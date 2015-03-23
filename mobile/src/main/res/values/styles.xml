@@ -1,0 +1,40 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+
+    </style>
+
+    <style name="lineSeparator">
+        <item name="android:background">@drawable/header_back</item>
+        <item name="android:layout_height">12dip</item>
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_marginBottom">12dip</item>
+    </style>
+
+    <style name="lineSeparator2">
+        <item name="android:background">@drawable/linesep2_back</item>
+        <item name="android:layout_height">10dip</item>
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_marginTop">6dip</item>
+        <item name="android:layout_marginBottom">6dip</item>
+    </style>
+
+    <style name="headerLabel">
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">?android:attr/textAppearanceLarge</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginTop">12dip</item>
+    </style>
+
+    <style name="valueTitleLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">?android:attr/textAppearanceMedium</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+
+</resources>

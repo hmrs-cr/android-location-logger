@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen 
+    android:key="global_preferences_creen"
+    xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <!--  Service Settings -->
+    <PreferenceCategory 
+        android:title="@string/pref_service_settings_title"
+        android:key="@string/pref_service_settings_key">
+
+        <CheckBoxPreference
+            android:key="@string/pref_service_enabled_key"
+            android:defaultValue="@string/pref_service_enabled_default"
+            android:title="@string/pref_service_enabled_title"
+            android:summary="@string/pref_service_enabled_summary" />
+
+        <ListPreference
+            android:key="@string/pref_update_interval_key"
+            android:defaultValue="@string/pref_update_interval_default"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_update_interval_title"
+            android:entries="@array/pref_update_interval_entries"
+            android:entryValues="@array/pref_update_interval_values"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <ListPreference
+            android:key="@string/pref_minimun_distance_key"
+            android:defaultValue="@string/pref_minimun_distance_default"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_minimun_distance_title"
+            android:entries="@array/pref_minimun_distance_entries"
+            android:entryValues="@array/pref_minimun_distance_values"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <ListPreference
+            android:key="@string/pref_max_speed_key"
+            android:defaultValue="@string/pref_max_speed_default"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_max_speed_title"
+            android:entries="@array/pref_max_speed_entries"
+            android:entryValues="@array/pref_max_speed_values"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <ListPreference
+            android:key="@string/pref_minimun_accuracy_key"
+            android:defaultValue="@string/pref_minimun_accuracy_default"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_minimun_accuracy_title"
+            android:entries="@array/pref_minimun_accuracy_entries"
+            android:entryValues="@array/pref_minimun_accuracy_values"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <ListPreference
+            android:key="@string/pref_best_accuracy_key"
+            android:defaultValue="@string/pref_best_accuracy_default"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_best_accuracy_title"
+            android:entries="@array/pref_best_accuracy_entries"
+            android:entryValues="@array/pref_best_accuracy_values"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <ListPreference
+            android:key="@string/pref_gps_timeout_key"
+            android:defaultValue="@string/pref_gps_timeout_default"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_gps_timeout_title"
+            android:entries="@array/pref_gps_timeout_entries"
+            android:entryValues="@array/pref_gps_timeout_values"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <CheckBoxPreference
+            android:key="@string/pref_passive_enabled_key"
+            android:defaultValue="@string/pref_passive_enabled_default"
+            android:title="@string/pref_passive_enabled_title"
+            android:summary="@string/pref_passive_enabled_summary"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <CheckBoxPreference
+            android:key="@string/pref_wackelock_enabled_key"
+            android:defaultValue="@string/pref_wackelock_enabled_default"
+            android:title="@string/pref_wackelock_enabled_title"
+            android:summary="@string/pref_wackelock_enabled_summary"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <CheckBoxPreference
+            android:key="@string/pref_notificationicon_enabled_key"
+            android:defaultValue="@string/pref_notificationicon_enabled_default"
+            android:title="@string/pref_notificationicon_enabled_title"
+            android:summary="@string/pref_notificationicon_enabled_summary"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <CheckBoxPreference
+            android:key="@string/pref_loglocations_key"
+            android:defaultValue="@string/pref_loglocations_default"
+            android:title="@string/pref_loglocations_title"
+            android:summary="@string/pref_loglocations_summary"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <CheckBoxPreference
+            android:key="@string/pref_use_gms_if_available_key"
+            android:defaultValue="true"
+            android:title="@string/pref_use_gms_if_available_title"
+            android:dependency="@string/pref_service_enabled_key" />
+
+    </PreferenceCategory>
+    
+	<!--   NMEA Settings -->
+    <PreferenceCategory 
+        android:title="@string/pref_nmea_settings_title"
+        android:key="@string/pref_nmea_settings_key">
+
+	   <EditTextPreference
+		    android:key="@string/pref_nmealog_directory_key"
+		    android:title="@string/pref_nmealog_directory_title"
+		    android:defaultValue="@string/pref_nmealog_directory_default"
+		    android:dependency="@string/pref_service_enabled_key" />
+	    
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/pref_export_settings_title"
+        android:summary="@string/pref_export_settings_summary"
+        android:key="@string/pref_locatrack_settings_key" >
+
+        <!-- Locatrack Settings
+            <PreferenceCategory
+                android:title="@string/pref_locatrack_settings_title"
+                android:key="@string/pref_locatrack_settings_key">-->
+
+                <EditTextPreference
+                    android:key="@string/pref_synctime_key"
+                    android:title="@string/pref_synctime_title"
+                    android:defaultValue="@string/pref_synctime_default"
+                    android:dialogTitle="@string/pref_synctime_title"
+                    android:dialogLayout="@layout/time_selector" />
+
+                <EditTextPreference
+                    android:key="@string/pref_locatrack_uri_key"
+                    android:title="@string/pref_locatrack_uri_title"
+                    android:defaultValue="@string/pref_locatrack_uri_default"
+                    android:inputType="textUri" />
+
+                 <EditTextPreference
+                    android:key="@string/pref_locatrack_key_key"
+                    android:title="@string/pref_locatrack_key_title"
+                    android:defaultValue="@string/pref_locatrack_key_default" />
+
+                <EditTextPreference
+                    android:key="@string/pref_locatrack_deviceid_key"
+                    android:title="@string/pref_locatrack_deviceid_title"
+                    android:defaultValue="@string/pref_locatrack_deviceid_default" />
+
+            <!--  </PreferenceCategory> -->
+    </PreferenceCategory>
+</PreferenceScreen>

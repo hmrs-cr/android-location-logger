@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pref_advanced_prefix">pref_advanced_</string>
+    <!-- Keys -->
+    <string name="pref_service_settings_key" translatable="false">service_settings</string>
+    <string name="pref_service_enabled_key" translatable="false">service_enabled</string>
+    <string name="pref_update_interval_key" translatable="false">update_interval</string>
+    <string name="pref_gps_timeout_key" translatable="false">gps_timeout</string>
+
+    <string name="pref_passive_enabled_key" translatable="false">pref_advanced_passive_enabled</string>
+    <string name="pref_minimun_distance_key" translatable="false">pref_advanced_minimun_distance</string>
+    <string name="pref_minimun_accuracy_key" translatable="false">pref_advanced_minimun_accuracy</string>
+    <string name="pref_best_accuracy_key" translatable="false">pref_advanced_best_accuracy</string>
+    <string name="pref_max_speed_key" translatable="false">pref_advanced_max_speed</string>
+    <string name="pref_wackelock_enabled_key" translatable="false">pref_advanced_wackelock_enabled</string>
+    <string name="pref_notificationicon_enabled_key" translatable="false">pref_advanced_notificationicon_enabled</string>
+    <string name="pref_loglocations_key" translatable="false">pref_advanced_loglocations</string>
+
+    <string name="pref_locatrack_settings_key" translatable="false">pref_advanced_locatrac_settings</string>
+    <string name="pref_synctime_key" translatable="false">synctime</string>
+    <string name="pref_locatrack_uri_key" translatable="false">locatrack_uri</string>
+    <string name="pref_locatrack_key_key" translatable="false">locatrack_key</string>
+    <string name="pref_locatrack_deviceid_key" translatable="false">locatrack_deviceid</string>
+    
+    <string name="pref_nmea_settings_key" translatable="false">pref_advanced_nmea_settings</string>
+    <string name="pref_nmealog_directory_key" translatable="false">nmealog_directory</string>
+    <string name="pref_auto_exif_geotager_enabled_key">auto_exif_geotager_enabled</string>
+    <string name="pref_use_gms_if_available_key">use_gms_if_available</string>
+
+</resources>

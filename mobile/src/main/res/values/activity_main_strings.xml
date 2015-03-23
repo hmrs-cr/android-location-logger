@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="generic_day">day</string>
+    <string name="generic_days">days</string>
+    <string name="generic_hour">hour</string>
+    <string name="generic_hours">hours</string>
+    <string name="generic_minute">minute</string>
+    <string name="generic_minutes">minutes</string>
+    <string name="generic_seconds">seconds</string>
+    <string name="generic_meters">meters</string>
+    <string name="generic_kilometers">kilometers</string>
+    <string name="nmea_last_entry_text">%1$d %2$s ago, in %3$s, %4$d %5$s from here.</string>
+    <string name="nmea_last_entry_noaddress_text">%1$d %2$s ago, %3$d %4$s from here.</string>
+    <string name="generic_none">None</string>
+    <string name="last_sync_time_text">%1$d %2$s ago</string>
+    <string name="next_sync_time_text">Within %1$d %2$s</string>
+    <string name="label_loading">Loading...</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="action_webserver">Start export Server</string>
+    <string name="action_locatrac_sync">Export to Locatrack cloud</string>
+    <string name="action_locatrac_sync_import">Import from Locatrack cloud</string>
+    <string name="action_export_kml">Export to KML</string>
+    <string name="action_export_gpx">Export to GPX</string>
+
+    <string name="lable_last_entry">Last Entry:</string>
+    <string name="generic_loading">Loading...</string>
+    <string name="label_log_path">Log Path:</string>
+    <string name="label_total_files">Total Files:</string>
+    <string name="label_total_entries">Total Entries:</string>
+    <string name="label_sync">Sync</string>
+    <string name="label_last_sync">Last Sync:</string>
+    <string name="label_next_sync">Next Sync:</string>
+    <string name="label_pending_entries">Pending Entries:</string>
+    <string name="label_total_sync_entries">Total Entries:</string>
+    <string name="geotagger_notify_text_failed">%1$d pictures tagged, %2$d failed</string>
+    <string name="label_auto_geotag">Auto geotag</string>
+    <string name="button_geotag_now">Geotag Now</string>
+
+</resources>

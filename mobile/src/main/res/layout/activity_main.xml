@@ -1,0 +1,305 @@
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content">
+    tools:context=".ui.MainActivity">
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
+        android:orientation="vertical"
+        tools:context=".MainActivity">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.hmsoft.nmealogger.ui.TouchLinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="vertical"
+                android:onClick="updateLocation">
+
+                <TextView
+                    android:id="@+id/labelLastEntry"
+                    style="@style/valueTitleLabel"
+                    android:text="@string/lable_last_entry" />
+
+                <TextView
+                    android:id="@+id/labelLastEntryValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            </com.hmsoft.nmealogger.ui.TouchLinearLayout>
+
+            <View
+                android:id="@+id/separator4"
+                style="@style/lineSeparator2" />
+
+            <com.hmsoft.nmealogger.ui.TouchLinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="vertical"
+                android:onClick="showFileOptions">
+
+                <TextView
+                    android:id="@+id/labelLogPath"
+                    style="@style/valueTitleLabel"
+                    android:text="@string/label_log_path" />
+
+                <TextView
+                    android:id="@+id/labelLogPathValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            </com.hmsoft.nmealogger.ui.TouchLinearLayout>
+
+            <View
+                android:id="@+id/separator5"
+                style="@style/lineSeparator2" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/labelTotalFiles"
+                    style="@style/valueTitleLabel"
+                    android:text="@string/label_total_files"
+                    android:layout_weight="1"
+                    android:layout_width="0dp" />
+
+                <TextView
+                    android:id="@+id/labelTotalFilesValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/separator6"
+                style="@style/lineSeparator2" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/labelTotaEntries"
+                    style="@style/valueTitleLabel"
+                    android:text="@string/label_total_entries"
+                    android:layout_weight="1"
+                    android:layout_width="0dp" />
+
+                <TextView
+                    android:id="@+id/labelTotalEntriesValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/separator2"
+                style="@style/lineSeparator2" />
+
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dip"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tbGEotag"
+                style="@style/headerLabel"
+                android:text="Geotagger"
+                android:layout_height="match_parent" />
+
+            <View
+                android:id="@+id/separator17"
+                style="@style/lineSeparator" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/labelAutoGeotag"
+                    style="@style/valueTitleLabel"
+                    android:text="@string/label_auto_geotag"
+                    android:layout_weight="1"
+                    android:layout_width="0dp" />
+
+                <ToggleButton
+                    android:id="@+id/chkAutoGeotag"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:onClick="setAutoGeotag"/>
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/separator18"
+                style="@style/lineSeparator2" />
+
+            <Button
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/button_geotag_now"
+                android:id="@+id/btnGeotagNow"
+                android:onClick="geotagPictures"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dip"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tbSync"
+                style="@style/headerLabel"
+                android:text="@string/label_sync"
+                android:layout_height="match_parent" />
+
+            <View
+                android:id="@+id/separator7"
+                style="@style/lineSeparator" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/labelLastSync"
+                    style="@style/valueTitleLabel"
+                    android:text="@string/label_last_sync"
+                    android:layout_weight="1"
+                    android:layout_width="0dp" />
+
+                <TextView
+                    android:id="@+id/labelLastSyncValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/separator8"
+                style="@style/lineSeparator2" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/labelNextSync"
+                    style="@style/valueTitleLabel"
+                    android:text="@string/label_next_sync"
+                    android:layout_weight="1"
+                    android:layout_width="0dp" />
+
+                <TextView
+                    android:id="@+id/labelNextSyncValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/separator9"
+                style="@style/lineSeparator2" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="horizontal"
+                android:weightSum="1">
+
+                <TextView
+                    android:id="@+id/labelPendingEntries"
+                    style="@style/valueTitleLabel"
+                    android:text="@string/label_pending_entries"
+                    android:layout_weight="1"
+                    android:layout_width="0dp" />
+
+                <TextView
+                    android:id="@+id/labelPendingEntriesValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/separator10"
+                style="@style/lineSeparator2" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/labelTotalSyncEntries"
+                    style="@style/valueTitleLabel"
+                    android:text="@string/label_total_sync_entries"
+                    android:layout_weight="1"
+                    android:layout_width="0dp" />
+
+                <TextView
+                    android:id="@+id/labelTotalSyncEntriesValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+        <View
+            android:id="@+id/separator12"
+            style="@style/lineSeparator" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text=""
+            android:id="@+id/labelVersion"
+            android:gravity="center_horizontal" />
+
+
+    </LinearLayout>
+</ScrollView>
