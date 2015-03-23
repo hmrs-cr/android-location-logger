@@ -8,9 +8,9 @@ location data in NMEA format compatible with [Canon Camera Window App](https://p
 Features
 --------
 * Log location in NMEA format.
-* Backup locations in the cloud.
+* Backup locations in the cloud ([myLatitude](https://bitbucket.org/nparley/mylatitude/wiki/Home)).
 * Export location to GPX and KML formats.
-* Embedded Web Server to by used by client application to extract location data. (like PyArcPics)
+* Embedded Web Server to be used by client application to extract location data. (like [PyArcPics](https://github.com/hmrs-cr/PyArcPics))
 
 Disclaimer
 ----------
