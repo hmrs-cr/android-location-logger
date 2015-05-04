@@ -49,6 +49,7 @@ import com.hmsoft.nmealogger.common.TaskExecutor;
 import com.hmsoft.nmealogger.data.ExifGeotager;
 import com.hmsoft.nmealogger.data.Geocoder;
 import com.hmsoft.nmealogger.data.locatrack.LocatrackDb;
+import com.hmsoft.nmealogger.data.locatrack.LocatrackOnlineStorer;
 import com.hmsoft.nmealogger.data.nmea.NmeaStorer;
 import com.hmsoft.nmealogger.ui.MainActivity;
 
@@ -91,6 +92,8 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private ComponentName mMapIntentComponent = null;
     private boolean mAutoExifGeotagerEnabled;
     private boolean mUseGmsIgAvailable;
+    private boolean mInstantUploadEnabled = false;
+
     //endregion Settings fields
 
     //region UI Data fields
@@ -112,6 +115,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private LocationClient mGpLocationClient = null;
     private boolean mGooglePlayServiceAvailable;
 
+    private LocatrackOnlineStorer mOnlineStorer = null;
     private NmeaStorer mNmeaStorer;
     private LocatrackDb mDbStorer;
 
@@ -388,7 +392,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 mCurrentBestLocation = location;
                 if ((!mGpsProviderEnabled && !mGooglePlayServiceAvailable) ||
                         (isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
-                    saveLocation(mCurrentBestLocation);
+                    saveLocation(mCurrentBestLocation, true);
                     if (!mTrackingMode) {
                         stopLocationListener();
                     }
@@ -505,7 +509,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
         if (mCurrentBestLocation != null && isFromGps(mCurrentBestLocation)) {
             if(Logger.DEBUG) Logger.debug(TAG, "currentBestLocation is from GPS");
-            saveLocation(mCurrentBestLocation);
+            saveLocation(mCurrentBestLocation, true);
             return;
         }
 
@@ -537,7 +541,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
 
         if (bestLastLocation != null) {
-            saveLocation(bestLastLocation);
+            saveLocation(bestLastLocation, true);
             if(mCurrentBestLocation == null) {
                 mCurrentBestLocation = bestLastLocation;
             }
@@ -547,6 +551,10 @@ public class LocationService extends Service implements GooglePlayServicesClient
     }
 
     private void saveLocation(final Location location) {
+        saveLocation(location, false);
+    }
+    
+    private void saveLocation(final Location location, final boolean upload) {
         if (location == null)
             return;
 
@@ -592,6 +600,22 @@ public class LocationService extends Service implements GooglePlayServicesClient
                         if (Logger.DEBUG) {
                             if (pw != null) {
                                 pw.stop(TAG, "End: Save location to db");
+                            }
+                        }
+                    }
+
+                    if(upload && !mTrackingMode && mInstantUploadEnabled) {
+                        if (Logger.DEBUG) {
+                            pw = PerfWatch.start(TAG, "Start: Upload location");
+                        }
+                        if(mOnlineStorer == null) {
+                            mOnlineStorer = new LocatrackOnlineStorer(getApplicationContext());
+                            mOnlineStorer.configure();
+                        }                       
+                        mOnlineStorer.storeLocation(location);
+                        if (Logger.DEBUG) {
+                            if (pw != null) {
+                                pw.stop(TAG, "End: Upload location");
                             }
                         }
                     }
@@ -1065,6 +1089,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         mSyncMinute = Integer.parseInt(syncTime[1]);
         mAutoExifGeotagerEnabled = preferences.getBoolean(getString(R.string.pref_auto_exif_geotager_enabled_key), true);
         mUseGmsIgAvailable = preferences.getBoolean(getString(R.string.pref_use_gms_if_available_key), true);
+        mInstantUploadEnabled = preferences.getBoolean(getString(R.string.pref_instant_upload_enabled_key), true);
 
         if (setup) {
             if (mRequestPassiveLocationUpdates) {
