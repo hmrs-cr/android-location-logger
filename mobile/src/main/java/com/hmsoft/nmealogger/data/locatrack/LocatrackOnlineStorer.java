@@ -18,6 +18,7 @@ import com.hmsoft.nmealogger.BuildConfig;
 import com.hmsoft.nmealogger.R;
 import com.hmsoft.nmealogger.data.LocationStorer;
 import com.hmsoft.nmealogger.common.Logger;
+import com.hmsoft.nmealogger.service.LocationService;
 import com.hmsoft.nmealogger.service.SyncAuthenticatorService;
 
 import android.app.Activity;
@@ -26,6 +27,7 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.BatteryManager;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
@@ -112,10 +114,13 @@ public class LocatrackOnlineStorer extends LocationStorer {
 			// add header
 			post.setHeader("User-Agent", USER_AGENT);
 			post.setHeader("Content-Type", "application/x-www-form-urlencoded");
-						
+
+			int batteryLevel = LocationService.getLocationExtras(location).getInt(BatteryManager.EXTRA_LEVEL, -1);
+
 			List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
 			urlParameters.add(new BasicNameValuePair("key", mMyLatitudeKey));
 			urlParameters.add(new BasicNameValuePair("deviceid", mDeviceId));
+			urlParameters.add(new BasicNameValuePair("battery", String.valueOf(batteryLevel)));
 			urlParameters.add(new BasicNameValuePair("latitude", String.valueOf(location.getLatitude())));
 			urlParameters.add(new BasicNameValuePair("longitude", String.valueOf(location.getLongitude())));
 			urlParameters.add(new BasicNameValuePair("altitude", String.valueOf(location.getAltitude())));

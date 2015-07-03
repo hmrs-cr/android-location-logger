@@ -20,6 +20,33 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/labelServiceEnabled"
+                    style="@style/valueTitleLabel"
+                    android:text="Service Enabled"
+                    android:layout_weight="1"
+                    android:layout_width="0dp" />
+
+                <ToggleButton
+                    android:id="@+id/chkServiceEnabled"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/generic_loading"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:onClick="setServiceEnabled"/>
+
+            </LinearLayout>
+            <View
+                android:id="@+id/separator4"
+                style="@style/lineSeparator2" />
+
+
+
             <com.hmsoft.nmealogger.ui.TouchLinearLayout
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
@@ -41,82 +68,7 @@
             </com.hmsoft.nmealogger.ui.TouchLinearLayout>
 
             <View
-                android:id="@+id/separator4"
-                style="@style/lineSeparator2" />
-
-            <com.hmsoft.nmealogger.ui.TouchLinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="vertical"
-                android:onClick="showFileOptions">
-
-                <TextView
-                    android:id="@+id/labelLogPath"
-                    style="@style/valueTitleLabel"
-                    android:text="@string/label_log_path" />
-
-                <TextView
-                    android:id="@+id/labelLogPathValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/generic_loading"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-            </com.hmsoft.nmealogger.ui.TouchLinearLayout>
-
-            <View
-                android:id="@+id/separator5"
-                style="@style/lineSeparator2" />
-
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/labelTotalFiles"
-                    style="@style/valueTitleLabel"
-                    android:text="@string/label_total_files"
-                    android:layout_weight="1"
-                    android:layout_width="0dp" />
-
-                <TextView
-                    android:id="@+id/labelTotalFilesValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-
-                    android:text="@string/generic_loading"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-            </LinearLayout>
-
-            <View
-                android:id="@+id/separator6"
-                style="@style/lineSeparator2" />
-
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/labelTotaEntries"
-                    style="@style/valueTitleLabel"
-                    android:text="@string/label_total_entries"
-                    android:layout_weight="1"
-                    android:layout_width="0dp" />
-
-                <TextView
-                    android:id="@+id/labelTotalEntriesValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/generic_loading"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-            </LinearLayout>
-
-            <View
-                android:id="@+id/separator2"
+                android:id="@+id/separator41"
                 style="@style/lineSeparator2" />
 
 
@@ -174,120 +126,6 @@
 
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dip"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tbSync"
-                style="@style/headerLabel"
-                android:text="@string/label_sync"
-                android:layout_height="match_parent" />
-
-            <View
-                android:id="@+id/separator7"
-                style="@style/lineSeparator" />
-
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/labelLastSync"
-                    style="@style/valueTitleLabel"
-                    android:text="@string/label_last_sync"
-                    android:layout_weight="1"
-                    android:layout_width="0dp" />
-
-                <TextView
-                    android:id="@+id/labelLastSyncValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/generic_loading"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-            </LinearLayout>
-
-            <View
-                android:id="@+id/separator8"
-                style="@style/lineSeparator2" />
-
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/labelNextSync"
-                    style="@style/valueTitleLabel"
-                    android:text="@string/label_next_sync"
-                    android:layout_weight="1"
-                    android:layout_width="0dp" />
-
-                <TextView
-                    android:id="@+id/labelNextSyncValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/generic_loading"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-            </LinearLayout>
-
-            <View
-                android:id="@+id/separator9"
-                style="@style/lineSeparator2" />
-
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="horizontal"
-                android:weightSum="1">
-
-                <TextView
-                    android:id="@+id/labelPendingEntries"
-                    style="@style/valueTitleLabel"
-                    android:text="@string/label_pending_entries"
-                    android:layout_weight="1"
-                    android:layout_width="0dp" />
-
-                <TextView
-                    android:id="@+id/labelPendingEntriesValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/generic_loading"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-            </LinearLayout>
-
-            <View
-                android:id="@+id/separator10"
-                style="@style/lineSeparator2" />
-
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/labelTotalSyncEntries"
-                    style="@style/valueTitleLabel"
-                    android:text="@string/label_total_sync_entries"
-                    android:layout_weight="1"
-                    android:layout_width="0dp" />
-
-                <TextView
-                    android:id="@+id/labelTotalSyncEntriesValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/generic_loading"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-            </LinearLayout>
-
-        </LinearLayout>
         <View
             android:id="@+id/separator12"
             style="@style/lineSeparator" />

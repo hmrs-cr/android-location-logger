@@ -27,5 +27,6 @@
     <string name="pref_auto_exif_geotager_enabled_key">auto_exif_geotager_enabled</string>
     <string name="pref_use_gms_if_available_key">use_gms_if_available</string>
     <string name="pref_instant_upload_enabled_key">pref_instant_upload_enabled</string>
+    <string name="pref_nmealog_enabled_key">pref_nmealog_enabled</string>
 
 </resources>

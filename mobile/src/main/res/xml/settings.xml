@@ -116,7 +116,13 @@
         android:title="@string/pref_nmea_settings_title"
         android:key="@string/pref_nmea_settings_key">
 
-	   <EditTextPreference
+        <CheckBoxPreference
+            android:key="@string/pref_nmealog_enabled_key"
+            android:defaultValue="false"
+            android:title="@string/pref_nmealog_enabled_title"
+            android:dependency="@string/pref_service_enabled_key" />
+
+        <EditTextPreference
 		    android:key="@string/pref_nmealog_directory_key"
 		    android:title="@string/pref_nmealog_directory_title"
 		    android:defaultValue="@string/pref_nmealog_directory_default"
@@ -156,6 +162,11 @@
                     android:key="@string/pref_locatrack_deviceid_key"
                     android:title="@string/pref_locatrack_deviceid_title"
                     android:defaultValue="@string/pref_locatrack_deviceid_default" />
+
+                <CheckBoxPreference
+                    android:key="@string/pref_instant_upload_enabled_key"
+                    android:defaultValue="false"
+                    android:title="@string/pref_instant_upload_enabled_title" />
 
             <!--  </PreferenceCategory> -->
     </PreferenceCategory>

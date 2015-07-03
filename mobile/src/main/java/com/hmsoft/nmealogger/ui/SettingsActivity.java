@@ -77,7 +77,7 @@ public class SettingsActivity extends PreferenceActivity
         }
 
         private boolean showAll() {
-            return "true".equals(getProperty("show_all", "false"));
+            return true;//"true".equals(getProperty("show_all", "false"));
         }
 
         private boolean isVisible(PreferenceGroup parent, Preference preference) {

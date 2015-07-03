@@ -49,14 +49,8 @@ public class MainActivity extends ActionBarActivity {
     static int sGeotagContentUriCount;
 
     TextView labelLastEntryValue;
-    TextView labelLogPathValue;
-    TextView labelTotalFilesValue;
-    TextView labelTotalEntriesValue;
-    TextView labelLastSyncValue;
-    TextView labelNextSyncValue;
-    TextView labelPendingEntriesValue;
-    TextView labelTotalSyncEntriesValue;
     ToggleButton chkAutoGeotag;
+    ToggleButton chkServiceEnabled;
     Button btnGeotagNow;
     Menu mMenu;
 
@@ -116,83 +110,40 @@ public class MainActivity extends ActionBarActivity {
         @Override
         protected Bundle doInBackground(Void... params) {
             Bundle values = new Bundle();
-            File nmeaPath = NmeaCommon.getNmeaPathFromConfig(mActivity);
-            ArrayList<File> fileList = NmeaCommon.getLogFilePathList(nmeaPath);
-            long totalSize = 0;
-            for (File file : fileList) {
-                totalSize += file.length();
-            }
 
             String lastEntryText = mActivity.getString(R.string.generic_none);
-            if (fileList.size() > 0) {
-                NmeaLogFile logFile = new NmeaLogFile(fileList.get(0));
-                Location lastLocation = logFile.getLastLocation();
-                if(lastLocation != null) {
-                    int distanceValue = 0;
-                    String distanceText = mActivity.getString(R.string.generic_meters);
 
-                    Location currentLoc = LocationService.getBestLastLocation(mActivity);
-                    if(currentLoc != null) {
-                        distanceValue = (int)currentLoc.distanceTo(lastLocation);
-                        if(distanceValue > 10000) {
-                            distanceValue = distanceValue / 1000;
-                            distanceText = mActivity.getString(R.string.generic_kilometers);
-                        }
-                    }
+            Location lastLocation = LocatrackDb.last();
+            if(lastLocation != null) {
+                int distanceValue = 0;
+                String distanceText = mActivity.getString(R.string.generic_meters);
 
-                    setTimeValueText(lastLocation.getTime(), false);
-                    String address = Geocoder.getFromCache(lastLocation);
-                    if(!TextUtils.isEmpty(address)) {
-                        lastEntryText = mActivity.getString(R.string.nmea_last_entry_text,
-                                mTimeValue, mTimeText, address, distanceValue, distanceText);
-                    } else {
-                        lastEntryText = mActivity.getString(R.string.nmea_last_entry_noaddress_text,
-                                mTimeValue, mTimeText, distanceValue, distanceText);
-                        (new GetAddressNameTask(mActivity, distanceValue, distanceText,
-                                mTimeValue, mTimeText)).execute(lastLocation);
+                Location currentLoc = LocationService.getBestLastLocation(mActivity);
+                if(currentLoc != null) {
+                    distanceValue = (int)currentLoc.distanceTo(lastLocation);
+                    if(distanceValue > 10000) {
+                        distanceValue = distanceValue / 1000;
+                        distanceText = mActivity.getString(R.string.generic_kilometers);
                     }
+                }
+
+                setTimeValueText(lastLocation.getTime(), false);
+                String address = Geocoder.getFromCache(lastLocation);
+                if(!TextUtils.isEmpty(address)) {
+                    lastEntryText = mActivity.getString(R.string.nmea_last_entry_text,
+                            mTimeValue, mTimeText, address, distanceValue, distanceText);
+                } else {
+                    lastEntryText = mActivity.getString(R.string.nmea_last_entry_noaddress_text,
+                            mTimeValue, mTimeText, distanceValue, distanceText);
+                    (new GetAddressNameTask(mActivity, distanceValue, distanceText,
+                            mTimeValue, mTimeText)).execute(lastLocation);
                 }
             }
 
-            String lastSyncTimeText = mActivity.getString(R.string.generic_none);
-            long millis = LocatrackDb.getLastLocationTime();
-            if(millis > 0) {
-                setTimeValueText(millis, false);
-                lastSyncTimeText = mActivity.getString(R.string.last_sync_time_text,
-                        mTimeValue, mTimeText);
-            }
-
-            String nextSyncTimeText = mActivity.getString(R.string.generic_none);
-            millis = SyncService.getMillisOfNextSyncAlarm(mActivity);
-            if(millis > 0) {
-                setTimeValueText(millis, true);
-                nextSyncTimeText = mActivity.getString(R.string.next_sync_time_text,
-                        mTimeValue, mTimeText);
-            }
 
             values.putString(String.valueOf(mActivity.labelLastEntryValue.getId()),
                     lastEntryText);
 
-            values.putString(String.valueOf(mActivity.labelLogPathValue.getId()),
-                    nmeaPath.toString());
-
-            values.putString(String.valueOf(mActivity.labelTotalFilesValue.getId()),
-                    String.valueOf(fileList.size()));
-
-            values.putString(String.valueOf(mActivity.labelTotalEntriesValue.getId()),
-                    String.valueOf(Math.round(totalSize / (NmeaCommon.NMEA_ENTRY_SIZE * 2))));
-
-            values.putString(String.valueOf(mActivity.labelLastSyncValue.getId()),
-                    lastSyncTimeText);
-
-            values.putString(String.valueOf(mActivity.labelNextSyncValue.getId()),
-                    nextSyncTimeText);
-
-            values.putString(String.valueOf(mActivity.labelPendingEntriesValue.getId()),
-                    String.valueOf(LocatrackDb.getCount(true)));
-
-            values.putString(String.valueOf(mActivity.labelTotalSyncEntriesValue.getId()),
-                    String.valueOf(LocatrackDb.getCount(false)));
 
            return values;
         }
@@ -281,13 +232,6 @@ public class MainActivity extends ActionBarActivity {
     void setUiValuesFromBundle(Bundle values) {
         if(values != null) {
             setTextFromBundle(labelLastEntryValue, values);
-            setTextFromBundle(labelLogPathValue, values);
-            setTextFromBundle(labelTotalFilesValue, values);
-            setTextFromBundle(labelTotalEntriesValue, values);
-            setTextFromBundle(labelLastSyncValue, values);
-            setTextFromBundle(labelNextSyncValue, values);
-            setTextFromBundle(labelPendingEntriesValue, values);
-            setTextFromBundle(labelTotalSyncEntriesValue, values);
         }
     }
 
@@ -342,18 +286,15 @@ public class MainActivity extends ActionBarActivity {
         SettingsActivity.setPrefDefaults(this);
 
         labelLastEntryValue = (TextView)findViewById(R.id.labelLastEntryValue);
-        labelLogPathValue = (TextView)findViewById(R.id.labelLogPathValue);
-        labelTotalFilesValue = (TextView)findViewById(R.id.labelTotalFilesValue);
-        labelTotalEntriesValue = (TextView)findViewById(R.id.labelTotalEntriesValue);
-        labelLastSyncValue = (TextView)findViewById(R.id.labelLastSyncValue);
-        labelNextSyncValue = (TextView)findViewById(R.id.labelNextSyncValue);
-        labelPendingEntriesValue = (TextView)findViewById(R.id.labelPendingEntriesValue);
-        labelTotalSyncEntriesValue = (TextView)findViewById(R.id.labelTotalSyncEntriesValue);
         chkAutoGeotag = (ToggleButton)findViewById(R.id.chkAutoGeotag);
+        chkServiceEnabled = (ToggleButton)findViewById(R.id.chkServiceEnabled);
         btnGeotagNow = (Button)findViewById(R.id.btnGeotagNow);
 
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
         chkAutoGeotag.setChecked(pref.getBoolean(getString(R.string.pref_auto_exif_geotager_enabled_key),
+                true));
+
+        chkServiceEnabled.setChecked(pref.getBoolean(getString(R.string.pref_service_enabled_key),
                 true));
 
         btnGeotagNow.setEnabled(sGeotagContentUriCount <= 0);
@@ -376,13 +317,6 @@ public class MainActivity extends ActionBarActivity {
         if(Logger.DEBUG) Logger.debug(TAG, "onSaveInstanceState");
         super.onSaveInstanceState(values);
         saveTextToBundle(labelLastEntryValue, values);
-        saveTextToBundle(labelLogPathValue, values);
-        saveTextToBundle(labelTotalFilesValue, values);
-        saveTextToBundle(labelTotalEntriesValue, values);
-        saveTextToBundle(labelLastSyncValue, values);
-        saveTextToBundle(labelNextSyncValue, values);
-        saveTextToBundle(labelPendingEntriesValue, values);
-        saveTextToBundle(labelTotalSyncEntriesValue, values);
     }
 	
 	public void updateLocation(View view) {
@@ -404,6 +338,19 @@ public class MainActivity extends ActionBarActivity {
         int iconId = trackingMode ? R.drawable.ic_action_traking : R.drawable.ic_action_not_traking;
         item.setIcon(iconId);
         item.setChecked(trackingMode);
+    }
+
+    public void setServiceEnabled(View view) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String key = getString(R.string.pref_service_enabled_key);
+        boolean serviceEnabled = preferences.getBoolean(key, true);
+        serviceEnabled = !serviceEnabled;
+        preferences.edit().putBoolean(key, serviceEnabled).apply();
+        if(serviceEnabled) {
+            LocationService.enable(this);
+        } else {
+            LocationService.configure(this);            
+        }        
     }
 
     public void setAutoGeotag(View view) {

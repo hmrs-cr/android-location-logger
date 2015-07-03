@@ -57,6 +57,9 @@ public class LocatrackDb extends LocationStorer {
         return  LocationTable.getCount(Helper.getInstance(), includeNotUploadedOnly);
     }
 	
+    public static Location last() {
+        return LocationTable.getLast(Helper.getInstance());
+    }
 	public static long getLastLocationTime() {
         return  LocationTable.getLastTime(Helper.getInstance());
     }

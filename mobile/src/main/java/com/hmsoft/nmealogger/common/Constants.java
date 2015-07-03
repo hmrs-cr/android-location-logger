@@ -30,6 +30,7 @@ public final class Constants {
     public static final String EXTRA_SET_AUTO_GEOTAG = EXTRA_NAMESPACE + ".SET_AUTO_GEOTAG";
     public static final String EXTRA_NOTIFICATION_DELETED = EXTRA_NAMESPACE + ".NOTIFICATION_DELETED";
     public static final String CATEGORY_TRACKING = BASE_NAMESPACE + ".CATEGORY_TRACKING";
+    public static final String EXTRA_UPLOAD_TIME = "EXTRA_UPLOAD_TIME";
     ;
 
     private Constants() {

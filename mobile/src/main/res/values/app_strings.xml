@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">NMEA Logger</string>
+    <string name="app_name">Location Logger</string>
     <string name="sync_account_type">hmlocatrack.appspot.com</string>
     <string name="location_provider_authority">com.hmsoft.nmealogger.location.provider</string>
-    <string name="service_title">NMEA Logger</string>
+    <string name="service_title">Location Logger</string>
     <string name="service_content">Count: %1$d ~ %2$dM</string>
     <string name="action_update_location">Update Now</string>
     <string name="action_stop_tracking">Stop tracking</string>
@@ -20,7 +20,7 @@
     <string name="export_preference_title">Export</string>
     <string name="export_preference_title_records">Export - %d records</string>
     <string name="export_preference_calculating">Calculating ...</string>
-    <string name="sync_notif_content_title">NMEA Logger Cloud Sync</string>
+    <string name="sync_notif_content_title">Location Logger Cloud Sync</string>
     <string name="sync_notif_content_text">%d uploaded.</string>
     <string name="sync_fail_notif_content_text">%1$d uploaded, %2$d failed.</string>
     <string name="action_about">About...</string>

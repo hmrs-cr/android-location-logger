@@ -15,9 +15,12 @@ import com.hmsoft.nmealogger.service.LocationExportWebServer;
 
 import java.math.BigInteger;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.Date;
+import java.util.Enumeration;
 
 public class WebServerActivity extends ActionBarActivity
     implements LocationExportWebServer.Callbacks {
@@ -38,6 +41,25 @@ public class WebServerActivity extends ActionBarActivity
         context.startActivity(intent);
     }
 
+    private String getIPExp() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                NetworkInterface intf = en.nextElement();
+                if (intf.getName().contains("wlan")) {
+                    for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                        InetAddress inetAddress = enumIpAddr.nextElement();
+                        if (!inetAddress.isLoopbackAddress() && (inetAddress.getAddress().length == 4)) {
+                            return inetAddress.getHostAddress();
+                        }
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     protected String wifiIpAddress(Context context) {
         WifiManager wifiManager = (WifiManager) context.getSystemService(WIFI_SERVICE);
         int ipAddress = wifiManager.getConnectionInfo().getIpAddress();
@@ -55,6 +77,10 @@ public class WebServerActivity extends ActionBarActivity
         } catch (UnknownHostException ex) {
             Logger.error(TAG, "Unable to get host address.");
             ipAddressString = null;
+        }
+
+        if(ipAddressString == null) {
+            ipAddressString = getIPExp();
         }
 
         return ipAddressString;

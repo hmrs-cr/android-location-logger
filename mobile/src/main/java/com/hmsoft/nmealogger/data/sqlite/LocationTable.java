@@ -5,7 +5,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.location.Location;
+import android.os.Bundle;
 
+import com.hmsoft.nmealogger.common.Constants;
 import com.hmsoft.nmealogger.common.Logger;
 import com.hmsoft.nmealogger.data.LocationSet;
 
@@ -57,7 +59,7 @@ public class LocationTable {
             COLUMN_NAME_LONGITUD  + "=?" + Helper.COMMA_SEP +
             COLUMN_NAME_ALTITUDE  + "=?" + Helper.COMMA_SEP +
             COLUMN_NAME_ACCURACY  + "=?" + Helper.COMMA_SEP +
-            COLUMN_NAME_UPLOAD_DATE + "=0" + Helper.COMMA_SEP +
+            COLUMN_NAME_UPLOAD_DATE + "=?" + Helper.COMMA_SEP +
             COLUMN_NAME_SPEED     + "=? WHERE " +
             COLUMN_NAME_TIMESTAMP + "=?";
 
@@ -144,7 +146,7 @@ public class LocationTable {
 
     public static long getLastTime(Helper helper) {
         Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME,
-                new String[] { COLUMN_NAME_TIMESTAMP }, null, null, null,
+                new String[]{COLUMN_NAME_TIMESTAMP}, null, null, null,
                 null, COLUMN_NAME_TIMESTAMP + " DESC", "1");
 
         if(cursor != null) {
@@ -170,6 +172,13 @@ public class LocationTable {
                 (sLastInsertedLocation.distanceTo(location) < minDistance);
 
         long c = 1;
+
+        long uploadDate = 0;
+        Bundle extras = location.getExtras();
+        if(extras != null) {
+            uploadDate = extras.getLong(Constants.EXTRA_UPLOAD_TIME, 0L);
+        }
+
         if(sInsertStatement != null) {
             SQLiteStatement statement;
             if(update) {
@@ -178,8 +187,9 @@ public class LocationTable {
                 sUpdateStatement.bindDouble(3, location.getLongitude());
                 sUpdateStatement.bindDouble(4, location.getAltitude());
                 sUpdateStatement.bindDouble(5, location.getAccuracy());
-                sUpdateStatement.bindDouble(6, location.getSpeed());
-                sUpdateStatement.bindLong(7, sLastInsertedLocation.getTime());
+                sUpdateStatement.bindDouble(6, uploadDate);
+                sUpdateStatement.bindDouble(7, location.getSpeed());
+                sUpdateStatement.bindLong(8, sLastInsertedLocation.getTime());
                 sLastInsertedLocation.setTime(location.getTime());
                 statement = sUpdateStatement;
             } else {
@@ -189,7 +199,7 @@ public class LocationTable {
                 sInsertStatement.bindDouble(4, location.getAltitude());
                 sInsertStatement.bindDouble(5, location.getAccuracy());
                 sInsertStatement.bindDouble(6, location.getSpeed());
-                sInsertStatement.bindLong(7, 0L);
+                sInsertStatement.bindLong(7, uploadDate);
                 statement = sInsertStatement;
                 sLastInsertedLocation = location;
             }
@@ -206,7 +216,7 @@ public class LocationTable {
             sInsertValues.put(COLUMN_NAME_ALTITUDE, location.getAltitude());
             sInsertValues.put(COLUMN_NAME_ACCURACY, location.getAccuracy());
             sInsertValues.put(COLUMN_NAME_SPEED, location.getSpeed());
-            sInsertValues.put(COLUMN_NAME_UPLOAD_DATE, 0);
+            sInsertValues.put(COLUMN_NAME_UPLOAD_DATE, uploadDate);
 
             SQLiteDatabase db = helper.getWritableDatabase();
 
