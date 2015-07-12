@@ -28,5 +28,7 @@
     <string name="pref_use_gms_if_available_key">use_gms_if_available</string>
     <string name="pref_instant_upload_enabled_key">pref_instant_upload_enabled</string>
     <string name="pref_nmealog_enabled_key">pref_nmealog_enabled</string>
+    <string name="pref_vehiclemode_enabled_key">pref_vehiclemode_enabled</string>
+    <string name="pref_set_airplanemode_key">pref_set_airplanemode</string>
 
 </resources>

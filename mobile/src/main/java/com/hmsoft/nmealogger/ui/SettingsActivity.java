@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.DialogPreference;
@@ -141,12 +142,15 @@ public class SettingsActivity extends PreferenceActivity
             getPreferenceScreen().removePreference(mPrefCategoryService);
             getPreferenceScreen().removePreference(mPrefCategoryNmea);
         } else {
-            hideAdvancedPreferences(getPreferenceScreen());
+            //hideAdvancedPreferences(getPreferenceScreen());
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) {
+                mPrefCategoryService.removePreference(mPrefCategoryService.findPreference(getString(string.pref_set_airplanemode_key)));
+            }
         }
         bindPreferencesSummaryToValue(getPreferenceScreen());
 	}
 
-    private void hideAdvancedPreferences(PreferenceGroup group) {
+    /*private void hideAdvancedPreferences(PreferenceGroup group) {
         if(mAdvancedSettings.showAll()) {
             return;
         }
@@ -163,7 +167,7 @@ public class SettingsActivity extends PreferenceActivity
                 c++;
             }
         }
-    }
+    }*/
 
     private void addCustomPreferecences() {
         //noinspection deprecation

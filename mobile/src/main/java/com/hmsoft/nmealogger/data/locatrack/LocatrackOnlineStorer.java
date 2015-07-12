@@ -16,6 +16,7 @@ import org.apache.http.message.BasicNameValuePair;
 
 import com.hmsoft.nmealogger.BuildConfig;
 import com.hmsoft.nmealogger.R;
+import com.hmsoft.nmealogger.common.TaskExecutor;
 import com.hmsoft.nmealogger.data.LocationStorer;
 import com.hmsoft.nmealogger.common.Logger;
 import com.hmsoft.nmealogger.service.LocationService;
@@ -47,6 +48,9 @@ public class LocatrackOnlineStorer extends LocationStorer {
 	private Context mContext;
 	private ConnectivityManager mConnectivityManager;
 	private Location mLastUploadedLocation;
+
+	public int retryCount;
+	public int retryDelaySeconds;
 
     public static class MissingConfigurationException extends IllegalArgumentException {
         public MissingConfigurationException(String configKeyName) {
@@ -188,15 +192,23 @@ public class LocatrackOnlineStorer extends LocationStorer {
             throw new MissingConfigurationException("myLatitudeKey");
         }
 
-		NetworkInfo activeNetwork = mConnectivityManager.getActiveNetworkInfo();
-		boolean isConnected = activeNetwork != null && activeNetwork.isConnected();
+        int count = retryCount;
+        boolean uploadOk = false;
+        while (!uploadOk) {
+            NetworkInfo activeNetwork = mConnectivityManager.getActiveNetworkInfo();
+            boolean isConnected = activeNetwork != null && activeNetwork.isConnected();
 
-		if(DEBUG) {
-			if(!isConnected)
-				if(Logger.DEBUG) Logger.debug(TAG, "Device disconnected");
+            if(DEBUG) {
+                if(!isConnected)
+                    if(Logger.DEBUG) Logger.debug(TAG, "Device disconnected");
+            }
+
+			uploadOk = isConnected && internalUploadLocation(location);
+			if(--count < 0) break;
+			if(!uploadOk) TaskExecutor.sleep(retryDelaySeconds);
 		}
 
-		boolean uploadOk = isConnected && internalUploadLocation(location);
+
         if(uploadOk) {
             mTotalSuccess++;
         } else {

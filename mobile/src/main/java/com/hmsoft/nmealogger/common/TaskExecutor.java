@@ -5,7 +5,7 @@ import android.os.Looper;
 
 public final class TaskExecutor 
 {
-	//private static final String TAG = "TaskExecutor";
+	private static final String TAG = "TaskExecutor";
 	
 	private static Handler sExecuteOnUIHandler = null;
 	
@@ -34,5 +34,15 @@ public final class TaskExecutor
 	
 	public synchronized static void executeOnUIThread(Runnable runnable, int seconds) {
 		sExecuteOnUIHandler.postDelayed(runnable, seconds * 1000);
+	}
+
+	public static void sleep(int seconds) {
+		if(seconds < 1) return;
+		try {
+            if(Logger.DEBUG) Logger.debug(TAG, "Sleeping %d seconds", seconds);
+			Thread.sleep(seconds * 1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 }

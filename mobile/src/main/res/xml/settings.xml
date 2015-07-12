@@ -15,6 +15,12 @@
             android:title="@string/pref_service_enabled_title"
             android:summary="@string/pref_service_enabled_summary" />
 
+        <CheckBoxPreference
+            android:key="@string/pref_vehiclemode_enabled_key"
+            android:defaultValue="@string/pref_vehiclemode_enabled_default"
+            android:title="@string/pref_vehiclemode_enabled_title"
+            android:dependency="@string/pref_service_enabled_key" />
+
         <ListPreference
             android:key="@string/pref_update_interval_key"
             android:defaultValue="@string/pref_update_interval_default"
@@ -102,6 +108,13 @@
             android:title="@string/pref_loglocations_title"
             android:summary="@string/pref_loglocations_summary"
             android:dependency="@string/pref_service_enabled_key" />
+
+        <CheckBoxPreference
+            android:key="@string/pref_set_airplanemode_key"
+            android:defaultValue="@string/pref_set_airplanemode_default"
+            android:title="@string/pref_set_airplanemode_title"
+            android:dependency="@string/pref_service_enabled_key" />
+
 
         <CheckBoxPreference
             android:key="@string/pref_use_gms_if_available_key"

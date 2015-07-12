@@ -2,8 +2,12 @@
 <resources>
     <string name="pref_service_settings_title">Service Settings</string>
     <string name="pref_service_enabled_title">Enable service</string>
+    <string name="pref_vehiclemode_enabled_title">Vehicle Mode</string>
+    <string name="pref_set_airplanemode_title">Set Airplane Mode</string>
     <string name="pref_service_enabled_summary"></string>
     <string name="pref_service_enabled_default">true</string>
+    <string name="pref_vehiclemode_enabled_default">false</string>
+    <string name="pref_set_airplanemode_default">false</string>
 
     <string name="pref_passive_enabled_title">Passive updates</string>
     <string name="pref_passive_enabled_summary"></string>

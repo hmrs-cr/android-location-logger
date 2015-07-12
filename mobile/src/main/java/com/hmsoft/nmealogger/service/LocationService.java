@@ -31,6 +31,7 @@ import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
 import android.text.TextUtils;
@@ -66,15 +67,30 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final int HALF_MINUTE = 1000 * 30;
     private static final int CRITICAL_BATTERY_LEVEL = 30;
+
+    private static final int CHARGING   = 0;
+    private static final int BAT_100_75 = 1;
+    private static final int BAT_75_50  = 2;
+    private static final int BAT_50_25  = 3;
+    private static final int BAT_25_0   = 4;
+    private static final int[] VEHICLE_MODE_LOCATION_INTERVAL_SETTINGS = {
+            150  /* 2.5 minutes */, // CHARGING
+            1800 /* 30 minutes */,  // BAT_100_75
+            2600 /* 1 hour */,      // BAT_75_50
+            5400 /* 1.5 hours */,   // BAT_50_25
+            7200 /* 2 hours */      // BAT_25_0
+    };
     //endregion Static fields
 
     //region Settings fields
     private int mAutoLocationInterval = 300; // seconds
     private float mBatteryMultiplier = 3.0F;
-    private int mBatteryCriticalLevel = 70;
+    private int mBatteryCriticalLevel = 50;
+    boolean mVehicleMode = false;
     private int mMinimumDistance = 20; //meters
     private int mGpsTimeout = 60; //seconds
     /*private*/ boolean mRequestPassiveLocationUpdates = true;
+    boolean mSetAirplaneMode = false;
     private float mMaxReasonableSpeed = 55; // meters/seconds
     private int mMinimumAccuracy = 750; // meters
     private int mBestAccuracy = 6;
@@ -633,16 +649,27 @@ public class LocationService extends Service implements GooglePlayServicesClient
                         if (Logger.DEBUG) {
                             pw = PerfWatch.start(TAG, "Start: Upload location");
                         }
+                        Context context = getApplicationContext();
                         if(mOnlineStorer == null) {
-                            mOnlineStorer = new LocatrackOnlineStorer(getApplicationContext());
+                            mOnlineStorer = new LocatrackOnlineStorer(context);
                             mOnlineStorer.configure();
                         }
                         getLocationExtras(location).putInt(BatteryManager.EXTRA_LEVEL, mLastBatteryLevel);
+                        if(mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
+                            mOnlineStorer.retryDelaySeconds = 10;
+                            mOnlineStorer.retryCount = 3;
+                        } else {
+                            mOnlineStorer.retryDelaySeconds = 3;
+                            mOnlineStorer.retryCount = 1;
+                        }
                         locationUploaded = mOnlineStorer.storeLocation(location);
                         if (Logger.DEBUG) {
                             if (pw != null) {
                                 pw.stop(TAG, "End: Upload location");
                             }
+                        }
+                        if(mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
+                            setAirplaneMode(context, true);
                         }
                     }
 
@@ -819,6 +846,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
     }
 
     void startLocationListener() {
+        if(mSetAirplaneMode && mVehicleMode) setAirplaneMode(this, false);
         if(mGooglePlayServiceAvailable) {
             if (mLocationRequest == null) {
                 if(Logger.DEBUG) Logger.debug(TAG, "startLocationListener: Google Play Services available.");
@@ -975,13 +1003,25 @@ public class LocationService extends Service implements GooglePlayServicesClient
         if(mTrackingMode) {
             interval = 600;
         } else{
-            if (mBatteryMultiplier > 0) {
+            if(mVehicleMode) {
+                int i = BAT_100_75;
+                if(mLastBatteryLevel > 100) {
+                    i = CHARGING;
+                } else if(mLastBatteryLevel < 25) {
+                    i = BAT_25_0;
+                } else if(mLastBatteryLevel < 50) {
+                    i = BAT_50_25;
+                } else if(mLastBatteryLevel < 75) {
+                    i = BAT_75_50;
+                }
+                interval = VEHICLE_MODE_LOCATION_INTERVAL_SETTINGS[i];
+            } else if (mBatteryMultiplier > 0) {
                 if (mLastBatteryLevel < mBatteryCriticalLevel) {
                     interval *= mBatteryMultiplier;
                     if(mLastBatteryLevel < CRITICAL_BATTERY_LEVEL) {
                         interval += 120 * (CRITICAL_BATTERY_LEVEL - mLastBatteryLevel);
                     }
-                } else if(mLastBatteryLevel > 100) {
+                } else if(mLastBatteryLevel > 100 && interval > 300) {
                     interval /= mBatteryMultiplier;
                 }
             }
@@ -1053,7 +1093,9 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
 
         if(intent.hasExtra(Constants.EXTRA_SYNC)) {
-            SyncService.importNmeaToLocalDb(this);
+            if(mLastBatteryLevel > 55) {
+                SyncService.importNmeaToLocalDb(this);
+            }
             setSyncAlarm();
         }
 
@@ -1148,8 +1190,22 @@ public class LocationService extends Service implements GooglePlayServicesClient
         mAutoExifGeotagerEnabled = preferences.getBoolean(getString(R.string.pref_auto_exif_geotager_enabled_key), true);
         mUseGmsIgAvailable = preferences.getBoolean(getString(R.string.pref_use_gms_if_available_key), true);
         mInstantUploadEnabled = preferences.getBoolean(getString(R.string.pref_instant_upload_enabled_key), true);
-        mNmeaLogEnabled  = preferences.getBoolean(getString(R.string.pref_nmealog_enabled_key), true);
-        
+        mNmeaLogEnabled  = preferences.getBoolean(getString(R.string.pref_nmealog_enabled_key), false);
+        mVehicleMode =  preferences.getBoolean(getString(R.string.pref_vehiclemode_enabled_key), mVehicleMode);
+        mSetAirplaneMode =  preferences.getBoolean(getString(R.string.pref_set_airplanemode_key), mSetAirplaneMode);
+
+        if(mVehicleMode) {
+            mInstantUploadEnabled = true;
+            mAutoExifGeotagerEnabled = false;
+            mNmeaLogEnabled = false;
+            mNotificationEnabled = true;
+            mMaxReasonableSpeed = 49;
+            mGpsTimeout = 61;
+            mTrackingMode = false;
+            mMinimumAccuracy = 1000;
+        }
+
+
         if (setup) {
             if (mRequestPassiveLocationUpdates) {
                 startLocationListener();
@@ -1414,6 +1470,27 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
         return extras;
     }
+
+    static void setAirplaneMode(Context context, boolean  isEnabled) {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) return;
+        try {
+            boolean enabled = Settings.System.getInt(context.getContentResolver(),
+                    Settings.System.AIRPLANE_MODE_ON, 0) == 1;
+
+            if(enabled == isEnabled) return;
+
+            // Toggle airplane mode.
+            Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON,
+                    isEnabled ? 1 : 0);
+
+            Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+            intent.putExtra("state", isEnabled);
+            context.sendBroadcast(intent);
+        } catch (Exception e) {
+
+        }
+    }
+
 
     //endregionregion Helper functions
 }

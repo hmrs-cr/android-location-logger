@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.ActionBarActivity;
 import android.text.TextUtils;
 import android.view.Menu;
@@ -33,13 +32,9 @@ import com.hmsoft.nmealogger.data.Geocoder;
 import com.hmsoft.nmealogger.data.LocationExporter;
 import com.hmsoft.nmealogger.data.LocationStorer;
 import com.hmsoft.nmealogger.data.locatrack.LocatrackDb;
-import com.hmsoft.nmealogger.data.nmea.NmeaCommon;
-import com.hmsoft.nmealogger.data.nmea.NmeaLogFile;
 import com.hmsoft.nmealogger.service.LocationService;
 import com.hmsoft.nmealogger.service.SyncService;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.Calendar;
 
 public class MainActivity extends ActionBarActivity {
@@ -57,6 +52,9 @@ public class MainActivity extends ActionBarActivity {
     private ExifGeotager.GeotagFinishListener mGeoTagContentFinishListener = null;
     int mGeotagContentTotalCount;
     int mGeotagContentTaggedCount;
+    private boolean mVehicleMode;
+
+    private int mVehicleModeSettingsCount = 6;
 
     private static class GetAddressNameTask extends AsyncTask<Location, Void, String> {
         private final MainActivity mActivity;
@@ -405,10 +403,18 @@ public class MainActivity extends ActionBarActivity {
             }
         });
 
-        SyncService.exportNmeaToStorer(this, storer, LocatrackDb.getLastLocationTime(),  0);
+        SyncService.exportNmeaToStorer(this, storer, LocatrackDb.getLastLocationTime(), 0);
     }
 
     private void updateUI() {
+        chkServiceEnabled.setEnabled(!mVehicleMode);
+        chkAutoGeotag.setEnabled(!mVehicleMode);
+        if(mVehicleMode) {
+            chkAutoGeotag.setChecked(false);
+            if(!chkServiceEnabled.isChecked()) {
+                setServiceEnabled(chkServiceEnabled);
+            }
+        }
         if(mMenu != null) {
             updateTrackingMenuItem(mMenu.findItem(R.id.action_toggle_trackmode));
         }
@@ -416,13 +422,14 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void updateTrackingMenuItem(MenuItem item) {
-        boolean isTracking = PreferenceManager.getDefaultSharedPreferences(this)
+        boolean isTracking = !mVehicleMode && PreferenceManager.getDefaultSharedPreferences(this)
                 .getBoolean(Constants.PREF_TRAKING_MODE_KEY, false);
 
         item.setChecked(isTracking);
         int iconId = isTracking ? R.drawable.ic_action_traking : R.drawable.ic_action_not_traking;
         item.setIcon(iconId);
         item.setChecked(isTracking);
+        item.setEnabled(!mVehicleMode);
     }
 
     @Override
@@ -462,7 +469,14 @@ public class MainActivity extends ActionBarActivity {
         cal.set(Calendar.MILLISECOND, 0);
 
         if(id == R.id.action_settings) {
-            SettingsActivity.start(this);
+            if(mVehicleMode  && mVehicleModeSettingsCount > 0) {
+                String extrat = "";
+                if(mVehicleModeSettingsCount-- < 4) extrat = " " + mVehicleModeSettingsCount;
+                Toast.makeText(this, getString(R.string.vehiclemode_enabled_warn) + extrat, Toast.LENGTH_LONG).show();
+            } else {
+                SettingsActivity.start(this);
+                mVehicleModeSettingsCount = 6;
+            }
         } if(id == R.id.action_webserver) {
             WebServerActivity.start(this);
         } else if (id == R.id.action_export_gpx) {
@@ -503,6 +517,7 @@ public class MainActivity extends ActionBarActivity {
     protected void onResume() {
         if(Logger.DEBUG) Logger.debug(TAG, "onResume");
         super.onResume();
+        mVehicleMode = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getBoolean(getString(R.string.pref_vehiclemode_enabled_key), false);
         updateUI();
 		registerReceiver(mUpdateUiReceiver, new IntentFilter(Constants.ACTION_UPDATE_UI));
         servicesConnected();

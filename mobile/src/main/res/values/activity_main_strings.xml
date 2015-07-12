@@ -36,5 +36,6 @@
     <string name="geotagger_notify_text_failed">%1$d pictures tagged, %2$d failed</string>
     <string name="label_auto_geotag">Auto geotag</string>
     <string name="button_geotag_now">Geotag Now</string>
+    <string name="vehiclemode_enabled_warn">Vehicle Mode is enabled</string>
 
 </resources>
