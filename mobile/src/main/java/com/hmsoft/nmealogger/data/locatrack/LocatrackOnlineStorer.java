@@ -1,27 +1,5 @@
 package com.hmsoft.nmealogger.data.locatrack;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-
-import com.hmsoft.nmealogger.BuildConfig;
-import com.hmsoft.nmealogger.R;
-import com.hmsoft.nmealogger.common.TaskExecutor;
-import com.hmsoft.nmealogger.data.LocationStorer;
-import com.hmsoft.nmealogger.common.Logger;
-import com.hmsoft.nmealogger.service.LocationService;
-import com.hmsoft.nmealogger.service.SyncAuthenticatorService;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -32,12 +10,34 @@ import android.os.BatteryManager;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
+import com.hmsoft.nmealogger.BuildConfig;
+import com.hmsoft.nmealogger.R;
+import com.hmsoft.nmealogger.common.Logger;
+import com.hmsoft.nmealogger.common.TaskExecutor;
+import com.hmsoft.nmealogger.data.LocationStorer;
+import com.hmsoft.nmealogger.service.LocationService;
+import com.hmsoft.nmealogger.service.SyncAuthenticatorService;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+
 public class LocatrackOnlineStorer extends LocationStorer {
 
 	private static final String TAG = "LocatrackOnlineStorer";
 	private static final boolean DEBUG = BuildConfig.DEBUG;
 	
-	private static final String USER_AGENT = "Android";
+	private static final String USER_AGENT = "Locatrack-";
 
 	// Settings
 	private int mMinimumDistance;
@@ -114,9 +114,9 @@ public class LocatrackOnlineStorer extends LocationStorer {
 		 try {
 			HttpClient client = new DefaultHttpClient();
 			HttpPost post = new HttpPost(mMyLatitudeUrl);
-		 
+
 			// add header
-			post.setHeader("User-Agent", USER_AGENT);
+			post.setHeader("User-Agent", USER_AGENT + mDeviceId);
 			post.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
 			int batteryLevel = LocationService.getLocationExtras(location).getInt(BatteryManager.EXTRA_LEVEL, -1);
