@@ -298,4 +298,9 @@ public class NmeaLogFile implements LocationSet, Iterator<Location> {
     public void setDateEnd(long dateEnd) {
         this.mDateEnd = dateEnd;
     }
+
+    @Override
+    public Location[] toArray() {
+        return new Location[0];
+    }
 }

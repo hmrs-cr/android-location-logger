@@ -185,9 +185,9 @@ public class SyncService extends Service {
                 boolean allUploaded = true;
                 PerfWatch watch = PerfWatch.start(TAG, "PerformSync begin");
                 try {
-                    LocationSet toUpload = LocatrackDb.getNotUploadedLocations();
-                    int toUploadCount = toUpload.getCount();
-                    Logger.info(TAG, "Locations to upload: %d", toUpload.getCount());
+                    Location[] toUpload = LocatrackDb.getNotUploadedLocations().toArray();
+                    int toUploadCount = toUpload.length;
+                    Logger.info(TAG, "Locations to upload: %d", toUpload.length);
                     if (toUploadCount > 0) {
                         synchronized (sLock) {
                             if (SyncAdapter.sStorer == null) {
@@ -348,32 +348,6 @@ public class SyncService extends Service {
                 closeCallback.onClose(null, null);
             }
         }
-    }
-   
-    public static void importNmeaToLocalDb(final Context context) {
-        final Context appContext = context.getApplicationContext();
-        PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        final PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Sync");
-
-        wakeLock.acquire();
-        TaskExecutor.executeOnNewThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    PerfWatch watch = PerfWatch.start(TAG, "importNmeaToLocalDb begin");
-                    if (sLocatrackStorer == null) {
-                        sLocatrackStorer = new LocatrackDb(context);
-                    }
-                    sLocatrackStorer.configure();
-                    long lastImportDate = LocatrackDb.getLastLocationTime();
-                    exportNmeaToStorer(appContext, sLocatrackStorer, lastImportDate, 0);                    
-                    watch.stop(TAG, "importNmeaToLocalDb end");
-                    SyncService.setAutoSync(appContext, true);
-                } finally {
-                    wakeLock.release();
-                }
-            }
-        });
     }
 
     public static void setAutoSync(Context context, boolean sync) {

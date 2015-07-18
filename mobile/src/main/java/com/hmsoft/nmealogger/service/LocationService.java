@@ -149,6 +149,8 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private Handler mHandler;
 
     int mLastBatteryLevel = 99;
+    boolean mChargingStart;
+    boolean mChargingStop;
     //endregion Core fields
 
     //region Debug only fields
@@ -207,9 +209,15 @@ public class LocationService extends Service implements GooglePlayServicesClient
             int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
             if (charging) level += 100;
 
-            boolean setAlarm = mService.mLastBatteryLevel <= 100 && level > 100;
+            if(mService.mLastBatteryLevel <= 100 && level > 100) {
+                SyncService.setAutoSync(context.getApplicationContext(), true);
+                mService.mChargingStart = true;
+            } else if(mService.mLastBatteryLevel > 100 && level <= 100) {
+                SyncService.setAutoSync(context.getApplicationContext(), false);
+                mService.mChargingStop = true;
+            }
             mService.mLastBatteryLevel = level;
-            if(setAlarm) {
+            if(mService.mChargingStart || mService.mChargingStop) {
                 mService.startLocationListener();
                 mService.setLocationAlarm();
             }
@@ -654,7 +662,20 @@ public class LocationService extends Service implements GooglePlayServicesClient
                             mOnlineStorer = new LocatrackOnlineStorer(context);
                             mOnlineStorer.configure();
                         }
+
                         getLocationExtras(location).putInt(BatteryManager.EXTRA_LEVEL, mLastBatteryLevel);
+                        if(mVehicleMode) {
+                            if(mChargingStart && mChargingStop) {
+                                location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_START_STOP);
+                            } else if(mChargingStart) {
+                                location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_START);
+                            } else if(mChargingStop) {
+                                location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_STOP);
+                            }
+                            mChargingStart = false;
+                            mChargingStop = false;
+                        }
+
                         if(mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
                             mOnlineStorer.retryDelaySeconds = 10;
                             mOnlineStorer.retryCount = 3;
@@ -818,7 +839,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 notificationBuilder.setContentText(getString(R.string.service_content, mLocationCount, accuracy));
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && !mVehicleMode) {
                 if (mTrackingMode) {
                     if (mStopTrackingIntent == null) {
                         Intent updateIntent = new Intent(context, LocationService.class);
@@ -1094,7 +1115,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
         if(intent.hasExtra(Constants.EXTRA_SYNC)) {
             if(mLastBatteryLevel > 55) {
-                SyncService.importNmeaToLocalDb(this);
+                SyncService.setAutoSync(getApplicationContext(), true);
             }
             setSyncAlarm();
         }

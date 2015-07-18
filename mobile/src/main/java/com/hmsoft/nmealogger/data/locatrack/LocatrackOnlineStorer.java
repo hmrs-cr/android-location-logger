@@ -7,11 +7,13 @@ import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.BatteryManager;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
 import com.hmsoft.nmealogger.BuildConfig;
 import com.hmsoft.nmealogger.R;
+import com.hmsoft.nmealogger.common.Constants;
 import com.hmsoft.nmealogger.common.Logger;
 import com.hmsoft.nmealogger.common.TaskExecutor;
 import com.hmsoft.nmealogger.data.LocationStorer;
@@ -65,34 +67,43 @@ public class LocatrackOnlineStorer extends LocationStorer {
 
     private boolean internalUploadLocation(Location location) {
 		boolean update = false;
+		boolean hasNotifyEvent = false;
 		long updateId = 0;
 
-		synchronized (this) {
-			if(mLastUploadedLocation != null) {
-				float distanceTo = mLastUploadedLocation.distanceTo(location);
-				update = distanceTo < mMinimumDistance;
-
-				if(DEBUG) {
-					if(update) {
-						if(Logger.DEBUG) Logger.debug(TAG, "internalUploadLocation UPDATE: distanceTo LUL: %f", distanceTo);
-					} 
-					else if(mLastUploadedLocation != null) {
-						if(Logger.DEBUG) Logger.debug(TAG, "internalUploadLocation: distanceTo LUL: %f", distanceTo);
-					} 
-					else {
-						if(Logger.DEBUG) Logger.debug(TAG, "lastUploadedLocation == null");
-					}
-				}
-
-				if(update) {
-					updateId = mLastUploadedLocation.getTime();
-				}
-			}
+		Bundle xtras = location.getExtras();
+		if(xtras != null) {
+			hasNotifyEvent = xtras.getString(Constants.NOTIFY_EVENT) != null;
 		}
 
-		if(update && (location.getTime() - updateId <= 0)) {
-			if(Logger.DEBUG) Logger.debug(TAG, "Location to update is older than last location");
-			return true;
+		if(!hasNotifyEvent) {
+			synchronized (this) {
+				if (mLastUploadedLocation != null) {
+					float distanceTo = mLastUploadedLocation.distanceTo(location);
+					update = distanceTo < mMinimumDistance;
+
+					if (DEBUG) {
+						if (update) {
+							if (Logger.DEBUG)
+								Logger.debug(TAG, "internalUploadLocation UPDATE: distanceTo LUL: %f", distanceTo);
+						} else if (mLastUploadedLocation != null) {
+							if (Logger.DEBUG)
+								Logger.debug(TAG, "internalUploadLocation: distanceTo LUL: %f", distanceTo);
+						} else {
+							if (Logger.DEBUG) Logger.debug(TAG, "lastUploadedLocation == null");
+						}
+					}
+
+					if (update) {
+						updateId = mLastUploadedLocation.getTime();
+					}
+				}
+			}
+
+			if (update && (location.getTime() - updateId <= 0)) {
+				if (Logger.DEBUG)
+					Logger.debug(TAG, "Location to update is older than last location");
+				return true;
+			}
 		}
 
 		boolean uploadOk = internalUploadLocation(location,  updateId);	
@@ -115,13 +126,21 @@ public class LocatrackOnlineStorer extends LocationStorer {
 			HttpClient client = new DefaultHttpClient();
 			HttpPost post = new HttpPost(mMyLatitudeUrl);
 
-			// add header
-			post.setHeader("User-Agent", USER_AGENT + mDeviceId);
-			post.setHeader("Content-Type", "application/x-www-form-urlencoded");
-
 			int batteryLevel = LocationService.getLocationExtras(location).getInt(BatteryManager.EXTRA_LEVEL, -1);
+			String notify = LocationService.getLocationExtras(location).getString(Constants.NOTIFY_EVENT);
+             if("".equals(notify)) notify = null;
 
-			List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+			 // add header
+			 post.setHeader("User-Agent", USER_AGENT + mDeviceId);
+             post.setHeader("Content-Type", "application/x-www-form-urlencoded");
+
+             if(DEBUG) {
+                 if(notify != null) {
+                     post.setHeader("User-Agent", USER_AGENT + mDeviceId + " " + notify);
+                 }
+             }
+
+             List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
 			urlParameters.add(new BasicNameValuePair("key", mMyLatitudeKey));
 			urlParameters.add(new BasicNameValuePair("deviceid", mDeviceId));
 			urlParameters.add(new BasicNameValuePair("battery", String.valueOf(batteryLevel)));
@@ -131,13 +150,13 @@ public class LocatrackOnlineStorer extends LocationStorer {
 			urlParameters.add(new BasicNameValuePair("accuracy",String.valueOf(location.getAccuracy())));
 			urlParameters.add(new BasicNameValuePair("speed", String.valueOf(location.getSpeed())));
 			urlParameters.add(new BasicNameValuePair("utc_timestamp", String.valueOf(location.getTime())));
+			if(notify != null) urlParameters.add(new BasicNameValuePair("notify", notify));
 			if(updateId>0)urlParameters.add(new BasicNameValuePair("update_id", String.valueOf(updateId)));
-			
 			UrlEncodedFormEntity entity = new UrlEncodedFormEntity(urlParameters);
 			post.setEntity(entity);
 		
 			HttpResponse response = client.execute(post);
-				
+
 			int status = response.getStatusLine().getStatusCode();
 			result = (status == 200 || status == 201);
 			
@@ -154,7 +173,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
                     if(Logger.DEBUG) Logger.debug(TAG, "internalUploadLocation: Location saved to server. Response: %s", serverResponse);
                 }
                 else {
-                    Logger.warning(TAG, "internalUploadLocation: Error saving location to server: Status: %d, Response: %s", status, serverResponse);
+                    Logger.warning(TAG, "internalUploadLocation: Error saving location to server: Status: %d", status);
                 }
 			}
 

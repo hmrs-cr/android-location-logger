@@ -5,6 +5,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.location.Location;
+import android.os.BatteryManager;
 import android.os.Bundle;
 
 import com.hmsoft.nmealogger.common.Constants;
@@ -29,6 +30,8 @@ public class LocationTable {
     public static final String COLUMN_NAME_ACCURACY = "accuracy";
     public static final String COLUMN_NAME_SPEED = "speed";
     public static final String COLUMN_NAME_UPLOAD_DATE = "uploadDate";
+    public static final String COLUMN_NAME_BATTERY_LEVEL = "batteryLevel";
+    public static final String COLUMN_NAME_EVENT = "event";
 
     public static final String SQL_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
 
@@ -41,7 +44,9 @@ public class LocationTable {
                     COLUMN_NAME_ALTITUDE + Helper.TYPE_REAL + Helper.COMMA_SEP +
                     COLUMN_NAME_ACCURACY + Helper.TYPE_REAL + Helper.COMMA_SEP +
                     COLUMN_NAME_SPEED + Helper.TYPE_REAL + Helper.COMMA_SEP +
-                    COLUMN_NAME_UPLOAD_DATE + Helper.TYPE_INTEGER +
+                    COLUMN_NAME_UPLOAD_DATE + Helper.TYPE_INTEGER  + Helper.COMMA_SEP +
+                    COLUMN_NAME_BATTERY_LEVEL + Helper.TYPE_INTEGER  + Helper.COMMA_SEP +
+                    COLUMN_NAME_EVENT + Helper.TYPE_TEXT  +
                     ")";
 
     public static final String INSERT_SQL = "INSERT OR IGNORE INTO " + TABLE_NAME + " (" +
@@ -51,7 +56,9 @@ public class LocationTable {
             COLUMN_NAME_ALTITUDE + Helper.COMMA_SEP +
             COLUMN_NAME_ACCURACY + Helper.COMMA_SEP +
             COLUMN_NAME_SPEED + Helper.COMMA_SEP +
-            COLUMN_NAME_UPLOAD_DATE  + ") VALUES (?,?,?,?,?,?,?)";
+            COLUMN_NAME_BATTERY_LEVEL + Helper.COMMA_SEP +
+            COLUMN_NAME_EVENT + Helper.COMMA_SEP +
+            COLUMN_NAME_UPLOAD_DATE  + ") VALUES (?,?,?,?,?,?,?,?,?)";
 
     public static final String UPDATE_SQL = "UPDATE " + TABLE_NAME + " SET " +
             COLUMN_NAME_TIMESTAMP + "=?" + Helper.COMMA_SEP +
@@ -60,6 +67,8 @@ public class LocationTable {
             COLUMN_NAME_ALTITUDE  + "=?" + Helper.COMMA_SEP +
             COLUMN_NAME_ACCURACY  + "=?" + Helper.COMMA_SEP +
             COLUMN_NAME_UPLOAD_DATE + "=?" + Helper.COMMA_SEP +
+            COLUMN_NAME_BATTERY_LEVEL + "=?" + Helper.COMMA_SEP +
+            COLUMN_NAME_EVENT + "=?" + Helper.COMMA_SEP +
             COLUMN_NAME_SPEED     + "=? WHERE " +
             COLUMN_NAME_TIMESTAMP + "=?";
 
@@ -80,6 +89,11 @@ public class LocationTable {
         location.setAltitude(cursor.getDouble(cursor.getColumnIndex(COLUMN_NAME_ALTITUDE)));
         location.setAccuracy(cursor.getFloat(cursor.getColumnIndex(COLUMN_NAME_ACCURACY)));
         location.setSpeed(cursor.getFloat(cursor.getColumnIndex(COLUMN_NAME_SPEED)));
+        Bundle extras = new Bundle();
+        extras.putLong(Constants.EXTRA_UPLOAD_TIME, cursor.getLong(cursor.getColumnIndex(COLUMN_NAME_UPLOAD_DATE)));
+        extras.putInt(BatteryManager.EXTRA_LEVEL, cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_BATTERY_LEVEL)));
+        extras.putString(Constants.NOTIFY_EVENT, cursor.getString(cursor.getColumnIndex(COLUMN_NAME_EVENT)));
+        location.setExtras(extras);
         return location;
     }
 
@@ -168,16 +182,21 @@ public class LocationTable {
             sLastInsertedLocation = getLast(helper);
         }
 
-        boolean update = (sLastInsertedLocation != null) &&
-                (sLastInsertedLocation.distanceTo(location) < minDistance);
-
         long c = 1;
 
         long uploadDate = 0;
+        int batteryLevel = -1;
+        String event = "";
         Bundle extras = location.getExtras();
         if(extras != null) {
             uploadDate = extras.getLong(Constants.EXTRA_UPLOAD_TIME, 0L);
+            batteryLevel = extras.getInt(BatteryManager.EXTRA_LEVEL, -1);
+            event = extras.getString(Constants.NOTIFY_EVENT);
+            if(event == null) event = "";
         }
+
+        boolean update = ("".equals(event)) && (sLastInsertedLocation != null) &&
+                (sLastInsertedLocation.distanceTo(location) < minDistance);
 
         if(sInsertStatement != null) {
             SQLiteStatement statement;
@@ -188,8 +207,10 @@ public class LocationTable {
                 sUpdateStatement.bindDouble(4, location.getAltitude());
                 sUpdateStatement.bindDouble(5, location.getAccuracy());
                 sUpdateStatement.bindDouble(6, uploadDate);
-                sUpdateStatement.bindDouble(7, location.getSpeed());
-                sUpdateStatement.bindLong(8, sLastInsertedLocation.getTime());
+                sUpdateStatement.bindLong(7, batteryLevel);
+                sUpdateStatement.bindString(8, event);
+                sUpdateStatement.bindDouble(9, location.getSpeed());
+                sUpdateStatement.bindLong(10, sLastInsertedLocation.getTime());
                 sLastInsertedLocation.setTime(location.getTime());
                 statement = sUpdateStatement;
             } else {
@@ -199,7 +220,9 @@ public class LocationTable {
                 sInsertStatement.bindDouble(4, location.getAltitude());
                 sInsertStatement.bindDouble(5, location.getAccuracy());
                 sInsertStatement.bindDouble(6, location.getSpeed());
-                sInsertStatement.bindLong(7, uploadDate);
+                sInsertStatement.bindLong(7, batteryLevel);
+                sInsertStatement.bindString(8, event);
+                sInsertStatement.bindLong(9, uploadDate);
                 statement = sInsertStatement;
                 sLastInsertedLocation = location;
             }
@@ -325,6 +348,25 @@ public class LocationTable {
         @Override
         public void setDateEnd(long dateEnd) {
 
+        }
+
+        @Override
+        public Location[] toArray() {
+            Location[] locations = new Location[cursor.getCount()];
+            int i = 0;
+            if(hasNext) {
+                while (true) {
+                    locations[i++] = LocationTable.loadFromCursor(cursor);
+                    if(!cursor.moveToNext()) {
+                        break;
+                    }
+                }
+            }
+
+            hasNext = false;
+            hasNext();
+
+            return locations;
         }
 
         @Override

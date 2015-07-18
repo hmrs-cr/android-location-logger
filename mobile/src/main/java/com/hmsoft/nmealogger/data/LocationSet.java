@@ -7,5 +7,6 @@ public interface LocationSet extends Iterable<Location> {
     public long getDateStart();
     public void setDateStart(long dateStart);
     public long getDateEnd();
-    public void setDateEnd(long dateEnd);  
+    public void setDateEnd(long dateEnd);
+    public Location[] toArray();
 }

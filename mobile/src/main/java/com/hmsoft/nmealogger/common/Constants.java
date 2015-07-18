@@ -31,7 +31,11 @@ public final class Constants {
     public static final String EXTRA_NOTIFICATION_DELETED = EXTRA_NAMESPACE + ".NOTIFICATION_DELETED";
     public static final String CATEGORY_TRACKING = BASE_NAMESPACE + ".CATEGORY_TRACKING";
     public static final String EXTRA_UPLOAD_TIME = "EXTRA_UPLOAD_TIME";
-    ;
+
+    public static final String NOTIFY_EVENT = "notify-event";
+    public static final String EVENT_START = "start";
+    public static final String EVENT_STOP = "stop";
+    public static final String EVENT_START_STOP = EVENT_START + "-" + EVENT_STOP;
 
     private Constants() {
     }
