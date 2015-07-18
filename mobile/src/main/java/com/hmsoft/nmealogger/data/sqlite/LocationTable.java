@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteStatement;
 import android.location.Location;
 import android.os.BatteryManager;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import com.hmsoft.nmealogger.common.Constants;
 import com.hmsoft.nmealogger.common.Logger;
@@ -193,10 +194,13 @@ public class LocationTable {
             batteryLevel = extras.getInt(BatteryManager.EXTRA_LEVEL, -1);
             event = extras.getString(Constants.NOTIFY_EVENT);
             if(event == null) event = "";
+        } else {
+            location.setExtras(new Bundle());
         }
 
         boolean update = ("".equals(event)) && (sLastInsertedLocation != null) &&
-                (sLastInsertedLocation.distanceTo(location) < minDistance);
+                TextUtils.isEmpty(sLastInsertedLocation.getExtras().getString(Constants.NOTIFY_EVENT))
+                && (sLastInsertedLocation.distanceTo(location) < minDistance);
 
         if(sInsertStatement != null) {
             SQLiteStatement statement;

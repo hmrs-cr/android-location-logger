@@ -423,11 +423,14 @@ public class LocationService extends Service implements GooglePlayServicesClient
     //region Core functions
 
     void handleLocation(Location location, String provider) {
+
         if (mCurrentBestLocation != null &&
                 (mCurrentBestLocation.getTime() == location.getTime())) {
-            if(Logger.DEBUG) Logger.debug(TAG, "Location is the same location that currentBestLocation");
+            logLocation(location, "Location is the same location that currentBestLocation");
             return;
         }
+
+        String message;
 
         long timeDelta = HALF_MINUTE;
         if (mTrackingMode) {
@@ -435,7 +438,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
 
         if(Logger.DEBUG) Logger.debug(TAG, "handleLocation %s", location);
-        logLocation(location);
 
         if (isBetterLocation(location, mCurrentBestLocation, timeDelta, mMinimumAccuracy,
                 mMaxReasonableSpeed)) {
@@ -444,24 +446,28 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 if(mLocationRequest == null || mLocationManager == null) {
                     mCurrentBestLocation = location;
                     saveLocation(mCurrentBestLocation);
+                    message = "*** Location saved (passive)";
                 } else {
-                    if(Logger.DEBUG) Logger.debug(TAG, "Ignored passive location while in location request.");
+                    message = "Ignored passive location while in location request.";
                 }
             } else {
                 mCurrentBestLocation = location;
                 if ((!mGpsProviderEnabled && !mGooglePlayServiceAvailable) ||
                         (isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
                     saveLocation(mCurrentBestLocation, true);
+                    message = "*** Location saved";
                     if (!mTrackingMode) {
                         stopLocationListener();
                     }
                 } else {
-                    if(Logger.DEBUG) Logger.debug(TAG, "No good GPS location.");
+                    message = "No good GPS location.";
                 }
             }
         } else {
-            if(Logger.DEBUG) Logger.debug(TAG, "Location is not better than last location.");
+            message = "Location is not better than last location.";
         }
+
+        logLocation(location, message);
     }
 
     protected boolean isBetterLocation(Location location, Location currentBestLocation) {
@@ -505,14 +511,12 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
         long timeDelta = location.getTime() - currentBestLocation.getTime();
 
-        if (isFromSameProvider) {
-            float meters = location.distanceTo(currentBestLocation);
-            long seconds = timeDelta / 1000L;
-            float speed = meters / seconds;
-            if ( speed > maxReasonableSpeed) {
-                if(Logger.DEBUG) Logger.debug(TAG, "Super speed detected. %f meters from last location", meters);
-                return false;
-            }
+        float meters = location.distanceTo(currentBestLocation);
+        long seconds = timeDelta / 1000L;
+        float speed = meters / seconds;
+        if ( speed > maxReasonableSpeed) {
+            if(Logger.DEBUG) Logger.debug(TAG, "Super speed detected. %f meters from last location", meters);
+            return false;
         }
 
         // Check whether the new location fix is newer or older
@@ -562,13 +566,16 @@ public class LocationService extends Service implements GooglePlayServicesClient
         if ((mCurrentBestLocation  != null && mLastSavedLocation != null) &&
                 (mCurrentBestLocation == mLastSavedLocation ||
                 mCurrentBestLocation.getTime() == mLastSavedLocation.getTime())) {
-            if(Logger.DEBUG) Logger.debug(TAG, "currentBestLocation is the same lastSavedLocation. Saving nothing...");
+            logLocation(null, "currentBestLocation is the same lastSavedLocation. Saving nothing...");
+            mChargingStart = false;
+            mChargingStop = false;
             return;
         }
 
         if (mCurrentBestLocation != null && isFromGps(mCurrentBestLocation)) {
             if(Logger.DEBUG) Logger.debug(TAG, "currentBestLocation is from GPS");
             saveLocation(mCurrentBestLocation, true);
+            logLocation(mCurrentBestLocation, "*** Location saved (current best)");
             return;
         }
 
@@ -601,11 +608,14 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
         if (bestLastLocation != null) {
             saveLocation(bestLastLocation, true);
+            logLocation(bestLastLocation, "*** Location saved (best last)");
             if(mCurrentBestLocation == null) {
                 mCurrentBestLocation = bestLastLocation;
             }
         } else if (DEBUG) {
-            if(Logger.DEBUG) Logger.debug(TAG, "No last location. Turn on GPS!");
+            logLocation(null, "No last location. Turn on GPS!");
+            mChargingStart = false;
+            mChargingStop = false;
         }
     }
 
@@ -652,6 +662,19 @@ public class LocationService extends Service implements GooglePlayServicesClient
                         }
                     }
 
+                    getLocationExtras(location).putInt(BatteryManager.EXTRA_LEVEL, mLastBatteryLevel);
+                    if(mVehicleMode) {
+                        if(mChargingStart && mChargingStop) {
+                            location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_START_STOP);
+                        } else if(mChargingStart) {
+                            location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_START);
+                        } else if(mChargingStop) {
+                            location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_STOP);
+                        }
+                        mChargingStart = false;
+                        mChargingStop = false;
+                    }
+
                     boolean locationUploaded = false;
                     if(upload && !mTrackingMode && mInstantUploadEnabled) {
                         if (Logger.DEBUG) {
@@ -661,19 +684,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
                         if(mOnlineStorer == null) {
                             mOnlineStorer = new LocatrackOnlineStorer(context);
                             mOnlineStorer.configure();
-                        }
-
-                        getLocationExtras(location).putInt(BatteryManager.EXTRA_LEVEL, mLastBatteryLevel);
-                        if(mVehicleMode) {
-                            if(mChargingStart && mChargingStop) {
-                                location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_START_STOP);
-                            } else if(mChargingStart) {
-                                location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_START);
-                            } else if(mChargingStop) {
-                                location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_STOP);
-                            }
-                            mChargingStart = false;
-                            mChargingStop = false;
                         }
 
                         if(mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
@@ -735,9 +745,12 @@ public class LocationService extends Service implements GooglePlayServicesClient
         });
     }
 
-    private void logLocation(Location location) {
+    private void logLocation(Location location, String message) {
+        if(DEBUG) Logger.debug(TAG, message);
         if (mLocationLogEnabled) {
-            Logger.log2file("LOCATION", location.toString(), "locations-%s.log", null);
+            String locationStr = "NOLOC";
+            if(location != null) locationStr = location.toString();
+            Logger.log2file(message, locationStr, "locations-%s.log", null);
         }
     }
 
@@ -1224,6 +1237,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
             mGpsTimeout = 61;
             mTrackingMode = false;
             mMinimumAccuracy = 1000;
+            mBestAccuracy = 8;
         }
 
 
@@ -1488,6 +1502,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         if(extras == null) {
             extras =  new Bundle();
             location.setExtras(extras);
+            extras = location.getExtras();
         }
         return extras;
     }
