@@ -165,7 +165,10 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
         @Override
         public void onReceive(final Context context, Intent intent) {
-            if(Logger.DEBUG) Logger.debug(TAG, "onReceive:%s", intent);
+            if(Logger.DEBUG) {
+                Logger.debug(TAG, "onReceive:%s", intent);
+                Toast.makeText(context, "" + intent, Toast.LENGTH_LONG).show();
+            }
             LocationService.start(context);
         }
     }
@@ -211,9 +214,11 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
             if(mService.mLastBatteryLevel <= 100 && level > 100) {
                 SyncService.setAutoSync(context.getApplicationContext(), true);
+                Logger.info(TAG, "Charging start");
                 mService.mChargingStart = true;
             } else if(mService.mLastBatteryLevel > 100 && level <= 100) {
                 SyncService.setAutoSync(context.getApplicationContext(), false);
+                Logger.info(TAG, "Charging stop");
                 mService.mChargingStop = true;
             }
             mService.mLastBatteryLevel = level;
@@ -442,7 +447,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         if (isBetterLocation(location, mCurrentBestLocation, timeDelta, mMinimumAccuracy,
                 mMaxReasonableSpeed)) {
 
-            if(LocationManager.PASSIVE_PROVIDER.equals(provider)) {
+            if(!mVehicleMode && LocationManager.PASSIVE_PROVIDER.equals(provider)) {
                 if(mLocationRequest == null || mLocationManager == null) {
                     mCurrentBestLocation = location;
                     saveLocation(mCurrentBestLocation);
@@ -563,7 +568,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private void saveLastLocation() {
         if(Logger.DEBUG) Logger.debug(TAG, "saveLastLocation");
 
-        if ((mCurrentBestLocation  != null && mLastSavedLocation != null) &&
+        if ((!mChargingStart && !mChargingStop) && (mCurrentBestLocation  != null && mLastSavedLocation != null) &&
                 (mCurrentBestLocation == mLastSavedLocation ||
                 mCurrentBestLocation.getTime() == mLastSavedLocation.getTime())) {
             logLocation(null, "currentBestLocation is the same lastSavedLocation. Saving nothing...");
@@ -1236,7 +1241,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
             mMaxReasonableSpeed = 49;
             mGpsTimeout = 61;
             mTrackingMode = false;
-            mMinimumAccuracy = 1000;
+            mMinimumAccuracy = 3000;
             mBestAccuracy = 8;
         }
 
