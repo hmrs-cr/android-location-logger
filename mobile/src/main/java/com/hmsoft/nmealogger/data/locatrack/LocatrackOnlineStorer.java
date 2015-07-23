@@ -75,6 +75,15 @@ public class LocatrackOnlineStorer extends LocationStorer {
 			hasNotifyEvent = xtras.getString(Constants.NOTIFY_EVENT) != null;
 		}
 
+        if(!hasNotifyEvent) {
+            if (mLastUploadedLocation != null) {
+                xtras = mLastUploadedLocation.getExtras();
+                if (xtras != null) {
+                    hasNotifyEvent = xtras.getString(Constants.NOTIFY_EVENT) != null;
+                }
+            }
+        }
+
 		if(!hasNotifyEvent) {
 			synchronized (this) {
 				if (mLastUploadedLocation != null) {
@@ -107,9 +116,9 @@ public class LocatrackOnlineStorer extends LocationStorer {
 		}
 
 		boolean uploadOk = internalUploadLocation(location,  updateId);	
-		if(uploadOk && !update)	{
+		if(uploadOk && !update) {
 			synchronized (this)	{
-				mLastUploadedLocation = location;
+				mLastUploadedLocation = new Location(location);
 			}
 		}
 
