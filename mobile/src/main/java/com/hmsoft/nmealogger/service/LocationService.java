@@ -154,10 +154,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
     boolean mChargingStop;
     //endregion Core fields
 
-    //region Debug only fields
-    int mUploadThreadCount;
-    //endregion Debug only fields
-
     //region Helper Inner Classes
 
     public static class StartServiceReceiver extends BroadcastReceiver {
@@ -226,6 +222,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
             }
             mService.mLastBatteryLevel = level;
             if(mService.mChargingStart || mService.mChargingStop) {
+                mService.destroyExecutorThread(); // Start with a new created threat
                 mService.acquireWakeLock();
                 mService.startLocationListener();
                 mService.setLocationAlarm();
@@ -453,14 +450,14 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
             if(!mVehicleMode && LocationManager.PASSIVE_PROVIDER.equals(provider)) {
                 if(mLocationRequest == null || mLocationManager == null) {
-                    mCurrentBestLocation = location;
+                    mCurrentBestLocation = new Location(location);
                     saveLocation(mCurrentBestLocation);
                     message = "*** Location saved (passive)";
                 } else {
                     message = "Ignored passive location while in location request.";
                 }
             } else {
-                mCurrentBestLocation = location;
+                mCurrentBestLocation = new Location(location);
                 if ((!mGpsProviderEnabled && !mGooglePlayServiceAvailable) ||
                         (isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
                     saveLocation(mCurrentBestLocation, true);
@@ -484,7 +481,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 mMaxReasonableSpeed);
     }
 
-    private boolean isFromGps(Location location) {
+    private static boolean isFromGps(Location location) {
         return LocationManager.GPS_PROVIDER.equals(location.getProvider()) ||
                 location.hasAltitude() || location.hasBearing() || location.hasSpeed();
     }
@@ -520,12 +517,15 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
         long timeDelta = location.getTime() - currentBestLocation.getTime();
 
-        float meters = location.distanceTo(currentBestLocation);
-        long seconds = timeDelta / 1000L;
-        float speed = meters / seconds;
-        if ( speed > maxReasonableSpeed) {
-            if(Logger.DEBUG) Logger.debug(TAG, "Super speed detected. %f meters from last location", meters);
-            return false;
+        if(isFromSameProvider || !isFromGps(location)) {
+            float meters = location.distanceTo(currentBestLocation);
+            long seconds = timeDelta / 1000L;
+            float speed = meters / seconds;
+            if (speed > maxReasonableSpeed) {
+                if (Logger.DEBUG)
+                    Logger.debug(TAG, "Super speed detected. %f meters from last location", meters);
+                return false;
+            }
         }
 
         // Check whether the new location fix is newer or older
@@ -594,7 +594,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         if (mGooglePlayServiceAvailable) {
             Location lastKnownGmsLocation  = mGpLocationClient.getLastLocation();
             if (isBetterLocation(lastKnownGmsLocation, bestLastLocation)) {
-                bestLastLocation = lastKnownGmsLocation;
+                bestLastLocation = new Location(lastKnownGmsLocation);
             }
         } else {
             if (mGpsProviderEnabled) {
@@ -602,7 +602,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 Location lastKnownGpsLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                 if (isBetterLocation(lastKnownGpsLocation, bestLastLocation)) {
                     if(Logger.DEBUG) Logger.debug(TAG, "Got good LastKnownLocation from GPS provider.");
-                    bestLastLocation = lastKnownGpsLocation;
+                    bestLastLocation = new Location(lastKnownGpsLocation);
                 } else {
                     if(Logger.DEBUG) Logger.debug(TAG, "LastKnownLocation from GPS provider is not better than currentBestLocation.");
                 }
@@ -611,7 +611,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
             if (mNetProviderEnabled) {
                 Location lastKnownNetLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                 if (isBetterLocation(lastKnownNetLocation, bestLastLocation)) {
-                    bestLastLocation = lastKnownNetLocation;
+                    bestLastLocation = new Location(lastKnownNetLocation);
                 }
             }
         }
@@ -640,25 +640,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
             return;
         }
 
-        if(DIAGNOSTICS) {
-            Logger.info(TAG, "saveLocation: %s", location);
-        }
-
-        if(mExecutorThread == null) {
-            mExecutorThread = new HandlerThread(BuildConfig.APPLICATION_ID + "." + TAG);
-            mExecutorThread.start();
-            Looper looper = mExecutorThread.getLooper();
-            mHandler = new Handler(looper);
-        }
-
-        if (DEBUG) {
-            int threadCount;
-            synchronized (this) {
-                threadCount = ++mUploadThreadCount;
-            }
-            if(Logger.DEBUG) Logger.debug(TAG, "START saveLocation: Thread count=%d", threadCount);
-        }
-
         getLocationExtras(location).putInt(BatteryManager.EXTRA_LEVEL, mLastBatteryLevel);
         if(mVehicleMode) {
             if(mChargingStart && mChargingStop) {
@@ -672,28 +653,52 @@ public class LocationService extends Service implements GooglePlayServicesClient
             mChargingStop = false;
         }
 
-        final Context context = getApplicationContext();
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    PerfWatch pw = null;
+        PerfWatch pw = null;
+        if (DIAGNOSTICS && mLocationLogEnabled) {
+            pw = PerfWatch.start(TAG, "Start: Save location to db");
+        }
 
-                    if (mNmeaLogEnabled) {
-                        if (Logger.DEBUG) {
-                            pw = PerfWatch.start(TAG, "Start: Save location to NMEA log");
-                        }
-                        mNmeaStorer.storeLocation(location);
-                        if (Logger.DEBUG) {
-                            if (pw != null) {
-                                pw.stop(TAG, "End: Save location to NMEA log");
-                            }
-                        }
-                    }
+        mDbStorer.prepareDmlStatements();
+        mDbStorer.storeLocation(location);
 
+        if (DIAGNOSTICS && mLocationLogEnabled) {
+            if (pw != null) {
+                pw.stop(TAG, "End: Save location to db");
+            }
+        }
+
+        if (mNmeaLogEnabled) {
+            if (Logger.DEBUG) {
+                pw = PerfWatch.start(TAG, "Start: Save location to NMEA log");
+            }
+            mNmeaStorer.storeLocation(location);
+            if (Logger.DEBUG) {
+                if (pw != null) {
+                    pw.stop(TAG, "End: Save location to NMEA log");
+                }
+            }
+        }
+
+        mLastSaveAddress = null;
+        mLastSavedLocation = location;
+        mLocationCount++;
+        updateUIIfNeeded();
+
+        if(upload && !mTrackingMode && mInstantUploadEnabled) {
+            final Context context = getApplicationContext();
+            createExecutorThreadIfNeeded();
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
                     boolean locationUploaded = false;
-                    if (upload && !mTrackingMode && mInstantUploadEnabled) {
-                        if (DIAGNOSTICS) {
+                    try {
+                        if (DIAGNOSTICS && mLocationLogEnabled) {
+                            Logger.info(TAG, "Upload: %s", location);
+                        }
+
+                        PerfWatch pw = null;
+
+                        if (DIAGNOSTICS && mLocationLogEnabled) {
                             pw = PerfWatch.start(TAG, "Start: Upload location");
                         }
 
@@ -710,56 +715,51 @@ public class LocationService extends Service implements GooglePlayServicesClient
                             mOnlineStorer.retryCount = 1;
                         }
                         locationUploaded = mOnlineStorer.storeLocation(location);
-                        if (DIAGNOSTICS) {
+                        if (DIAGNOSTICS && mLocationLogEnabled) {
                             if (pw != null) {
-                                pw.stop(TAG, "End: Upload location");
+                                pw.stop(TAG, "End: Upload location Success: " + locationUploaded);
                             }
                         }
                         if (mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
                             setAirplaneMode(context, true);
                         }
+                    } finally {
+                        final boolean uploaded = locationUploaded;
+                        TaskExecutor.executeOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                releaseWakeLock();
+                                if (uploaded) {
+                                    LocatrackDb.setUploadDate(location);
+                                    updateUIIfNeeded();
+                                }
+                            }
+                        });
                     }
-
-                    if (DIAGNOSTICS) {
-                        pw = PerfWatch.start(TAG, "Start: Save location to db");
-                    }
-
-                    if (locationUploaded) {
-                        getLocationExtras(location).putLong(Constants.EXTRA_UPLOAD_TIME,
-                                System.currentTimeMillis());
-                    }
-                    mDbStorer.prepareDmlStatements();
-                    mDbStorer.storeLocation(location);
-
-                    if (DIAGNOSTICS) {
-                        if (pw != null) {
-                            pw.stop(TAG, "End: Save location to db");
-                        }
-                    }
-
-                    if (DEBUG) {
-                        int threadCount;
-                        synchronized (this) {
-                            threadCount = --mUploadThreadCount;
-                        }
-                        if (Logger.DEBUG)
-                            Logger.debug(TAG, "END saveLocation: Thread count=%d", threadCount);
-                    }
-                } finally {
-                    TaskExecutor.executeOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mLastSaveAddress = null;
-                            mLastSavedLocation = location;
-                            mLocationCount++;
-
-                            updateUIIfNeeded();
-                            releaseWakeLock();
-                        }
-                    });
                 }
-            }
-        });
+            });
+        }
+    }
+
+    private void createExecutorThreadIfNeeded() {
+        if(mExecutorThread == null) {
+            mExecutorThread = new HandlerThread(BuildConfig.APPLICATION_ID + "." + TAG);
+            mExecutorThread.start();
+            Looper looper = mExecutorThread.getLooper();
+            mHandler = new Handler(looper);
+            Logger.info(TAG, "ExecutorThread created");
+            if(DEBUG) Toast.makeText(this, "ExecutorThread created", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    void destroyExecutorThread() {
+        if(mExecutorThread != null) {
+            mExecutorThread.quit();
+            mExecutorThread = null;
+            Logger.info(TAG, "ExecutorThread destroyed");
+            if(DEBUG) Toast.makeText(this, "ExecutorThread destroyed", Toast.LENGTH_SHORT).show();
+        }
+        mHandler = null;
     }
 
     private void logLocation(Location location, String message) {
@@ -777,14 +777,16 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Utils");
                 mWakeLock.setReferenceCounted(false);
             }
-            if(DIAGNOSTICS) Logger.info(TAG, "acquireLocationLock");
-            mWakeLock.acquire();
+            if(!mWakeLock.isHeld()) {
+                if (DIAGNOSTICS && mLocationLogEnabled) Logger.info(TAG, "acquireLocationLock");
+                mWakeLock.acquire();
+            }
         }
     }
 
     public void releaseWakeLock() {
         if (mWakeLock != null) {
-            if(DIAGNOSTICS) Logger.info(TAG, "releaseLocationLock");
+            if(DIAGNOSTICS && mLocationLogEnabled) Logger.info(TAG, "releaseLocationLock");
             mWakeLock.release();
         }
     }
@@ -866,7 +868,8 @@ public class LocationService extends Service implements GooglePlayServicesClient
             }
 
             if (mLocationCount > -1) {
-                notificationBuilder.setContentText(getString(R.string.service_content, mLocationCount, accuracy));
+                notificationBuilder.setContentText(getString(R.string.service_content,
+                        mLocationCount, accuracy));
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && !mVehicleMode) {
@@ -1346,6 +1349,26 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
         mBatteryReceiver = new BatteryReceiver(this);
         registerReceiver(mBatteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+
+
+        /*
+        mCurrentBestLocation = new Location("network");
+        mCurrentBestLocation.setTime(1437944815206L);
+        mCurrentBestLocation.setLatitude(9.9952122);
+        mCurrentBestLocation.setLongitude(-84.2507418);
+        mCurrentBestLocation.setAccuracy(2779.0F);
+
+        Location l = new Location("gps");
+        l.setTime(1437944831000L);
+        l.setLatitude(9.99714976);
+        l.setLongitude(-84.22563166);
+        l.setAltitude(911.5);
+        l.setSpeed(20.8F);
+        l.setBearing(69.6F);
+        l.setAccuracy(12.0F);
+
+        handleLocation(l, "gps");
+        */
     }
 
     @Override
@@ -1363,9 +1386,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         stopLocationListener();
         stopForeground(true);
 
-        if(mExecutorThread != null) {
-            mExecutorThread.quit();
-        }
+        destroyExecutorThread();
 
         super.onDestroy();
     }

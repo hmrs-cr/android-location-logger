@@ -46,7 +46,8 @@ public class LocatrackOnlineStorer extends LocationStorer {
 	private String mMyLatitudeUrl;
 	private String mMyLatitudeKey;
 	private String mDeviceId;
-	
+
+    private String mLastNetworkType;
 	private Context mContext;
 	private ConnectivityManager mConnectivityManager;
 	private Location mLastUploadedLocation;
@@ -140,7 +141,8 @@ public class LocatrackOnlineStorer extends LocationStorer {
              if("".equals(notify)) notify = null;
 
 			 // add header
-			 post.setHeader("User-Agent", USER_AGENT + mDeviceId);
+             if(mLastNetworkType == null) mLastNetworkType = "n/a";
+			 post.setHeader("User-Agent", USER_AGENT + mDeviceId + " (" + mLastNetworkType + ")");
              post.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
              if(DEBUG) {
@@ -225,6 +227,10 @@ public class LocatrackOnlineStorer extends LocationStorer {
         while (!uploadOk) {
             NetworkInfo activeNetwork = mConnectivityManager.getActiveNetworkInfo();
             boolean isConnected = activeNetwork != null && activeNetwork.isConnected();
+
+			if(isConnected) {
+                mLastNetworkType = activeNetwork.getTypeName();
+            }
 
             if(DEBUG) {
                 if(!isConnected)
