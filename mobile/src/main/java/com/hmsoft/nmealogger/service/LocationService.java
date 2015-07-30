@@ -125,8 +125,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
     //endregion UI Data fields
 
     //region Core fields
-    private BroadcastReceiver mUserPresentReceiver = null;
-    private BroadcastReceiver mBatteryReceiver = null;
     private AlarmManager mAlarm = null;
     private PendingIntent mAlarmLocationCallback = null;
     private PendingIntent mAlarmSyncCallback = null;
@@ -170,65 +168,57 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
     }
 
-    private static class UserPresentReceiver extends BroadcastReceiver {
+    private static class ActionReceiver extends BroadcastReceiver {
         private static final String TAG = "UserPresentReceiver";
 
-        public LocationService mService;
-
-        public UserPresentReceiver(LocationService service) {
-            mService = service;
-        }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if(Logger.DEBUG) Logger.debug(TAG, "onReceive");
-            mService.mNeedsToUpdateUI = true;
-            mService.updateNotification();
-        }
-    }
-
-    private static class BatteryReceiver extends BroadcastReceiver {
-        private static final String TAG = "BatteryReceiver";
+        private static ActionReceiver sInstance;
 
         private LocationService mService;
 
-        public BatteryReceiver(LocationService service) {
+        private ActionReceiver(LocationService service) {
             mService = service;
         }
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            boolean plugged = (intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
+            if(Logger.DEBUG) Logger.debug(TAG, "onReceive:" + intent.getAction());
+            switch (intent.getAction()) {
+                case Intent.ACTION_USER_PRESENT:
+                    mService.handleUserPresent();
+                    break;
+                case Intent.ACTION_BATTERY_CHANGED:
+                    int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+                    boolean plugged = (intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
 
-            boolean charging = (
-                    (status == BatteryManager.BATTERY_STATUS_CHARGING) ||
-                            ((status == BatteryManager.BATTERY_STATUS_FULL) && plugged)
-            );
+                    boolean charging = (
+                            (status == BatteryManager.BATTERY_STATUS_CHARGING) ||
+                                    ((status == BatteryManager.BATTERY_STATUS_FULL) && plugged)
+                    );
 
-            int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
-            if (charging) level += 100;
+                    int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
+                    if (charging) level += 100;
 
-            if(mService.mLastBatteryLevel <= 100 && level > 100) {
-                SyncService.setAutoSync(context.getApplicationContext(), true);
-                Logger.info(TAG, "Charging start");
-                mService.mChargingStart = true;
-                mService.mChargingStop = false;
-            } else if(mService.mLastBatteryLevel > 100 && level <= 100) {
-                SyncService.setAutoSync(context.getApplicationContext(), false);
-                Logger.info(TAG, "Charging stop");
-                mService.mChargingStop = true;
-                mService.mChargingStart = false;
+                    mService.handleBatteryLevelChange(level);
+                    break;
             }
-            mService.mLastBatteryLevel = level;
-            if(mService.mChargingStart || mService.mChargingStop) {
-                mService.destroyExecutorThread(); // Start with a new created thread
-                mService.acquireWakeLock();
-                mService.startLocationListener();
-                mService.setLocationAlarm();
-            }
+        }
 
-            if(Logger.DEBUG) Logger.debug(TAG, "onReceive:" + level + ", Charging:" + charging);
+        public static void register(LocationService service){
+            if(sInstance == null) {
+                sInstance = new ActionReceiver(service);
+                IntentFilter filter = new IntentFilter();
+                filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+                filter.addAction(Intent.ACTION_USER_PRESENT);
+                service.getApplicationContext().registerReceiver(sInstance, filter);
+            }
+        }
+
+        public static void unregister(Context context) {
+            if(sInstance != null) {
+                context.getApplicationContext().unregisterReceiver(sInstance);
+                sInstance.mService = null;
+                sInstance = null;
+            }
         }
     }
 
@@ -295,11 +285,13 @@ public class LocationService extends Service implements GooglePlayServicesClient
         @Override
         protected void onCancelled() {
             sInstance = null;
+            mService = null;
         }
 
         @Override
         protected void onPostExecute(String address) {
             sInstance = null;
+            mService = null;
             if (!TextUtils.isEmpty(address)) {
                 if(Logger.DEBUG) Logger.debug(TAG, "onPostExecute");
                 mService.mLastSaveAddress = address;
@@ -384,11 +376,13 @@ public class LocationService extends Service implements GooglePlayServicesClient
             ContentResolver resolver = context.getContentResolver();
             if(sExternalInstance != null) {
                 resolver.unregisterContentObserver(sExternalInstance);
+                sExternalInstance.mContext = null;
                 sExternalInstance = null;
                 if(Logger.DEBUG) Logger.debug(TAG, "ContentObserver UNregistered (external)");
             }
             if(sInternalInstance != null) {
                 resolver.unregisterContentObserver(sInternalInstance);
+                sInternalInstance.mContext = null;
                 sInternalInstance = null;
                 if(Logger.DEBUG) Logger.debug(TAG, "ContentObserver UNregistered (internal)");
             }
@@ -427,6 +421,32 @@ public class LocationService extends Service implements GooglePlayServicesClient
     //endregion Google Play location service helper functions
 
     //region Core functions
+
+    void handleUserPresent() {
+        mNeedsToUpdateUI = true;
+        updateNotification();
+    }
+
+    void handleBatteryLevelChange(int newLevel) {
+        if (mLastBatteryLevel <= 100 && newLevel > 100) {
+            SyncService.setAutoSync(getApplicationContext(), true);
+            Logger.info(TAG, "Charging start");
+            mChargingStart = true;
+            mChargingStop = false;
+        } else if (mLastBatteryLevel > 100 && newLevel <= 100) {
+            SyncService.setAutoSync(getApplicationContext(), false);
+            Logger.info(TAG, "Charging stop");
+            mChargingStop = true;
+            mChargingStart = false;
+        }
+        mLastBatteryLevel = newLevel;
+        if (mChargingStart || mChargingStop) {
+            destroyExecutorThread(); // Start with a new created thread
+            acquireWakeLock();
+            startLocationListener();
+            setLocationAlarm();
+        }
+    }
 
     void handleLocation(Location location, String provider) {
 
@@ -987,7 +1007,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 if (locationManager == null) {
                     locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
                 }
-                locationManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 2000, mMinimumDistance / 2,
+                locationManager.requestLocationUpdates (LocationManager.PASSIVE_PROVIDER, 2000, mMinimumDistance / 2,
                         mPassiveLocationListener);
 
             }
@@ -1010,6 +1030,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 if(Logger.DEBUG) Logger.debug(TAG, "stopPassiveLocationListener:Android Location");
 
             }
+            mPassiveLocationListener.mService = null;
             mPassiveLocationListener = null;
         }
     }
@@ -1021,6 +1042,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 mLocationRequest = null;
                 if(mGpLocationClient != null) {
                     mGpLocationClient.removeLocationUpdates(mGmsLocationListener);
+                    mGmsLocationListener.mService = null;
                     mGmsLocationListener = null;
                 }
             }
@@ -1034,11 +1056,13 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 if (mGpsLocationListener != null) {
                     mLocationManager.removeUpdates(mGpsLocationListener);
                     if(Logger.DEBUG) Logger.debug(TAG, "stopLocationListener:%s", mGpsLocationListener.mProvider);
+                    mGpsLocationListener.mService = null;
                     mGpsLocationListener = null;
                 }
                 if (mNetLocationListener != null) {
                     mLocationManager.removeUpdates(mNetLocationListener);
                     if(Logger.DEBUG) Logger.debug(TAG, "stopLocationListener:%s", mNetLocationListener.mProvider);
+                    mNetLocationListener.mService = null;
                     mNetLocationListener = null;
                 }
                 mLocationManager = null;
@@ -1324,12 +1348,10 @@ public class LocationService extends Service implements GooglePlayServicesClient
         mDbStorer = new LocatrackDb(getApplicationContext());
         mDbStorer.configure();
         configure(false);
-
         
         mGooglePlayServiceAvailable = mUseGmsIgAvailable &&
                 GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS;
 
-        
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mAlarm = (AlarmManager) getSystemService(ALARM_SERVICE);
         Intent i = new Intent(getApplicationContext(), LocationService.class);
@@ -1342,31 +1364,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         i.putExtra(Constants.EXTRA_SYNC, 1);
         mAlarmSyncCallback = PendingIntent.getService(getApplicationContext(), 0, i, 0);
 
-        mUserPresentReceiver = new UserPresentReceiver(this);
-        registerReceiver(mUserPresentReceiver, new IntentFilter(Intent.ACTION_USER_PRESENT));
-
-        mBatteryReceiver = new BatteryReceiver(this);
-        registerReceiver(mBatteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-
-
-        /*
-        mCurrentBestLocation = new Location("network");
-        mCurrentBestLocation.setTime(1437944815206L);
-        mCurrentBestLocation.setLatitude(9.9952122);
-        mCurrentBestLocation.setLongitude(-84.2507418);
-        mCurrentBestLocation.setAccuracy(2779.0F);
-
-        Location l = new Location("gps");
-        l.setTime(1437944831000L);
-        l.setLatitude(9.99714976);
-        l.setLongitude(-84.22563166);
-        l.setAltitude(911.5);
-        l.setSpeed(20.8F);
-        l.setBearing(69.6F);
-        l.setAccuracy(12.0F);
-
-        handleLocation(l, "gps");
-        */
+        ActionReceiver.register(this);
     }
 
     @Override
@@ -1375,8 +1373,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
         releaseWakeLock();
         PictureContentObserver.unregister(getApplicationContext());
-        unregisterReceiver(mUserPresentReceiver);
-        unregisterReceiver(mBatteryReceiver);
+        ActionReceiver.unregister(this);
         mAlarm.cancel(mAlarmLocationCallback);
         mAlarm.cancel(mAlarmSyncCallback);
 
