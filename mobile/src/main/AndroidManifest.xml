@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.hmsoft.nmealogger"
+    package="com.hmsoft.locationlogger"
     android:versionCode="3"
     android:versionName="1.0 (Beta 1)" >
 
@@ -26,7 +26,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <application
-        android:name=".LocationLoggerApp"
+        android:name="com.hmsoft.locationlogger.LocationLoggerApp"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
@@ -36,7 +36,7 @@
             android:value="@integer/google_play_services_version" />
 
         <activity
-            android:name=".ui.MainActivity"
+            android:name="com.hmsoft.locationlogger.ui.MainActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -45,7 +45,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.SettingsActivity"
+            android:name="com.hmsoft.locationlogger.ui.SettingsActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="com.hmsoft.nmealogger.ACTION.SYNC_SETTINGS" />
@@ -54,9 +54,9 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.LocationService" >
+        <service android:name="com.hmsoft.locationlogger.service.LocationService" >
         </service>
-        <service android:name=".service.SyncAuthenticatorService" >
+        <service android:name="com.hmsoft.locationlogger.service.SyncAuthenticatorService" >
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator" />
             </intent-filter>
@@ -66,7 +66,7 @@
                 android:resource="@xml/authenticator" />
         </service>
         <service
-            android:name=".service.SyncService"
+            android:name="com.hmsoft.locationlogger.service.SyncService"
             android:exported="true"
             android:process=":sync" >
             <intent-filter>
@@ -78,7 +78,7 @@
                 android:resource="@xml/syncadapter" />
         </service>
 
-        <receiver android:name=".service.LocationService$StartServiceReceiver" >
+        <receiver android:name="com.hmsoft.locationlogger.service.LocationService$StartServiceReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
 
@@ -87,13 +87,13 @@
         </receiver>
 
         <provider
-            android:name=".data.providers.LocationProvider"
+            android:name="com.hmsoft.locationlogger.data.providers.LocationProvider"
             android:authorities="@string/location_provider_authority"
             android:exported="false"
             android:syncable="true" />
 
         <activity
-            android:name=".ui.WebServerActivity"
+            android:name="com.hmsoft.locationlogger.ui.WebServerActivity"
             android:label="@string/title_activity_web_server" >
         </activity>
     </application>

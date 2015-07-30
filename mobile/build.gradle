@@ -3,7 +3,7 @@ apply plugin: 'android'
 def versionMajor = 1
 def versionMinor = 0
 def verCode = 14;
-def APP_NAME = "NMEALogger"
+def APP_NAME = "LocationLogger"
 
 def buildTime() {
     def date = new Date()
