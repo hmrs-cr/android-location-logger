@@ -9,7 +9,7 @@ import java.util.Date;
 import java.util.Locale;
 
 import com.hmsoft.nmealogger.BuildConfig;
-import com.hmsoft.nmealogger.NmeaLoggerApp;
+import com.hmsoft.nmealogger.LocationLoggerApp;
 
 import android.util.Log;
 
@@ -40,7 +40,7 @@ public final class Logger {
 		
 		try {
 			if(sLogsFolder == null) {
-				sLogsFolder = NmeaLoggerApp.getContext().getExternalFilesDir(LOGS_FOLDER);
+				sLogsFolder = LocationLoggerApp.getContext().getExternalFilesDir(LOGS_FOLDER);
 			}
 			
 			if(sLogsFolder == null) return;

@@ -381,34 +381,21 @@ public class MainActivity extends ActionBarActivity {
         }
 
         btnGeotagNow.setEnabled(false);
-        LocatrackDb storer = new LocatrackDb(this);
-        storer.configure();
-        storer.setOnCloseCallback(new LocationStorer.OnCloseCallback() {
-            @Override
-            public void onClose(Bundle extras, Exception error) {
-                if (error == null) {
-                    sGeotagContentUriCount = 2;
-                    mGeotagContentTotalCount = 0;
-                    mGeotagContentTaggedCount = 0;
-                    ExifGeotager.geoTagContent(context,
-                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, 
-                            true, true, mGeoTagContentFinishListener);
-                    ExifGeotager.geoTagContent(context,
-                            MediaStore.Images.Media.INTERNAL_CONTENT_URI, 
-                            true, true, mGeoTagContentFinishListener);
-                } else {
-                    if(Logger.DEBUG) Logger.debug(TAG, "Error on LocatrackDatabase, %s", error.getMessage());
-                    btnGeotagNow.setEnabled(true);
-                }
-            }
-        });
 
-        SyncService.exportNmeaToStorer(this, storer, LocatrackDb.getLastLocationTime(), 0);
+        sGeotagContentUriCount = 2;
+        mGeotagContentTotalCount = 0;
+        mGeotagContentTaggedCount = 0;
+        ExifGeotager.geoTagContent(context, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true,
+                true, mGeoTagContentFinishListener);
+        ExifGeotager.geoTagContent(context, MediaStore.Images.Media.INTERNAL_CONTENT_URI, true,
+                true, mGeoTagContentFinishListener);
     }
 
     private void updateUI() {
         chkServiceEnabled.setEnabled(!mVehicleMode);
         chkAutoGeotag.setEnabled(!mVehicleMode);
+        View layoutGeotagger = findViewById(R.id.layoutGeotagger);
+        layoutGeotagger.setVisibility(mVehicleMode ? View.GONE : View.VISIBLE);
         if(mVehicleMode) {
             chkAutoGeotag.setChecked(false);
             if(!chkServiceEnabled.isChecked()) {
@@ -454,62 +441,33 @@ public class MainActivity extends ActionBarActivity {
     }
 
     @Override
+    public boolean onMenuOpened(int featureId, Menu menu) {
+        if (menu != null) {
+            MenuItem settingsMenu = menu.findItem(R.id.action_settings);
+            if(settingsMenu != null) {
+                if (mVehicleMode && mVehicleModeSettingsCount > 0) {
+                    mVehicleModeSettingsCount--;
+                    settingsMenu.setVisible(false);
+                } else {
+                    mVehicleModeSettingsCount = 6;
+                    settingsMenu.setVisible(true);
+                }
+            }
+        }
+        return super.onMenuOpened(featureId, menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if(Logger.DEBUG) Logger.debug(TAG, "onOptionsItemSelected");
-        LocationStorer storer = null;
-        long starTimeFilter = 0;
-        int successTextId = 0;
         int id = item.getItemId();
-
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(System.currentTimeMillis());
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-
         if(id == R.id.action_settings) {
-            if(mVehicleMode  && mVehicleModeSettingsCount > 0) {
-                String extrat = "";
-                if(mVehicleModeSettingsCount-- < 4) extrat = " " + mVehicleModeSettingsCount;
-                Toast.makeText(this, getString(R.string.vehiclemode_enabled_warn) + extrat, Toast.LENGTH_LONG).show();
-            } else {
-                SettingsActivity.start(this);
-                mVehicleModeSettingsCount = 6;
-            }
+            SettingsActivity.start(this);
         } if(id == R.id.action_webserver) {
             WebServerActivity.start(this);
-        } else if (id == R.id.action_export_gpx) {
-            storer = new LocationExporter.FileStorer(this);
-            ((LocationExporter.FileStorer) storer).setFormat(LocationExporter.FileStorer.Format.GPX);
-            starTimeFilter = cal.getTimeInMillis();
-        } else if (id == R.id.action_export_kml) {
-            storer = new LocationExporter.FileStorer(this);
-            ((LocationExporter.FileStorer) storer).setFormat(LocationExporter.FileStorer.Format.KML);
-            starTimeFilter = cal.getTimeInMillis();
         } else if (id == R.id.action_locatrac_sync) {
-            storer = new LocatrackDb(this);
-            storer.configure();
-            final Context context = this;
-            storer.setOnCloseCallback(new LocationStorer.OnCloseCallback() {
-                @Override
-                public void onClose(Bundle extras, Exception error) {
-                    if (error == null) {
-                        SyncService.syncNow(context);
-                    } else {
-                        if(Logger.DEBUG) Logger.debug(TAG, "Error on LocatrackDatabase, %s", error.getMessage());
-                    }
-                }
-            });
-            starTimeFilter = LocatrackDb.getLastLocationTime();
-            successTextId = R.string.export_complete_sync;
+            SyncService.syncNow(getApplicationContext());
         }
-
-        if (storer != null) {
-            SyncService.exportNmeaToStorer(this, storer, starTimeFilter, successTextId);
-            return true;
-        }
-
         return super.onOptionsItemSelected(item);
     }
 

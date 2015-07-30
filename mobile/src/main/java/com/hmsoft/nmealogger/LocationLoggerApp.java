@@ -6,7 +6,7 @@ import com.hmsoft.nmealogger.common.TaskExecutor;
 import android.app.Application;
 import android.content.Context;
 
-public class NmeaLoggerApp extends Application {
+public class LocationLoggerApp extends Application {
 	
 	private static final String TAG = "NmeaLoggerApp";
 	

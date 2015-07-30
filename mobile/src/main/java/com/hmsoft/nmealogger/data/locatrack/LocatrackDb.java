@@ -53,6 +53,11 @@ public class LocatrackDb extends LocationStorer {
         LocationTable.setUploadDate(Helper.getInstance(), location);
     }
 
+    @Override
+    public void setUploadDateToday(Location location) {
+        LocationTable.setUploadDate(Helper.getInstance(), location);
+    }
+
     public static int getCount(boolean includeNotUploadedOnly) {
         return  LocationTable.getCount(Helper.getInstance(), includeNotUploadedOnly);
     }

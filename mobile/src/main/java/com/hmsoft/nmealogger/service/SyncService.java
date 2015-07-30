@@ -15,7 +15,6 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.text.TextUtils;
@@ -23,23 +22,13 @@ import android.text.TextUtils;
 import com.hmsoft.nmealogger.R;
 import com.hmsoft.nmealogger.common.Logger;
 import com.hmsoft.nmealogger.common.PerfWatch;
-import com.hmsoft.nmealogger.common.TaskExecutor;
-import com.hmsoft.nmealogger.data.LocationExporter;
-import com.hmsoft.nmealogger.data.LocationSet;
-import com.hmsoft.nmealogger.data.LocationStorer;
-import com.hmsoft.nmealogger.data.MultiLocationStorer;
 import com.hmsoft.nmealogger.data.locatrack.LocatrackDb;
 import com.hmsoft.nmealogger.data.locatrack.LocatrackOnlineStorer;
-import com.hmsoft.nmealogger.data.nmea.NmeaCommon;
-import com.hmsoft.nmealogger.data.nmea.NmeaLogFile;
-import com.hmsoft.nmealogger.data.nmea.NmeaStorer;
 import com.hmsoft.nmealogger.ui.MainActivity;
 import com.hmsoft.nmealogger.ui.SettingsActivity;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Calendar;
-import java.util.Iterator;
 
 /**
  * Define a Service that returns an IBinder for the
@@ -279,44 +268,6 @@ public class SyncService extends Service {
     private static SyncAdapter sSyncAdapter = null;
     // Object to use as a thread-safe lock
     private static final Object sSyncAdapterLock = new Object();
-    private static LocationStorer sLocatrackStorer = null;
-
-    public static boolean exportNmeaToStorer(Context context, LocationStorer storer, long starTimeFilter,
-                                          int successTextId) {
-       final File nmeaPath = NmeaCommon.getNmeaPathFromConfig(context);
-       return exportNmeaToStorer(context, nmeaPath, storer, starTimeFilter, successTextId);
-    }
-    
-    private static boolean exportNmeaToStorer(Context context, 
-                                              File nmeaPath, 
-                                              LocationStorer storer,
-                                              long starTimeFilter,
-                                              int successTextId) {
-        if (nmeaPath.exists()) {
-            NmeaLogFile nmeaLogFile = new NmeaLogFile(nmeaPath);
-            return exportNmeaToStorer(context, nmeaLogFile, storer, starTimeFilter, successTextId);            
-        }
-        return false;
-    }
-
-    private static boolean exportNmeaToStorer(Context context,
-                                              NmeaLogFile nmeaLogFile,
-                                              LocationStorer storer,
-                                              long starTimeFilter,
-                                              int successTextId) {
-        if (storer != null) {
-            LocationExporter exporter = new LocationExporter(context);
-            exporter.setStorer(storer);
-            if(starTimeFilter > 0) {
-                nmeaLogFile.setDateStart(starTimeFilter);
-                nmeaLogFile.setDateEnd(System.currentTimeMillis() + 1000 * 60 * 15);
-            }
-            exporter.setSuccessTextId(successTextId);
-            boolean success = exporter.export(nmeaLogFile);
-            return success;
-        }
-        return false;
-    }
 
     public static void setAutoSync(Context context, boolean sync) {
         Account account = SyncAuthenticatorService.getSyncAccount(context);
@@ -337,18 +288,6 @@ public class SyncService extends Service {
          */
         ContentResolver.requestSync(account, authority, settingsBundle);
 
-    }
-
-    public static long getMillisOfNextSyncAlarm(Context context) {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        String syncTimeStr = preferences.getString(context.getString(R.string.pref_synctime_key), "");
-        if(!TextUtils.isEmpty(syncTimeStr)) {
-            String[] syncTime = syncTimeStr.split(":");
-            int syncHour = Integer.parseInt(syncTime[0]);
-            int syncMinute = Integer.parseInt(syncTime[1]);
-            return  getMillisOfTomorrowTime(syncHour, syncMinute);
-        }
-        return  0;
     }
 
     public static long getMillisOfTomorrowTime(int hour, int minute) {

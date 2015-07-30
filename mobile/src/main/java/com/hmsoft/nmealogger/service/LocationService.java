@@ -51,9 +51,9 @@ import com.hmsoft.nmealogger.common.PerfWatch;
 import com.hmsoft.nmealogger.common.TaskExecutor;
 import com.hmsoft.nmealogger.data.ExifGeotager;
 import com.hmsoft.nmealogger.data.Geocoder;
+import com.hmsoft.nmealogger.data.LocationStorer;
 import com.hmsoft.nmealogger.data.locatrack.LocatrackDb;
 import com.hmsoft.nmealogger.data.locatrack.LocatrackOnlineStorer;
-import com.hmsoft.nmealogger.data.nmea.NmeaStorer;
 import com.hmsoft.nmealogger.ui.MainActivity;
 
 import java.util.Date;
@@ -115,7 +115,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private boolean mAutoExifGeotagerEnabled;
     private boolean mUseGmsIgAvailable;
     private boolean mInstantUploadEnabled = false;
-    private boolean mNmeaLogEnabled;
 
     //endregion Settings fields
 
@@ -138,8 +137,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private boolean mGooglePlayServiceAvailable;
 
     private LocatrackOnlineStorer mOnlineStorer = null;
-    private NmeaStorer mNmeaStorer;
-    private LocatrackDb mDbStorer;
+    LocationStorer mLocationStorer;
 
     boolean mTrackingMode;
     boolean mNeedsToUpdateUI;
@@ -348,8 +346,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
                     mService.uploadLocation(location);
             }
         }
-
-
     }
 
     private static class PictureContentObserver extends ContentObserver {
@@ -699,6 +695,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
     /* Must not be called in the UI thread */
     void uploadLocation(final Location location) {
+
         final Context context = getApplicationContext();
         if (mOnlineStorer == null) {
             mOnlineStorer = new LocatrackOnlineStorer(context);
@@ -739,7 +736,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 public void run() {
                     releaseWakeLock();
                     if (uploaded) {
-                        LocatrackDb.setUploadDate(location);
+                        mLocationStorer.setUploadDateToday(location);
                     }
                 }
             });
@@ -751,51 +748,21 @@ public class LocationService extends Service implements GooglePlayServicesClient
     }
     
     private void saveLocation(final Location location, final boolean upload) {
-        if (location == null) {
-            Logger.warning(TAG, "Trying to save null location.");
-            return;
-        }
 
-        getLocationExtras(location).putInt(BatteryManager.EXTRA_LEVEL, mLastBatteryLevel);
+        if(location.getExtras() == null) location.setExtras(new Bundle());
+        Bundle extras = location.getExtras();
+        extras.putInt(BatteryManager.EXTRA_LEVEL, mLastBatteryLevel);
         if(mVehicleMode) {
             if(mChargingStart) {
-                location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_START);
+                extras.putString(Constants.NOTIFY_EVENT, Constants.EVENT_START);
             } else if(mChargingStop) {
-                location.getExtras().putString(Constants.NOTIFY_EVENT, Constants.EVENT_STOP);
+                extras.putString(Constants.NOTIFY_EVENT, Constants.EVENT_STOP);
             }
             mChargingStart = false;
             mChargingStop = false;
         }
 
-        PerfWatch pw = null;
-        if (DIAGNOSTICS && mLocationLogEnabled) {
-            pw = PerfWatch.start(TAG, "Start: Save location to db");
-        }
-
-        mDbStorer.prepareDmlStatements();
-        mDbStorer.storeLocation(location);
-
-        if (DIAGNOSTICS && mLocationLogEnabled) {
-            if (pw != null) {
-                pw.stop(TAG, "End: Save location to db");
-            }
-        }
-
-        if (mNmeaLogEnabled) {
-            if (Logger.DEBUG) {
-                pw = PerfWatch.start(TAG, "Start: Save location to NMEA log");
-            }
-            if(mNmeaStorer == null) {
-                mNmeaStorer = new NmeaStorer(getApplicationContext());
-                mNmeaStorer.configure();
-            }
-            mNmeaStorer.storeLocation(location);
-            if (Logger.DEBUG) {
-                if (pw != null) {
-                    pw.stop(TAG, "End: Save location to NMEA log");
-                }
-            }
-        }
+        mLocationStorer.storeLocation(location);
 
         mLastSaveAddress = null;
         mLastSavedLocation = location;
@@ -1217,8 +1184,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
 
         if (intent.hasExtra(Constants.EXTRA_CONFIGURE_STORER)) {
-            if(mNmeaStorer != null) mNmeaStorer.configure();
-            mDbStorer.configure();
+            mLocationStorer.configure();
         }
 
         if(intent.hasExtra(Constants.EXTRA_SYNC)) {
@@ -1319,14 +1285,12 @@ public class LocationService extends Service implements GooglePlayServicesClient
         mAutoExifGeotagerEnabled = preferences.getBoolean(getString(R.string.pref_auto_exif_geotager_enabled_key), true);
         mUseGmsIgAvailable = preferences.getBoolean(getString(R.string.pref_use_gms_if_available_key), true);
         mInstantUploadEnabled = preferences.getBoolean(getString(R.string.pref_instant_upload_enabled_key), true);
-        mNmeaLogEnabled  = preferences.getBoolean(getString(R.string.pref_nmealog_enabled_key), false);
         mVehicleMode =  preferences.getBoolean(getString(R.string.pref_vehiclemode_enabled_key), mVehicleMode);
         mSetAirplaneMode =  preferences.getBoolean(getString(R.string.pref_set_airplanemode_key), mSetAirplaneMode);
 
         if(mVehicleMode) {
             mInstantUploadEnabled = true;
             mAutoExifGeotagerEnabled = false;
-            mNmeaLogEnabled = false;
             mNotificationEnabled = true;
             mMaxReasonableSpeed = 49;
             mGpsTimeout = 61;
@@ -1381,6 +1345,12 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
     }
 
+    protected LocationStorer createStorer() {
+        LocatrackDb storer = new LocatrackDb(getApplicationContext());
+        storer.prepareDmlStatements();
+        return storer;
+    }
+
     //endregion Core functions
 
     //region Method overrides
@@ -1395,9 +1365,8 @@ public class LocationService extends Service implements GooglePlayServicesClient
         super.onCreate();
         if(Logger.DEBUG) Logger.debug(TAG, "onCreate");
 
-
-        mDbStorer = new LocatrackDb(getApplicationContext());
-        mDbStorer.configure();
+        mLocationStorer = createStorer();
+        mLocationStorer.configure();
         configure(false);
         
         mGooglePlayServiceAvailable = mUseGmsIgAvailable &&
@@ -1579,16 +1548,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
             }
         }
         return bestResult;
-    }
-
-    public static Bundle getLocationExtras(Location location) {
-        Bundle extras = location.getExtras();
-        if(extras == null) {
-            extras =  new Bundle();
-            location.setExtras(extras);
-            extras = location.getExtras();
-        }
-        return extras;
     }
 
     static void setAirplaneMode(Context context, boolean  isEnabled) {

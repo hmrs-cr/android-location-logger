@@ -4,7 +4,7 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import com.hmsoft.nmealogger.NmeaLoggerApp;
+import com.hmsoft.nmealogger.LocationLoggerApp;
 import com.hmsoft.nmealogger.common.Logger;
 
 
@@ -29,7 +29,7 @@ public class Helper extends SQLiteOpenHelper {
     }
 
     private Helper() {
-        this(NmeaLoggerApp.getContext(), DATABASE_NAME, null, DATABASE_VERSION);
+        this(LocationLoggerApp.getContext(), DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     public static synchronized Helper getInstance() {

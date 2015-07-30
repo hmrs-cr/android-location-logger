@@ -16,17 +16,12 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
-import android.view.MenuItem;
 import android.widget.TimePicker;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.hmsoft.nmealogger.R;
 import com.hmsoft.nmealogger.common.Logger;
-import com.hmsoft.nmealogger.data.LocationExporter;
-import com.hmsoft.nmealogger.data.LocationStorer;
-import com.hmsoft.nmealogger.data.locatrack.LocatrackDb;
-import com.hmsoft.nmealogger.data.nmea.NmeaCommon;
 import com.hmsoft.nmealogger.service.LocationService;
 import com.hmsoft.nmealogger.service.SyncAuthenticatorService;
 import com.hmsoft.nmealogger.service.SyncService;
@@ -36,7 +31,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Properties;
 
@@ -215,18 +209,6 @@ public class SettingsActivity extends PreferenceActivity
             editor = preferences.edit();
             editor.putString(deviceIdKey, SyncAuthenticatorService.getGoogleAccount(context));
         }
-
-        String nmeaLogDirKey = context.getString(R.string.pref_nmealog_directory_key);
-        String configPath = preferences.getString(nmeaLogDirKey, "");
-        if(TextUtils.isEmpty(configPath)) {
-            if(editor == null) {
-                editor = preferences.edit();
-            }
-            editor.putString(nmeaLogDirKey, NmeaCommon.getCanonCWGeoLogPath().getAbsolutePath());
-        }
-        if(editor != null) {
-            editor.commit();
-        }
     }
 
 	public static void start(Context context) {
@@ -238,60 +220,6 @@ public class SettingsActivity extends PreferenceActivity
         Intent intent = new Intent(context, SettingsActivity.class);
         intent.setAction(action);
         context.startActivity(intent);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        LocationStorer storer = null;
-        long starTimeFilter = 0;
-        int successTextId = 0;
-
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(System.currentTimeMillis());
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-
-        if(id == R.id.action_settings) {
-            SettingsActivity.start(this);
-        } else if (id == R.id.action_export_gpx) {
-            storer = new LocationExporter.FileStorer(this);
-            ((LocationExporter.FileStorer) storer).setFormat(LocationExporter.FileStorer.Format.GPX);
-            starTimeFilter = cal.getTimeInMillis();
-        } else if (id == R.id.action_export_kml) {
-            storer = new LocationExporter.FileStorer(this);
-            ((LocationExporter.FileStorer) storer).setFormat(LocationExporter.FileStorer.Format.KML);
-            starTimeFilter = cal.getTimeInMillis();
-        } else if (id == R.id.action_locatrac_sync) {
-            storer = new LocatrackDb(this);
-            storer.configure();
-            final Context context = this;
-            storer.setOnCloseCallback(new LocationStorer.OnCloseCallback() {
-                @Override
-                public void onClose(Bundle extras, Exception error) {
-                    if (error == null) {
-                        SyncService.syncNow(context);
-                    } else {
-                        if(Logger.DEBUG) Logger.debug(TAG, "Error on LocatrackDatabase, %s", error.getMessage());
-                    }
-                }
-            });
-            starTimeFilter = LocatrackDb.getLastLocationTime();
-            successTextId = R.string.export_complete_sync;
-        }
-
-        if (storer != null) {
-            SyncService.exportNmeaToStorer(this, storer, starTimeFilter, successTextId);
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 	
 	@Override

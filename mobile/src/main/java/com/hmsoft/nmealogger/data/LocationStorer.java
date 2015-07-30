@@ -21,8 +21,12 @@ public abstract class LocationStorer {
 	public abstract boolean storeLocation(Location location);
 	public abstract void configure();
 
+    public void setUploadDateToday(Location location) {
+
+    }
+
     public interface OnCloseCallback {
-        public void onClose(Bundle extras, Exception error);
+        void onClose(Bundle extras, Exception error);
     }
 
     public void setOnCloseCallback(OnCloseCallback mOnCloseCallback) {
