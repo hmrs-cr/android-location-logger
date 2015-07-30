@@ -26,6 +26,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.Message;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
@@ -145,7 +146,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private WakeLock mWakeLock;
 
     private HandlerThread mExecutorThread = null;
-    private Handler mHandler;
 
     int mLastBatteryLevel = 99;
     boolean mChargingStart;
@@ -304,6 +304,52 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 (new GetAddressTask(service)).run(location);
             }
         }
+    }
+
+    private static class UploadHandler extends Handler {
+
+        private static final int UPLOAD_LOCATION_MSG = 19830310;
+
+        private LocationService mService;
+        private static UploadHandler sInstance = null;
+
+        private UploadHandler(LocationService service, Looper looper) {
+            super(looper);
+            mService = service;
+        }
+
+        private void _sendUploadLocationMsg(Location location) {
+            Message msg = obtainMessage(UPLOAD_LOCATION_MSG, location);
+            sendMessage(msg);
+        }
+
+        public static void init(LocationService service, Looper looper) {
+            if(sInstance == null) {
+                sInstance = new UploadHandler(service, looper);
+            }
+        }
+
+        public static void sendUploadLocationMsg(Location location) {
+            if(sInstance != null) sInstance._sendUploadLocationMsg(location);
+        }
+
+        public static void destroy() {
+            if(sInstance != null) {
+                sInstance.mService = null;
+                sInstance = null;
+            }
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case UPLOAD_LOCATION_MSG:
+                    Location location = (Location)msg.obj;
+                    mService.uploadLocation(location);
+            }
+        }
+
+
     }
 
     private static class PictureContentObserver extends ContentObserver {
@@ -650,6 +696,56 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
     }
 
+
+    /* Must not be called in the UI thread */
+    void uploadLocation(final Location location) {
+        final Context context = getApplicationContext();
+        if (mOnlineStorer == null) {
+            mOnlineStorer = new LocatrackOnlineStorer(context);
+            mOnlineStorer.configure();
+        }
+        boolean locationUploaded = false;
+        try {
+            if (DIAGNOSTICS && mLocationLogEnabled) {
+                Logger.info(TAG, "Upload: %s", location);
+            }
+
+            PerfWatch pw = null;
+
+            if (DIAGNOSTICS && mLocationLogEnabled) {
+                pw = PerfWatch.start(TAG, "Start: Upload location");
+            }
+
+            if (mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
+                mOnlineStorer.retryDelaySeconds = 10;
+                mOnlineStorer.retryCount = 3;
+            } else {
+                mOnlineStorer.retryDelaySeconds = 3;
+                mOnlineStorer.retryCount = 1;
+            }
+            locationUploaded = mOnlineStorer.storeLocation(location);
+            if (DIAGNOSTICS && mLocationLogEnabled) {
+                if (pw != null) {
+                    pw.stop(TAG, "End: Upload location Success: " + locationUploaded);
+                }
+            }
+            if (mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
+                setAirplaneMode(context, true);
+            }
+        } finally {
+            final boolean uploaded = locationUploaded;
+            TaskExecutor.executeOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    releaseWakeLock();
+                    if (uploaded) {
+                        LocatrackDb.setUploadDate(location);
+                    }
+                }
+            });
+        }
+    }
+
     private void saveLocation(final Location location) {
         saveLocation(location, false);
     }
@@ -706,70 +802,25 @@ public class LocationService extends Service implements GooglePlayServicesClient
         mLocationCount++;
         updateUIIfNeeded();
 
-        if(upload && !mTrackingMode && mInstantUploadEnabled) {
-            final Context context = getApplicationContext();
-            createExecutorThreadIfNeeded();
-            if (mOnlineStorer == null) {
-                mOnlineStorer = new LocatrackOnlineStorer(context);
-                mOnlineStorer.configure();
+        if(upload) {
+            if (!mTrackingMode && mInstantUploadEnabled) {
+                sendUploadLocationMsg(location);
+            } else {
+                releaseWakeLock();
             }
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    boolean locationUploaded = false;
-                    try {
-                        if (DIAGNOSTICS && mLocationLogEnabled) {
-                            Logger.info(TAG, "Upload: %s", location);
-                        }
-
-                        PerfWatch pw = null;
-
-                        if (DIAGNOSTICS && mLocationLogEnabled) {
-                            pw = PerfWatch.start(TAG, "Start: Upload location");
-                        }                        
-
-                        if (mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
-                            mOnlineStorer.retryDelaySeconds = 10;
-                            mOnlineStorer.retryCount = 3;
-                        } else {
-                            mOnlineStorer.retryDelaySeconds = 3;
-                            mOnlineStorer.retryCount = 1;
-                        }
-                        locationUploaded = mOnlineStorer.storeLocation(location);
-                        if (DIAGNOSTICS && mLocationLogEnabled) {
-                            if (pw != null) {
-                                pw.stop(TAG, "End: Upload location Success: " + locationUploaded);
-                            }
-                        }
-                        if (mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
-                            setAirplaneMode(context, true);
-                        }
-                    } finally {
-                        final boolean uploaded = locationUploaded;
-                        TaskExecutor.executeOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                releaseWakeLock();
-                                if (uploaded) {
-                                    LocatrackDb.setUploadDate(location);
-                                }
-                            }
-                        });
-                    }
-                }
-            });
         }
     }
 
-    private void createExecutorThreadIfNeeded() {
+    private void sendUploadLocationMsg(Location location) {
         if(mExecutorThread == null) {
             mExecutorThread = new HandlerThread(BuildConfig.APPLICATION_ID + "." + TAG);
             mExecutorThread.start();
             Looper looper = mExecutorThread.getLooper();
-            mHandler = new Handler(looper);
+            UploadHandler.init(this, looper);
             Logger.info(TAG, "ExecutorThread created");
             if(DEBUG) Toast.makeText(this, "ExecutorThread created", Toast.LENGTH_SHORT).show();
         }
+        UploadHandler.sendUploadLocationMsg(location);
     }
 
     void destroyExecutorThread() {
@@ -779,7 +830,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
             Logger.info(TAG, "ExecutorThread destroyed");
             if(DEBUG) Toast.makeText(this, "ExecutorThread destroyed", Toast.LENGTH_SHORT).show();
         }
-        mHandler = null;
+        UploadHandler.destroy();
     }
 
     private void logLocation(Location location, String message) {
