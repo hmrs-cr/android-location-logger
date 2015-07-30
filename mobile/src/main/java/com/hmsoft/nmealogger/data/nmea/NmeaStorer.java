@@ -30,9 +30,7 @@ public class NmeaStorer extends LocationStorer {
     private Context mContext;
     private Writer mWriter = null;
 
-    public static final NmeaStorer instance = new NmeaStorer(NmeaLoggerApp.getContext());
-
-    private NmeaStorer(Context context) {
+    public NmeaStorer(Context context) {
         mContext = context;
     }
 

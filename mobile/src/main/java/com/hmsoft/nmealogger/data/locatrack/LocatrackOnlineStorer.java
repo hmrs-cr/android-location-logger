@@ -222,6 +222,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
             throw new MissingConfigurationException("myLatitudeKey");
         }
 
+        Logger.info(TAG, "Uploading location...");
         int count = retryCount;
         boolean uploadOk = false;
         while (!uploadOk) {
@@ -238,8 +239,15 @@ public class LocatrackOnlineStorer extends LocationStorer {
             }
 
 			uploadOk = isConnected && internalUploadLocation(location);
-			if(--count < 0) break;
-			if(!uploadOk) TaskExecutor.sleep(retryDelaySeconds);
+            if(--count < 0) {
+                Logger.warning(TAG, "Too many retries");
+                break;
+            }
+            if(!uploadOk) {
+                Logger.warning(TAG, "Upload failed retry %d of %d. Sleeping %d seconds", count+1, 
+                               retryCount, retryDelaySeconds);
+                TaskExecutor.sleep(retryDelaySeconds);
+            }
 		}
 
 
