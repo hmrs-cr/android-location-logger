@@ -318,38 +318,6 @@ public class SyncService extends Service {
         return false;
     }
 
-    public static void importExternalNmea(Context context, final LocationStorer.OnCloseCallback closeCallback) {
-        File externalPath = NmeaCommon.getExternalNmeaPath(context);
-        if(externalPath != null && externalPath.exists()) {
-            final NmeaLogFile nmeaLogFile = new NmeaLogFile(externalPath);
-            if(nmeaLogFile.getCount() > 0) {
-                MultiLocationStorer storer = new MultiLocationStorer(NmeaStorer.instance,
-                        new LocatrackDb(context));
-                storer.configure();
-                storer.setOnCloseCallback(new LocationStorer.OnCloseCallback() {
-                    @Override
-                    public void onClose(Bundle extras, Exception error) {
-                        if (error == null) {
-                            nmeaLogFile.deleteFiles();
-                        }
-                        if(closeCallback != null) {
-                            closeCallback.onClose(extras, error);
-                        }
-                    }
-                });
-                exportNmeaToStorer(context, nmeaLogFile, storer, 0, 0);
-            } else {
-                if(closeCallback != null) {
-                    closeCallback.onClose(null, null);
-                }
-            }
-        } else{
-            if(closeCallback != null) {
-                closeCallback.onClose(null, null);
-            }
-        }
-    }
-
     public static void setAutoSync(Context context, boolean sync) {
         Account account = SyncAuthenticatorService.getSyncAccount(context);
         String authority =  context.getString(R.string.location_provider_authority);
