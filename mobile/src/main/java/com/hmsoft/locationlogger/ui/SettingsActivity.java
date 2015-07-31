@@ -43,11 +43,9 @@ public class SettingsActivity extends PreferenceActivity
 	private static final String TAG = "SettingsActivity";
 	
 	private PreferenceCategory mPrefCategoryService;
-	private PreferenceCategory mPrefCategoryNmea;
     private PreferenceCategory mPrefCategorySync;
 
     private boolean mServicePrefChanged;
-	private boolean mNmeaPrefChanged;
     private boolean mSyncPrefChanged;
     private AdvancedSettings mAdvancedSettings;
 
@@ -122,7 +120,6 @@ public class SettingsActivity extends PreferenceActivity
         mAdvancedSettings = new AdvancedSettings(this);
 
      	mPrefCategoryService = (PreferenceCategory)findPreference(getString(string.pref_service_settings_key));
-		mPrefCategoryNmea = (PreferenceCategory)findPreference(getString(string.pref_nmea_settings_key));
         mPrefCategorySync = (PreferenceCategory)findPreference(getString(string.pref_locatrack_settings_key));
 
         if(GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) != ConnectionResult.SUCCESS) {
@@ -134,7 +131,6 @@ public class SettingsActivity extends PreferenceActivity
 
         if(getString(R.string.action_sync_settings).equals(getIntent().getAction())) {
             getPreferenceScreen().removePreference(mPrefCategoryService);
-            getPreferenceScreen().removePreference(mPrefCategoryNmea);
         } else {
             //hideAdvancedPreferences(getPreferenceScreen());
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) {
@@ -238,10 +234,7 @@ public class SettingsActivity extends PreferenceActivity
 			}
 			if(Logger.DEBUG) Logger.debug(TAG, "Preference %s chaged. (Service)", key);
 		} 
-		else if(mPrefCategoryNmea.findPreference(key) != null) {
-			mNmeaPrefChanged = true;
-			if(Logger.DEBUG) Logger.debug(TAG, "Preference %s chaged. (NMEA)", key);
-		} else if(mPrefCategorySync.findPreference(key) != null) {
+		else if(mPrefCategorySync.findPreference(key) != null) {
             mSyncPrefChanged = true;
             if(Logger.DEBUG) Logger.debug(TAG, "Preference %s chaged. (Sync)", key);
         } else {
@@ -256,7 +249,6 @@ public class SettingsActivity extends PreferenceActivity
 	    if(Logger.DEBUG) Logger.debug(TAG, "onResume");
 		
 		mServicePrefChanged = false;
-		mNmeaPrefChanged = false;
 
 		getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
 	}
@@ -270,12 +262,8 @@ public class SettingsActivity extends PreferenceActivity
 		
 		if(mServicePrefChanged || mSyncPrefChanged) {
 			LocationService.configure(this);
-		} 
-		
-		if(mNmeaPrefChanged) {
-            LocationService.configureStorer(this);
 		}
-		
+
 		super.onPause();
 	}
 

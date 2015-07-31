@@ -178,7 +178,6 @@
     <string name="pref_locatrack_key_title">Locatrack Key</string>
 
     <string name="pref_locatrack_deviceid_title">Device ID</string>
-    <string name="pref_locatrack_deviceid_default"></string>
 
     <string name="pref_nmea_settings_title">NMEA Settings</string>
 

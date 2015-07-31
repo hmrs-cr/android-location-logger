@@ -438,18 +438,18 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     public boolean onMenuOpened(int featureId, Menu menu) {
-        if (menu != null) {
-            MenuItem settingsMenu = menu.findItem(R.id.action_settings);
-            if(settingsMenu != null) {
-                if (mVehicleMode && mVehicleModeSettingsCount > 0) {
-                    mVehicleModeSettingsCount--;
-                    settingsMenu.setVisible(false);
-                } else {
-                    mVehicleModeSettingsCount = 6;
-                    settingsMenu.setVisible(true);
-                }
+        if (menu == null) menu = mMenu;
+        MenuItem settingsMenu = menu.findItem(R.id.action_settings);
+        if(settingsMenu != null) {
+            if (mVehicleMode && mVehicleModeSettingsCount > 0) {
+                mVehicleModeSettingsCount--;
+                settingsMenu.setVisible(false);
+            } else {
+                mVehicleModeSettingsCount = 6;
+                settingsMenu.setVisible(true);
             }
         }
+
         return super.onMenuOpened(featureId, menu);
     }
 
