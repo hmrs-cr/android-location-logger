@@ -2,11 +2,13 @@ package com.hmsoft.locationlogger.data;
 
 import android.location.Location;
 
-public interface LocationSet extends Iterable<Location> {
+import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
+
+public interface LocationSet extends Iterable<LocatrackLocation> {
     public int getCount();
     public long getDateStart();
     public void setDateStart(long dateStart);
     public long getDateEnd();
     public void setDateEnd(long dateEnd);
-    public Location[] toArray();
+    public LocatrackLocation[] toArray();
 }

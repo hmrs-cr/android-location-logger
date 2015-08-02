@@ -70,7 +70,7 @@ public class LocatrackDb extends LocationStorer {
     }
 
     @Override
-    public boolean storeLocation(Location location) {
+    public boolean storeLocation(LocatrackLocation location) {
         mTotalItems++;
         if (Logger.DEBUG) {
             if(Logger.DEBUG) Logger.debug(TAG, "saveLocationToLocalDatabase");

@@ -45,6 +45,6 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:appcompat-v7:20.0.0'
-    compile 'com.google.android.gms:play-services:5.0.89'
+    compile "com.android.support:appcompat-v7:21.0.+"
+    /*compile 'com.google.android.gms:play-services:7.5.0'*/
 }

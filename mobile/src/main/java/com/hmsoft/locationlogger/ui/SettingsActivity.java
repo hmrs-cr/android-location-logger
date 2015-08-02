@@ -18,8 +18,6 @@ import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.widget.TimePicker;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.service.LocationService;
@@ -122,12 +120,14 @@ public class SettingsActivity extends PreferenceActivity
      	mPrefCategoryService = (PreferenceCategory)findPreference(getString(string.pref_service_settings_key));
         mPrefCategorySync = (PreferenceCategory)findPreference(getString(string.pref_locatrack_settings_key));
 
-        if(GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) != ConnectionResult.SUCCESS) {
+        /*if(GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) != ConnectionResult.SUCCESS) {
             Preference gmspref = mPrefCategoryService.findPreference(getString(R.string.pref_use_gms_if_available_key));
             if(gmspref != null) {
                 mPrefCategoryService.removePreference(gmspref);
             }
-        }
+        }*/
+        Preference gmspref = mPrefCategoryService.findPreference(getString(R.string.pref_use_gms_if_available_key));
+        mPrefCategoryService.removePreference(gmspref);
 
         if(getString(R.string.action_sync_settings).equals(getIntent().getAction())) {
             getPreferenceScreen().removePreference(mPrefCategoryService);

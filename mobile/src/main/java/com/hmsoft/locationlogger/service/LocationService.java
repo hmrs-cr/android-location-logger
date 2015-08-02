@@ -38,11 +38,6 @@ import android.support.v4.app.NotificationCompat.Builder;
 import android.text.TextUtils;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.location.LocationClient;
-import com.google.android.gms.location.LocationRequest;
 import com.hmsoft.locationlogger.BuildConfig;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Constants;
@@ -53,6 +48,7 @@ import com.hmsoft.locationlogger.data.ExifGeotager;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
+import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
@@ -60,15 +56,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class LocationService extends Service implements GooglePlayServicesClient.ConnectionCallbacks,
-        GooglePlayServicesClient.OnConnectionFailedListener {
+public class LocationService extends Service /*implements GooglePlayServicesClient.ConnectionCallbacks,
+        GooglePlayServicesClient.OnConnectionFailedListener*/ {
 
     //region Static fields
     private static final String TAG = "LocationService";
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final boolean DIAGNOSTICS = DEBUG;
     private static final int HALF_MINUTE = 1000 * 30;
-    private static final int CRITICAL_BATTERY_LEVEL = 25;
+    //private static final int CRITICAL_BATTERY_LEVEL = 25;
 
     private static final int CHARGING   = 0;
     private static final int BAT_100_75 = 1;
@@ -107,7 +103,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private LocationListener mGpsLocationListener;
     private LocationListener mPassiveLocationListener;
     private LocationListener mGmsLocationListener;
-    private Location mCurrentBestLocation;
+    private LocatrackLocation mCurrentBestLocation;
     private PowerManager mPowerManager;
     private ComponentName mMapIntentComponent = null;
     private boolean mAutoExifGeotagerEnabled;
@@ -130,9 +126,9 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private Intent mMapIntent = null;
     private PendingIntent mUpdateLocationIntent = null;
     private PendingIntent mStopTrackingIntent;
-    private LocationRequest mLocationRequest = null;
-    private LocationClient mGpLocationClient = null;
-    private boolean mGooglePlayServiceAvailable;
+    //private LocationRequest mLocationRequest = null;
+    //private LocationClient mGpLocationClient = null;
+    private final boolean mGooglePlayServiceAvailable = false;
 
     private LocatrackOnlineStorer mOnlineStorer = null;
     LocationStorer mLocationStorer;
@@ -218,8 +214,8 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
     }
 
-    private static class LocationListener implements android.location.LocationListener,
-            com.google.android.gms.location.LocationListener {
+    private static class LocationListener implements android.location.LocationListener
+            /*, com.google.android.gms.location.LocationListener*/ {
 
         private static final String TAG = "LocationListener";
 
@@ -314,7 +310,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
             mService = service;
         }
 
-        private void _sendUploadLocationMsg(Location location) {
+        private void _sendUploadLocationMsg(LocatrackLocation location) {
             Message msg = obtainMessage(UPLOAD_LOCATION_MSG, location);
             sendMessage(msg);
         }
@@ -325,7 +321,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
             }
         }
 
-        public static void sendUploadLocationMsg(Location location) {
+        public static void sendUploadLocationMsg(LocatrackLocation location) {
             if(sInstance != null) sInstance._sendUploadLocationMsg(location);
         }
 
@@ -340,7 +336,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case UPLOAD_LOCATION_MSG:
-                    Location location = (Location)msg.obj;
+                    LocatrackLocation location = (LocatrackLocation)msg.obj;
                     mService.uploadLocation(location);
             }
         }
@@ -433,7 +429,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
     //region Google Play location service helper functions
 
-    private void requestGooglePlayLocationUpdates() {
+    /*private void requestGooglePlayLocationUpdates() {
         if(Logger.DEBUG) Logger.debug(TAG, "requestGooglePlayLocationUpdates");
         long time = mGpsTimeout;
         if (!mTrackingMode) {
@@ -456,7 +452,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         mGpLocationClient.requestLocationUpdates(mLocationRequest, mGmsLocationListener);
 
         startPassiveLocationListener();
-    }
+    }*/
 
     //endregion Google Play location service helper functions
 
@@ -509,15 +505,15 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 mMaxReasonableSpeed)) {
 
             if(!mVehicleMode && LocationManager.PASSIVE_PROVIDER.equals(provider)) {
-                if(mLocationRequest == null || mLocationManager == null) {
-                    mCurrentBestLocation = new Location(location);
+                if(/*mLocationRequest == null ||*/ mLocationManager == null) {
+                    mCurrentBestLocation = new LocatrackLocation(location);
                     saveLocation(mCurrentBestLocation);
                     message = "*** Location saved (passive)";
                 } else {
                     message = "Ignored passive location while in location request.";
                 }
             } else {
-                mCurrentBestLocation = new Location(location);
+                mCurrentBestLocation = new LocatrackLocation(location);
                 if ((!mGpsProviderEnabled && !mGooglePlayServiceAvailable) ||
                         (isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
                     saveLocation(mCurrentBestLocation, true);
@@ -649,20 +645,20 @@ public class LocationService extends Service implements GooglePlayServicesClient
             return;
         }
 
-        Location bestLastLocation = mCurrentBestLocation;
+        LocatrackLocation bestLastLocation = mCurrentBestLocation;
 
         if (mGooglePlayServiceAvailable) {
-            Location lastKnownGmsLocation  = mGpLocationClient.getLastLocation();
+            /*Location lastKnownGmsLocation  = mGpLocationClient.getLastLocation();
             if (isBetterLocation(lastKnownGmsLocation, bestLastLocation)) {
-                bestLastLocation = new Location(lastKnownGmsLocation);
-            }
+                bestLastLocation = new LocatrackLocation(lastKnownGmsLocation);
+            }*/
         } else {
             if (mGpsProviderEnabled) {
                 if(Logger.DEBUG) Logger.debug(TAG, "currentBestLocation is not from GPS, but GPS is enabled");
                 Location lastKnownGpsLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                 if (isBetterLocation(lastKnownGpsLocation, bestLastLocation)) {
                     if(Logger.DEBUG) Logger.debug(TAG, "Got good LastKnownLocation from GPS provider.");
-                    bestLastLocation = new Location(lastKnownGpsLocation);
+                    bestLastLocation = new LocatrackLocation(lastKnownGpsLocation);
                 } else {
                     if(Logger.DEBUG) Logger.debug(TAG, "LastKnownLocation from GPS provider is not better than currentBestLocation.");
                 }
@@ -671,7 +667,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
             if (mNetProviderEnabled) {
                 Location lastKnownNetLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                 if (isBetterLocation(lastKnownNetLocation, bestLastLocation)) {
-                    bestLastLocation = new Location(lastKnownNetLocation);
+                    bestLastLocation = new LocatrackLocation(lastKnownNetLocation);
                 }
             }
         }
@@ -692,7 +688,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
 
     /* Must not be called in the UI thread */
-    void uploadLocation(final Location location) {
+    void uploadLocation(final LocatrackLocation location) {
 
         final Context context = getApplicationContext();
         if (mOnlineStorer == null) {
@@ -741,20 +737,18 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
     }
 
-    private void saveLocation(final Location location) {
+    private void saveLocation(final LocatrackLocation location) {
         saveLocation(location, false);
     }
     
-    private void saveLocation(final Location location, final boolean upload) {
+    private void saveLocation(final LocatrackLocation location, final boolean upload) {
 
-        if(location.getExtras() == null) location.setExtras(new Bundle());
-        Bundle extras = location.getExtras();
-        extras.putInt(BatteryManager.EXTRA_LEVEL, mLastBatteryLevel);
+        location.batteryLevel = mLastBatteryLevel;
         if(mVehicleMode) {
             if(mChargingStart) {
-                extras.putString(Constants.NOTIFY_EVENT, Constants.EVENT_START);
+                location.event = LocatrackLocation.EVENT_START;
             } else if(mChargingStop) {
-                extras.putString(Constants.NOTIFY_EVENT, Constants.EVENT_STOP);
+                location.event = LocatrackLocation.EVENT_STOP;
             }
             mChargingStart = false;
             mChargingStop = false;
@@ -776,7 +770,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         }
     }
 
-    private void sendUploadLocationMsg(Location location) {
+    private void sendUploadLocationMsg(LocatrackLocation location) {
         if(mExecutorThread == null) {
             mExecutorThread = new HandlerThread(BuildConfig.APPLICATION_ID + "." + TAG);
             mExecutorThread.start();
@@ -938,7 +932,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
     void startLocationListener() {
         if(mSetAirplaneMode && mVehicleMode) setAirplaneMode(this, false);
         if(mGooglePlayServiceAvailable) {
-            if (mLocationRequest == null) {
+            /*if (mLocationRequest == null) {
                 if(Logger.DEBUG) Logger.debug(TAG, "startLocationListener: Google Play Services available.");
                 if(mGpLocationClient == null) {
                     mGpLocationClient = new LocationClient(this, this, this);
@@ -950,7 +944,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                     if(Logger.DEBUG) Logger.debug(TAG, "Connecting Google Pay Location Service Client");
 
                 }
-            }
+            }*/
         } else if (mLocationManager == null) {
 
             if(Logger.DEBUG) Logger.debug(TAG, "startLocationListener: No Google Play Services available. Fallback to old location listeners.");
@@ -994,7 +988,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 @Override
                 public void run() {
                     mTimeoutRoutinePending = false;
-                    if (mLocationManager != null || mLocationRequest != null) {
+                    if (mLocationManager != null /*|| mLocationRequest != null*/) {
                         if(Logger.DEBUG) Logger.debug(TAG, "GPS Timeout");
                         saveLastLocation();
                         if (!LocationService.this.mTrackingMode) {
@@ -1012,12 +1006,12 @@ public class LocationService extends Service implements GooglePlayServicesClient
             mPassiveLocationListener = new LocationListener(this, LocationManager.PASSIVE_PROVIDER);
 
             if(mGooglePlayServiceAvailable) {
-                LocationRequest passiveRequest = new LocationRequest();
+               /* LocationRequest passiveRequest = new LocationRequest();
                 passiveRequest.setInterval(2000);
                 passiveRequest.setFastestInterval(1750);
                 passiveRequest.setSmallestDisplacement(mMinimumDistance / 2);
                 passiveRequest.setPriority(LocationRequest.PRIORITY_NO_POWER);
-                mGpLocationClient.requestLocationUpdates(passiveRequest, mPassiveLocationListener);
+                mGpLocationClient.requestLocationUpdates(passiveRequest, mPassiveLocationListener);*/
             } else {
                 LocationManager locationManager = this.mLocationManager;
                 if (locationManager == null) {
@@ -1033,7 +1027,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private void stopPassiveLocationListener() {
         if (mPassiveLocationListener != null) {
             if(mGooglePlayServiceAvailable) {
-                mGpLocationClient.removeLocationUpdates(mPassiveLocationListener);
+                //mGpLocationClient.removeLocationUpdates(mPassiveLocationListener);
                 if(Logger.DEBUG) Logger.debug(TAG, "stopPassiveLocationListener: Google Play Location");
 
             } else {
@@ -1053,7 +1047,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
     private void stopLocationListener() {
         if(mGooglePlayServiceAvailable) {
-            if(mLocationRequest != null) {
+            /*if(mLocationRequest != null) {
                 if(Logger.DEBUG) Logger.debug(TAG, "stopLocationListener:%s", mGmsLocationListener.mProvider);
                 mLocationRequest = null;
                 if(mGpLocationClient != null) {
@@ -1066,7 +1060,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 if(Logger.DEBUG) Logger.debug(TAG, "Disconnecting Play Services...");
                 if(mGpLocationClient.isConnected()) mGpLocationClient.disconnect();
                 mGpLocationClient = null;
-            }
+            }*/
         } else {
             if (mLocationManager != null) {
                 if (mGpsLocationListener != null) {
@@ -1294,9 +1288,9 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 startLocationListener();
             } else {
                 stopPassiveLocationListener();
-                if(mLocationRequest == null) {
+                /*if(mLocationRequest == null) {
                     stopLocationListener();
-                }
+                }*/
             }
 
             if (mAutoLocationInterval != oldAutoLocationInterval) {
@@ -1319,6 +1313,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 stopForeground(true);
             }
 
+            /*
             if(oldUseGmsIgAvailable != mUseGmsIgAvailable) {
                 stopPassiveLocationListener();
                 stopLocationListener();
@@ -1326,6 +1321,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                         GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS;
 
             }
+            */
 
             PictureContentObserver.unregister(getApplicationContext());
             if(mAutoExifGeotagerEnabled) {
@@ -1358,8 +1354,8 @@ public class LocationService extends Service implements GooglePlayServicesClient
         mLocationStorer.configure();
         configure(false);
         
-        mGooglePlayServiceAvailable = mUseGmsIgAvailable &&
-                GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS;
+        /*mGooglePlayServiceAvailable = mUseGmsIgAvailable &&
+                GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS;*/
 
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mAlarm = (AlarmManager) getSystemService(ALARM_SERVICE);
@@ -1406,6 +1402,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
     //region Google Play Service callbacks
 
+    /*
     @Override
     public void onConnected(Bundle bundle) {
         if(Logger.DEBUG) Logger.debug(TAG, "onConnected");
@@ -1420,7 +1417,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         if(Logger.DEBUG) Logger.debug(TAG, "onConnectionFailed:%s", connectionResult);
-    }
+    }*/
 
     //endregionregion Google Play Service callbacks
 
@@ -1453,10 +1450,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
     public static void configure(Context context) {
         start(context, Constants.EXTRA_CONFIGURE);
-    }
-
-    public static void configureStorer(Context context) {
-        start(context, Constants.EXTRA_CONFIGURE_STORER);
     }
 
     public static void startTrackingMode(Context context) {
@@ -1522,7 +1515,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
         return false;
     }
 
-    public static Location getBestLastLocation(Context context)
+    public static LocatrackLocation getBestLastLocation(Context context)
     {
         LocationManager locationManager =
                 (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
@@ -1536,7 +1529,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
                 bestResult = location;
             }
         }
-        return bestResult;
+        return new LocatrackLocation(bestResult);
     }
 
     static void setAirplaneMode(Context context, boolean  isEnabled) {
@@ -1554,8 +1547,8 @@ public class LocationService extends Service implements GooglePlayServicesClient
             Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
             intent.putExtra("state", isEnabled);
             context.sendBroadcast(intent);
-        } catch (Exception e) {
-
+        } catch (Exception ignored) {
+            Logger.error(TAG, ignored.getMessage());
         }
     }
 

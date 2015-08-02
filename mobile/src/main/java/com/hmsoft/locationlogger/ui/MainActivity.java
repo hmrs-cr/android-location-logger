@@ -22,8 +22,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
@@ -250,6 +248,7 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
+    /*
     private void servicesConnected() {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -271,7 +270,7 @@ public class MainActivity extends ActionBarActivity {
         } else {
             Logger.debug(TAG, "Google Play Services error code %d", resultCode);
         }
-    }
+    }*/
 
 
     @Override
@@ -490,7 +489,7 @@ public class MainActivity extends ActionBarActivity {
         mVehicleMode = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getBoolean(getString(R.string.pref_vehiclemode_enabled_key), false);
         updateUI();
 		registerReceiver(mUpdateUiReceiver, new IntentFilter(Constants.ACTION_UPDATE_UI));
-        servicesConnected();
+        //servicesConnected();
         mUpdateHandler = new Handler();
         mUpdateRunnable = new UpdateUIRunnable(this);
         mUpdateHandler.postDelayed(mUpdateRunnable, 6000);

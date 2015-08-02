@@ -5,21 +5,17 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.location.Location;
-import android.os.BatteryManager;
-import android.os.Bundle;
 import android.text.TextUtils;
 
-import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.data.LocationSet;
+import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
 
 import java.util.Iterator;
 
 public class LocationTable {
 
     private static final String TAG = "Location";
-
-    private static final Object sWriteLock = new Object();
 
     private static final String CACHED_LOCATION_PROVIDER = "database";
     public static final String TABLE_NAME = "location";
@@ -80,21 +76,21 @@ public class LocationTable {
     private static ContentValues sInsertValues = new ContentValues(7);
     private static SQLiteStatement sInsertStatement = null;
     private static SQLiteStatement sUpdateStatement = null;
-    private static Location sLastInsertedLocation = null;
+    private static LocatrackLocation sLastInsertedLocation = null;
 
-    public static Location loadFromCursor(Cursor cursor) {
-        Location location = new Location(CACHED_LOCATION_PROVIDER);
+    public static LocatrackLocation loadFromCursor(Cursor cursor) {
+        LocatrackLocation location = new LocatrackLocation(CACHED_LOCATION_PROVIDER);
         location.setTime(cursor.getLong(cursor.getColumnIndex(COLUMN_NAME_TIMESTAMP)));
         location.setLatitude(cursor.getDouble(cursor.getColumnIndex(COLUMN_NAME_LATITUDE)));
         location.setLongitude(cursor.getDouble(cursor.getColumnIndex(COLUMN_NAME_LONGITUD)));
         location.setAltitude(cursor.getDouble(cursor.getColumnIndex(COLUMN_NAME_ALTITUDE)));
         location.setAccuracy(cursor.getFloat(cursor.getColumnIndex(COLUMN_NAME_ACCURACY)));
         location.setSpeed(cursor.getFloat(cursor.getColumnIndex(COLUMN_NAME_SPEED)));
-        Bundle extras = new Bundle();
-        extras.putLong(Constants.EXTRA_UPLOAD_TIME, cursor.getLong(cursor.getColumnIndex(COLUMN_NAME_UPLOAD_DATE)));
-        extras.putInt(BatteryManager.EXTRA_LEVEL, cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_BATTERY_LEVEL)));
-        extras.putString(Constants.NOTIFY_EVENT, cursor.getString(cursor.getColumnIndex(COLUMN_NAME_EVENT)));
-        location.setExtras(extras);
+
+        location.uploadTime = cursor.getLong(cursor.getColumnIndex(COLUMN_NAME_UPLOAD_DATE));
+        location.batteryLevel = cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_BATTERY_LEVEL));
+        location.event = cursor.getString(cursor.getColumnIndex(COLUMN_NAME_EVENT));
+
         return location;
     }
 
@@ -143,7 +139,7 @@ public class LocationTable {
         return 0;
     }
 
-    public static Location getLast(Helper helper) {
+    public static LocatrackLocation getLast(Helper helper) {
         Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, null, null, null, null,
                 null, COLUMN_NAME_TIMESTAMP + " DESC", "1");
         if(cursor != null) {
@@ -177,7 +173,7 @@ public class LocationTable {
         return 0;
     }
 
-    public static synchronized long saveToDatabase(Helper helper, Location location, float minDistance) {
+    public static synchronized long saveToDatabase(Helper helper, LocatrackLocation location, float minDistance) {
 
         if(sLastInsertedLocation == null) {
             sLastInsertedLocation = getLast(helper);
@@ -185,21 +181,9 @@ public class LocationTable {
 
         long c = 1;
 
-        long uploadDate = 0;
-        int batteryLevel = -1;
-        String event = "";
-        Bundle extras = location.getExtras();
-        if(extras != null) {
-            uploadDate = extras.getLong(Constants.EXTRA_UPLOAD_TIME, 0L);
-            batteryLevel = extras.getInt(BatteryManager.EXTRA_LEVEL, -1);
-            event = extras.getString(Constants.NOTIFY_EVENT);
-            if(event == null) event = "";
-        } else {
-            location.setExtras(new Bundle());
-        }
 
-        boolean update = ("".equals(event)) && (sLastInsertedLocation != null) &&
-                TextUtils.isEmpty(sLastInsertedLocation.getExtras().getString(Constants.NOTIFY_EVENT))
+        boolean update = ("".equals(location.event)) && (sLastInsertedLocation != null) &&
+                TextUtils.isEmpty(sLastInsertedLocation.event)
                 && (sLastInsertedLocation.distanceTo(location) < minDistance);
 
         if(sInsertStatement != null) {
@@ -210,9 +194,9 @@ public class LocationTable {
                 sUpdateStatement.bindDouble(3, location.getLongitude());
                 sUpdateStatement.bindDouble(4, location.getAltitude());
                 sUpdateStatement.bindDouble(5, location.getAccuracy());
-                sUpdateStatement.bindDouble(6, uploadDate);
-                sUpdateStatement.bindLong(7, batteryLevel);
-                sUpdateStatement.bindString(8, event);
+                sUpdateStatement.bindDouble(6, location.uploadTime);
+                sUpdateStatement.bindLong(7, location.batteryLevel);
+                sUpdateStatement.bindString(8, location.event);
                 sUpdateStatement.bindDouble(9, location.getSpeed());
                 sUpdateStatement.bindLong(10, sLastInsertedLocation.getTime());
                 sLastInsertedLocation.setTime(location.getTime());
@@ -224,9 +208,9 @@ public class LocationTable {
                 sInsertStatement.bindDouble(4, location.getAltitude());
                 sInsertStatement.bindDouble(5, location.getAccuracy());
                 sInsertStatement.bindDouble(6, location.getSpeed());
-                sInsertStatement.bindLong(7, batteryLevel);
-                sInsertStatement.bindString(8, event);
-                sInsertStatement.bindLong(9, uploadDate);
+                sInsertStatement.bindLong(7, location.batteryLevel);
+                sInsertStatement.bindString(8, location.event);
+                sInsertStatement.bindLong(9, location.uploadTime);
                 statement = sInsertStatement;
                 sLastInsertedLocation = location;
             }
@@ -243,7 +227,7 @@ public class LocationTable {
             sInsertValues.put(COLUMN_NAME_ALTITUDE, location.getAltitude());
             sInsertValues.put(COLUMN_NAME_ACCURACY, location.getAccuracy());
             sInsertValues.put(COLUMN_NAME_SPEED, location.getSpeed());
-            sInsertValues.put(COLUMN_NAME_UPLOAD_DATE, uploadDate);
+            sInsertValues.put(COLUMN_NAME_UPLOAD_DATE, location.uploadTime);
 
             SQLiteDatabase db = helper.getWritableDatabase();
 
@@ -319,7 +303,7 @@ public class LocationTable {
         return null;
     }
 
-    private static class DatabaseLocationSet implements LocationSet, Iterator<Location> {
+    private static class DatabaseLocationSet implements LocationSet, Iterator<LocatrackLocation> {
 
         private final Cursor cursor;
         private boolean hasNext;
@@ -355,8 +339,8 @@ public class LocationTable {
         }
 
         @Override
-        public Location[] toArray() {
-            Location[] locations = new Location[cursor.getCount()];
+        public LocatrackLocation[] toArray() {
+            LocatrackLocation[] locations = new LocatrackLocation[cursor.getCount()];
             int i = 0;
             if(hasNext) {
                 while (true) {
@@ -374,7 +358,7 @@ public class LocationTable {
         }
 
         @Override
-        public Iterator<Location> iterator() {
+        public Iterator<LocatrackLocation> iterator() {
             return this;
         }
 
@@ -388,8 +372,8 @@ public class LocationTable {
         }
 
         @Override
-        public Location next() {
-            Location loc = null;
+        public LocatrackLocation next() {
+            LocatrackLocation loc = null;
             if (hasNext) {
                 loc = LocationTable.loadFromCursor(cursor);
                 hasNext = cursor.moveToNext();

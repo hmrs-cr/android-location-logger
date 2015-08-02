@@ -11,7 +11,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SyncResult;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -23,6 +22,7 @@ import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
+import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
 import com.hmsoft.locationlogger.ui.MainActivity;
 import com.hmsoft.locationlogger.ui.SettingsActivity;
@@ -174,7 +174,7 @@ public class SyncService extends Service {
                 boolean allUploaded = true;
                 PerfWatch watch = PerfWatch.start(TAG, "PerformSync begin");
                 try {
-                    Location[] toUpload = LocatrackDb.getNotUploadedLocations().toArray();
+                    LocatrackLocation[] toUpload = LocatrackDb.getNotUploadedLocations().toArray();
                     int toUploadCount = toUpload.length;
                     Logger.info(TAG, "Locations to upload: %d", toUpload.length);
                     if (toUploadCount > 0) {
@@ -191,7 +191,7 @@ public class SyncService extends Service {
                         try {
                             SyncAdapter.sStorer.open();
                             // upload each one
-                            for (Location loc : toUpload) {
+                            for (LocatrackLocation loc : toUpload) {
                                 if(builder != null) {
                                     int progress = (int)syncResult.stats.numEntries +
                                             (int)syncResult.stats.numIoExceptions + 1;

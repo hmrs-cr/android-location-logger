@@ -3,17 +3,13 @@ package com.hmsoft.locationlogger.data.locatrack;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.BatteryManager;
-import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.BuildConfig;
 import com.hmsoft.locationlogger.R;
-import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.data.LocationStorer;
@@ -49,7 +45,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
     private String mLastNetworkType;
     private Context mContext;
     private ConnectivityManager mConnectivityManager;
-    private Location mLastUploadedLocation;
+    private LocatrackLocation mLastUploadedLocation;
 
     public int retryCount;
     public int retryDelaySeconds;
@@ -65,24 +61,12 @@ public class LocatrackOnlineStorer extends LocationStorer {
         mConnectivityManager = (ConnectivityManager) context.getSystemService(Activity.CONNECTIVITY_SERVICE);
     }
 
-    private boolean internalUploadLocation(Location location) {
+    private boolean internalUploadLocation(LocatrackLocation location) {
         boolean update = false;
-        boolean hasNotifyEvent = false;
         long updateId = 0;
 
-        Bundle xtras = location.getExtras();
-        if (xtras != null) {
-            hasNotifyEvent = xtras.getString(Constants.NOTIFY_EVENT) != null;
-        }
-
-        if (!hasNotifyEvent) {
-            if (mLastUploadedLocation != null) {
-                xtras = mLastUploadedLocation.getExtras();
-                if (xtras != null) {
-                    hasNotifyEvent = xtras.getString(Constants.NOTIFY_EVENT) != null;
-                }
-            }
-        }
+        boolean hasNotifyEvent = !TextUtils.isEmpty(location.event) ||
+                (mLastUploadedLocation != null && !TextUtils.isEmpty(mLastUploadedLocation.event));
 
         if (!hasNotifyEvent) {
             synchronized (this) {
@@ -118,14 +102,14 @@ public class LocatrackOnlineStorer extends LocationStorer {
         boolean uploadOk = internalUploadLocation(location, updateId);
         if (uploadOk && !update) {
             synchronized (this) {
-                mLastUploadedLocation = new Location(location);
+                mLastUploadedLocation = new LocatrackLocation(location);
             }
         }
 
         return uploadOk;
     }
 
-    private boolean internalUploadLocation(Location location, long updateId) {
+    private boolean internalUploadLocation(LocatrackLocation location, long updateId) {
 
         if (Logger.DEBUG) Logger.debug(TAG, "internalUploadLocation: %s", location);
 
@@ -135,36 +119,33 @@ public class LocatrackOnlineStorer extends LocationStorer {
             HttpClient client = new DefaultHttpClient();
             HttpPost post = new HttpPost(mMyLatitudeUrl);
 
-            if (location.getExtras() == null) location.setExtras(new Bundle());
-            Bundle extras = location.getExtras();
-            int batteryLevel = extras.getInt(BatteryManager.EXTRA_LEVEL, -1);
-            String notify = extras.getString(Constants.NOTIFY_EVENT);
-            if ("".equals(notify)) notify = null;
-
             // add header
             if (mLastNetworkType == null) mLastNetworkType = "n/a";
             post.setHeader("User-Agent", USER_AGENT + mDeviceId + " (" + mLastNetworkType + ")");
             post.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
             if (DEBUG) {
-                if (notify != null) {
-                    post.setHeader("User-Agent", USER_AGENT + mDeviceId + " " + notify);
+                if (location.event != null) {
+                    post.setHeader("User-Agent", USER_AGENT + mDeviceId + " " + location.event);
                 }
             }
 
-            List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
+            List<NameValuePair> urlParameters = new ArrayList<>();
             urlParameters.add(new BasicNameValuePair("key", mMyLatitudeKey));
             urlParameters.add(new BasicNameValuePair("deviceid", mDeviceId));
-            urlParameters.add(new BasicNameValuePair("battery", String.valueOf(batteryLevel)));
+            urlParameters.add(new BasicNameValuePair("battery", String.valueOf(location.batteryLevel)));
             urlParameters.add(new BasicNameValuePair("latitude", String.valueOf(location.getLatitude())));
             urlParameters.add(new BasicNameValuePair("longitude", String.valueOf(location.getLongitude())));
             urlParameters.add(new BasicNameValuePair("altitude", String.valueOf(location.getAltitude())));
             urlParameters.add(new BasicNameValuePair("accuracy", String.valueOf(location.getAccuracy())));
             urlParameters.add(new BasicNameValuePair("speed", String.valueOf(location.getSpeed())));
             urlParameters.add(new BasicNameValuePair("utc_timestamp", String.valueOf(location.getTime())));
-            if (notify != null) urlParameters.add(new BasicNameValuePair("notify", notify));
-            if (updateId > 0)
+            if (!TextUtils.isDigitsOnly(location.event)) {
+                urlParameters.add(new BasicNameValuePair("notify", location.event));
+            }
+            if (updateId > 0) {
                 urlParameters.add(new BasicNameValuePair("update_id", String.valueOf(updateId)));
+            }
             UrlEncodedFormEntity entity = new UrlEncodedFormEntity(urlParameters);
             post.setEntity(entity);
 
@@ -212,7 +193,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
     }
 
     @Override
-    public boolean storeLocation(Location location) {
+    public boolean storeLocation(LocatrackLocation location) {
         mTotalItems++;
 
         if (TextUtils.isEmpty(mMyLatitudeUrl)) {

@@ -3,6 +3,8 @@ package com.hmsoft.locationlogger.data;
 import android.location.Location;
 import android.os.Bundle;
 
+import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
+
 import java.io.IOException;
 
 public abstract class LocationStorer {
@@ -18,7 +20,7 @@ public abstract class LocationStorer {
     protected int mTotalSuccess = 0;
     protected int mTotalFail = 0;
 
-	public abstract boolean storeLocation(Location location);
+	public abstract boolean storeLocation(LocatrackLocation location);
 	public abstract void configure();
 
     public void setUploadDateToday(Location location) {

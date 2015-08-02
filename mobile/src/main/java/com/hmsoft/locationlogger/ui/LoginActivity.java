@@ -7,7 +7,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,15 +22,11 @@ import android.widget.TextView;
 
 import com.hmsoft.locationlogger.BuildConfig;
 import com.hmsoft.locationlogger.R;
-import com.hmsoft.locationlogger.common.Constants;
+import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
 import com.hmsoft.locationlogger.service.LocationService;
 
-/**
- * A login screen that offers login via email/password.
- */
 public class LoginActivity extends Activity  {
-
 
     private UserLoginTask mAuthTask = null;
 
@@ -80,9 +75,6 @@ public class LoginActivity extends Activity  {
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
     }
-
-
-
 
     /**
      * Attempts to sign in or register the account specified by the login form.
@@ -203,13 +195,11 @@ public class LoginActivity extends Activity  {
                     .putString(getString(R.string.pref_locatrack_deviceid_key), mId)
                     .commit();
 
-            Location location = LocationService.getBestLastLocation(getApplicationContext());
-            if(BuildConfig.DEBUG && location == null) location = new Location("");
+            LocatrackLocation location = LocationService.getBestLastLocation(getApplicationContext());
+            if(BuildConfig.DEBUG && location == null) location = new LocatrackLocation("");
             boolean success = false;
             if(location != null) {
-                if (location.getExtras() == null) location.setExtras(new Bundle());
-                Bundle extras = location.getExtras();
-                extras.putString(Constants.NOTIFY_EVENT, Constants.EVENT_LOGIN);
+                location.event = LocatrackLocation.EVENT_LOGIN;
 
                 LocatrackOnlineStorer onlineStorer = new LocatrackOnlineStorer(getApplicationContext());
                 onlineStorer.configure();
