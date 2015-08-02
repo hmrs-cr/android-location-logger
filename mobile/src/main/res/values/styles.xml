@@ -6,6 +6,11 @@
 
     </style>
 
+    <style name="LoginActivityNoActionBar" parent="Theme.AppCompat.Light">
+        <item name="windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
     <style name="lineSeparator">
         <item name="android:background">@drawable/header_back</item>
         <item name="android:layout_height">12dip</item>

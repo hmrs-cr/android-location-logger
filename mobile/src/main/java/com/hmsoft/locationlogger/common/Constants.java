@@ -35,7 +35,7 @@ public final class Constants {
     public static final String NOTIFY_EVENT = "notify-event";
     public static final String EVENT_START = "start";
     public static final String EVENT_STOP = "stop";
-    public static final String EVENT_START_STOP = EVENT_START + "-" + EVENT_STOP;
+    public static final String EVENT_LOGIN = "login";
 
     private Constants() {
     }

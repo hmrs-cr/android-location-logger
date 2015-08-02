@@ -68,7 +68,7 @@ public class LocationService extends Service implements GooglePlayServicesClient
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final boolean DIAGNOSTICS = DEBUG;
     private static final int HALF_MINUTE = 1000 * 30;
-    private static final int CRITICAL_BATTERY_LEVEL = 30;
+    private static final int CRITICAL_BATTERY_LEVEL = 25;
 
     private static final int CHARGING   = 0;
     private static final int BAT_100_75 = 1;
@@ -86,8 +86,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
 
     //region Settings fields
     private int mAutoLocationInterval = 300; // seconds
-    private float mBatteryMultiplier = 3.0F;
-    private int mBatteryCriticalLevel = 50;
     boolean mVehicleMode = false;
     private int mMinimumDistance = 20; //meters
     private int mGpsTimeout = 60; //seconds
@@ -1111,15 +1109,6 @@ public class LocationService extends Service implements GooglePlayServicesClient
                     i = BAT_75_50;
                 }
                 interval = VEHICLE_MODE_LOCATION_INTERVAL_SETTINGS[i];
-            } else if (mBatteryMultiplier > 0) {
-                if (mLastBatteryLevel < mBatteryCriticalLevel) {
-                    interval *= mBatteryMultiplier;
-                    if(mLastBatteryLevel < CRITICAL_BATTERY_LEVEL) {
-                        interval += 120 * (CRITICAL_BATTERY_LEVEL - mLastBatteryLevel);
-                    }
-                } else if(mLastBatteryLevel > 100 && interval > 300) {
-                    interval /= mBatteryMultiplier;
-                }
             }
         }
 

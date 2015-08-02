@@ -1,6 +1,6 @@
 package com.hmsoft.locationlogger.ui;
 
-import android.app.Dialog;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,9 +9,9 @@ import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
-import android.support.v4.app.DialogFragment;
 import android.support.v7.app.ActionBarActivity;
 import android.text.TextUtils;
 import android.view.Menu;
@@ -44,16 +44,51 @@ public class MainActivity extends ActionBarActivity {
     ToggleButton chkServiceEnabled;
     Button btnGeotagNow;
     Menu mMenu;
+    View layoutGeotagger;
+    View layoutServiceEnabled;
+    TextView labelDeviceId;
 
     private ExifGeotager.GeotagFinishListener mGeoTagContentFinishListener = null;
     int mGeotagContentTotalCount;
     int mGeotagContentTaggedCount;
     private boolean mVehicleMode;
+    private boolean mConfigured;
+    private String mDeviceId;
 
     private int mVehicleModeSettingsCount = 6;
 
+    Handler mUpdateHandler;
+    UpdateUIRunnable mUpdateRunnable;
+
+
+    public static void start(Context context) {
+        Intent intent = new Intent(context, MainActivity.class);
+        if(!(context instanceof Activity)) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        context.startActivity(intent);
+    }
+
+    private static class UpdateUIRunnable implements Runnable {
+
+        MainActivity activity;
+
+        private UpdateUIRunnable(MainActivity activity) {
+            this.activity = activity;
+        }
+
+        @Override
+        public void run() {
+            if(activity != null && activity.mUpdateHandler != null){
+                activity.updateUI();
+                activity.mUpdateHandler.postDelayed(this, 6000);
+                Logger.debug(TAG, "Upating UI");
+            }
+        }
+    }
+
     private static class GetAddressNameTask extends AsyncTask<Location, Void, String> {
-        private final MainActivity mActivity;
+        private MainActivity mActivity;
         private final int mDistanceValue;
         private final String mDistanceText;
         private final int mTimeValue;
@@ -84,17 +119,25 @@ public class MainActivity extends ActionBarActivity {
                 mActivity.labelLastEntryValue.setText(mActivity.getString(R.string.nmea_last_entry_text,
                         mTimeValue, mTimeText, address, mDistanceValue, mDistanceText));
             }
+            mActivity = null;
         }
     }
 
     private static class LoadUITask extends AsyncTask<Void, Void, Bundle> {
 
-        private final MainActivity mActivity;
+        private MainActivity mActivity;
         private String mTimeText;
         private int mTimeValue;
+        private final int mLabelLastEntryValueId;
+        private boolean mNeedGetAddress;
+        private int mDistanceValue = 0;
+        private String mDistanceText;
+        private Location mLastLocation;
 
         private LoadUITask(MainActivity activity) {
             mActivity = activity;
+            mDistanceText = mActivity.getString(R.string.generic_meters);
+            mLabelLastEntryValueId = mActivity.labelLastEntryValue.getId();
         }
 
         public static void run(MainActivity activity) {
@@ -103,49 +146,47 @@ public class MainActivity extends ActionBarActivity {
 
         @Override
         protected Bundle doInBackground(Void... params) {
-            Bundle values = new Bundle();
 
             String lastEntryText = mActivity.getString(R.string.generic_none);
 
-            Location lastLocation = LocatrackDb.last();
-            if(lastLocation != null) {
-                int distanceValue = 0;
-                String distanceText = mActivity.getString(R.string.generic_meters);
-
+            mLastLocation = LocatrackDb.last();
+            if(mLastLocation != null) {
                 Location currentLoc = LocationService.getBestLastLocation(mActivity);
                 if(currentLoc != null) {
-                    distanceValue = (int)currentLoc.distanceTo(lastLocation);
-                    if(distanceValue > 10000) {
-                        distanceValue = distanceValue / 1000;
-                        distanceText = mActivity.getString(R.string.generic_kilometers);
+                    mDistanceValue = (int)currentLoc.distanceTo(mLastLocation);
+                    if(mDistanceValue > 10000) {
+                        mDistanceValue = mDistanceValue / 1000;
+                        mDistanceText = mActivity.getString(R.string.generic_kilometers);
                     }
                 }
 
-                setTimeValueText(lastLocation.getTime(), false);
-                String address = Geocoder.getFromCache(lastLocation);
+                setTimeValueText(mLastLocation.getTime(), false);
+                String address = Geocoder.getFromCache(mLastLocation);
                 if(!TextUtils.isEmpty(address)) {
                     lastEntryText = mActivity.getString(R.string.nmea_last_entry_text,
-                            mTimeValue, mTimeText, address, distanceValue, distanceText);
+                            mTimeValue, mTimeText, address, mDistanceValue, mDistanceText);
                 } else {
                     lastEntryText = mActivity.getString(R.string.nmea_last_entry_noaddress_text,
-                            mTimeValue, mTimeText, distanceValue, distanceText);
-                    (new GetAddressNameTask(mActivity, distanceValue, distanceText,
-                            mTimeValue, mTimeText)).execute(lastLocation);
+                            mTimeValue, mTimeText, mDistanceValue, mDistanceText);
+                    mNeedGetAddress = true;
                 }
             }
 
-
-            values.putString(String.valueOf(mActivity.labelLastEntryValue.getId()),
-                    lastEntryText);
-
-
-           return values;
+            Bundle values = new Bundle();
+            values.putString(String.valueOf(mLabelLastEntryValueId), lastEntryText);
+            return values;
         }
 
         @Override
         protected void onPostExecute(Bundle result) {
+            if(mNeedGetAddress) {
+                (new GetAddressNameTask(mActivity, mDistanceValue, mDistanceText,
+                        mTimeValue, mTimeText)).execute(mLastLocation);
+            }
+
             sLastBundle = result;
             mActivity.setUiValuesFromBundle(result);
+            mActivity = null;
         }
 
         private void setTimeValueText(long millis, boolean negative) {
@@ -180,26 +221,6 @@ public class MainActivity extends ActionBarActivity {
                 mTimeValue = seconds;
                 mTimeText = mActivity.getString(R.string.generic_seconds);
             }
-        }
-    }
-
-    // Define a DialogFragment that displays the error dialog
-    public static class ErrorDialogFragment extends DialogFragment {
-        // Global field to contain the error dialog
-        private Dialog mDialog;
-        // Default constructor. Sets the dialog field to null
-        public ErrorDialogFragment() {
-            super();
-            mDialog = null;
-        }
-        // Set the dialog to display
-        public void setDialog(Dialog dialog) {
-            mDialog = dialog;
-        }
-        // Return a Dialog to the DialogFragment.
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            return mDialog;
         }
     }
 
@@ -248,25 +269,7 @@ public class MainActivity extends ActionBarActivity {
             return ;
             // Google Play services was not available for some reason
         } else {
-            // Get the error code
-            int errorCode = resultCode;
-            // Get the error dialog from Google Play services
-            Dialog errorDialog = GooglePlayServicesUtil.getErrorDialog(
-                    errorCode,
-                    this,
-                    1);
-
-            // If Google Play services can provide an error dialog
-            if (errorDialog != null) {
-                // Create a new DialogFragment for the error dialog
-                ErrorDialogFragment errorFragment =
-                        new ErrorDialogFragment();
-                // Set the dialog in the DialogFragment
-                errorFragment.setDialog(errorDialog);
-                // Show the error dialog in the DialogFragment
-                errorFragment.show(getSupportFragmentManager(),
-                        "Location Updates");
-            }
+            Logger.debug(TAG, "Google Play Services error code %d", resultCode);
         }
     }
 
@@ -275,13 +278,27 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         if(Logger.DEBUG) Logger.debug(TAG, "onCreate");
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
         SettingsActivity.setPrefDefaults(this);
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        mConfigured = preferences.getBoolean(getString(R.string.pref_locatrack_activated_key), false);
+        mDeviceId = preferences.getString(getString(R.string.pref_locatrack_deviceid_key), "");
+        if(!mConfigured) {
+            LoginActivity.start(getApplicationContext());
+            LocationService.disable(getApplicationContext());
+            finish();
+            return;
+        }
+
+        setContentView(R.layout.activity_main);
 
         labelLastEntryValue = (TextView)findViewById(R.id.labelLastEntryValue);
         chkAutoGeotag = (ToggleButton)findViewById(R.id.chkAutoGeotag);
         chkServiceEnabled = (ToggleButton)findViewById(R.id.chkServiceEnabled);
+        layoutGeotagger = findViewById(R.id.layoutGeotagger);
+        layoutServiceEnabled = findViewById(R.id.layoutServiceEnabled);
+        labelDeviceId = (TextView)findViewById(R.id.labelDeviceId);
+
         btnGeotagNow = (Button)findViewById(R.id.btnGeotagNow);
 
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -315,10 +332,6 @@ public class MainActivity extends ActionBarActivity {
 	
 	public void updateLocation(View view) {
 		LocationService.updateLocation(this);
-	}
-	
-	public void showFileOptions(View view) {
-		// TODO: Implement
 	}
 
     public void toggleTrackingMode(MenuItem item) {
@@ -387,11 +400,13 @@ public class MainActivity extends ActionBarActivity {
                 true, mGeoTagContentFinishListener);
     }
 
-    private void updateUI() {
+    void updateUI() {
         chkServiceEnabled.setEnabled(!mVehicleMode);
         chkAutoGeotag.setEnabled(!mVehicleMode);
-        View layoutGeotagger = findViewById(R.id.layoutGeotagger);
         layoutGeotagger.setVisibility(mVehicleMode ? View.GONE : View.VISIBLE);
+        layoutServiceEnabled.setVisibility(mVehicleMode ? View.GONE : View.VISIBLE);
+        labelDeviceId.setVisibility(mVehicleMode ? View.VISIBLE : View.GONE);
+        labelDeviceId.setText(mDeviceId);
         if(mVehicleMode) {
             chkAutoGeotag.setChecked(false);
             if(!chkServiceEnabled.isChecked()) {
@@ -471,16 +486,24 @@ public class MainActivity extends ActionBarActivity {
     protected void onResume() {
         if(Logger.DEBUG) Logger.debug(TAG, "onResume");
         super.onResume();
+        if(!mConfigured) return;
         mVehicleMode = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getBoolean(getString(R.string.pref_vehiclemode_enabled_key), false);
         updateUI();
 		registerReceiver(mUpdateUiReceiver, new IntentFilter(Constants.ACTION_UPDATE_UI));
         servicesConnected();
+        mUpdateHandler = new Handler();
+        mUpdateRunnable = new UpdateUIRunnable(this);
+        mUpdateHandler.postDelayed(mUpdateRunnable, 6000);
     }
 	
 	@Override
     protected void onPause() {
         if(Logger.DEBUG) Logger.debug(TAG, "onPause");
 		super.onPause();
+        if(!mConfigured) return;
+        mUpdateHandler = null;
+        mUpdateRunnable.activity = null;
+        mUpdateRunnable = null;
         unregisterReceiver(mUpdateUiReceiver);
 	}
 }

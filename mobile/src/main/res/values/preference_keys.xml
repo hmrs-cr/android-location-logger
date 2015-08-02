@@ -21,6 +21,7 @@
     <string name="pref_locatrack_uri_key" translatable="false">locatrack_uri</string>
     <string name="pref_locatrack_key_key" translatable="false">locatrack_key</string>
     <string name="pref_locatrack_deviceid_key" translatable="false">locatrack_deviceid</string>
+    <string name="pref_locatrack_activated_key" translatable="false">locatrack_activated</string>
     
     <string name="pref_nmea_settings_key" translatable="false">pref_advanced_nmea_settings</string>
     <string name="pref_nmealog_directory_key" translatable="false">nmealog_directory</string>
