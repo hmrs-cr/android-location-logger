@@ -48,7 +48,7 @@ import com.hmsoft.locationlogger.data.ExifGeotager;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
-import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
+import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
 import com.hmsoft.locationlogger.ui.MainActivity;
 

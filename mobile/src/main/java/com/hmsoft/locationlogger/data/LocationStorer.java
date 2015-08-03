@@ -3,8 +3,6 @@ package com.hmsoft.locationlogger.data;
 import android.location.Location;
 import android.os.Bundle;
 
-import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
-
 import java.io.IOException;
 
 public abstract class LocationStorer {

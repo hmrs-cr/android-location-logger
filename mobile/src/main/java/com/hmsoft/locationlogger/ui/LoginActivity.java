@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,7 +23,7 @@ import android.widget.TextView;
 
 import com.hmsoft.locationlogger.BuildConfig;
 import com.hmsoft.locationlogger.R;
-import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
+import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
 import com.hmsoft.locationlogger.service.LocationService;
 
@@ -46,6 +47,15 @@ public class LoginActivity extends Activity  {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        if(preferences.getBoolean(getString(R.string.pref_locatrack_activated_key), false)) {
+            MainActivity.start(getApplicationContext());
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_login);
 
         // Set up the login form.
@@ -74,6 +84,42 @@ public class LoginActivity extends Activity  {
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+        mDeviceIdView.setText(preferences.getString(getString(R.string.pref_locatrack_deviceid_key), ""));
+        mDeviceKeyView.setText(preferences.getString(getString(R.string.pref_locatrack_key_key), ""));
+
+        findViewById(R.id.btnWorkOffline).setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                        .edit()
+                        .putBoolean(getString(R.string.pref_locatrack_activated_key), true)
+                        .putBoolean(getString(R.string.pref_vehiclemode_enabled_key), false)
+                        .putBoolean(getString(R.string.pref_instant_upload_enabled_key), false)
+                        .putString(getString(R.string.pref_locatrack_key_key), "")
+                        .putString(getString(R.string.pref_locatrack_deviceid_key), "")
+                        .apply();
+                MainActivity.start(getApplicationContext());
+                finish();
+            }
+        });
+
+        Intent intent = getIntent();
+        if(intent != null) {
+            Uri data = intent.getData();
+            if(data != null) {
+                String path = data.getPath();
+                if(path != null) {
+                    String[] parts = path.split("/");
+                    if(parts.length == 5 && parts[1].equals("device")  && parts[2].equals("register")) {
+                        String deviceId = parts[3];
+                        String deviceKey = parts[4];
+                        mDeviceIdView.setText(deviceId);
+                        mDeviceKeyView.setText(deviceKey);
+                        attemptLogin();
+                    }
+                }
+            }
+        }
     }
 
     /**

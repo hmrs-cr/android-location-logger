@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
+    android:gravity="center|center_horizontal"
     android:orientation="vertical"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/login_activity_horizontal_margin"
@@ -13,7 +13,8 @@
     <!-- Login progress -->
     <ProgressBar android:id="@+id/login_progress" style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp" android:visibility="gone" />
+        android:layout_marginBottom="8dp" android:visibility="gone"
+        android:layout_gravity="center" />
 
     <ScrollView android:id="@+id/login_form" android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -53,6 +54,17 @@
                 android:textStyle="bold" >
                 <requestFocus />
             </Button>
+
+            <Button android:id="@+id/btnWorkOffline"
+                style="?android:textAppearanceSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Work Offline"
+                android:background="@null">
+                <requestFocus />
+            </Button>
+
 
         </LinearLayout>
     </ScrollView>

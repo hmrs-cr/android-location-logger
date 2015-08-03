@@ -13,6 +13,7 @@ import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.data.LocationStorer;
+import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.service.SyncAuthenticatorService;
 
 import org.apache.http.HttpResponse;
@@ -49,12 +50,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
 
     public int retryCount;
     public int retryDelaySeconds;
-
-    public static class MissingConfigurationException extends IllegalArgumentException {
-        public MissingConfigurationException(String configKeyName) {
-            super(configKeyName + " not configured.");
-        }
-    }
+    private boolean mConfigured;
 
     public LocatrackOnlineStorer(Context context) {
         mContext = context;
@@ -181,28 +177,33 @@ public class LocatrackOnlineStorer extends LocationStorer {
         return result;
     }
 
+    public boolean isConfigured() {
+        return mConfigured;
+    }
+
     @Override
     public void configure() {
         if (Logger.DEBUG) Logger.debug(TAG, "configure");
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 
         mMinimumDistance = Integer.valueOf(preferences.getString(mContext.getString(R.string.pref_minimun_distance_key), String.valueOf(mMinimumDistance)));
+
         mMyLatitudeUrl = preferences.getString(mContext.getString(R.string.pref_locatrack_uri_key), mMyLatitudeUrl);
         mMyLatitudeKey = preferences.getString(mContext.getString(R.string.pref_locatrack_key_key), mMyLatitudeKey);
         mDeviceId = preferences.getString(mContext.getString(R.string.pref_locatrack_deviceid_key), SyncAuthenticatorService.getGoogleAccount(mContext));
+
+        mConfigured = !TextUtils.isEmpty(mMyLatitudeUrl) && !TextUtils.isEmpty(mMyLatitudeKey) &&
+                !TextUtils.isEmpty(mDeviceId);
     }
 
     @Override
     public boolean storeLocation(LocatrackLocation location) {
+        if(!mConfigured) {
+            Logger.error(TAG, "Not configured");
+            return false;
+        }
+
         mTotalItems++;
-
-        if (TextUtils.isEmpty(mMyLatitudeUrl)) {
-            throw new MissingConfigurationException("myLatitudeUrl");
-        }
-
-        if (TextUtils.isEmpty(mMyLatitudeKey)) {
-            throw new MissingConfigurationException("myLatitudeKey");
-        }
 
         Logger.info(TAG, "Uploading location...");
         int count = retryCount;

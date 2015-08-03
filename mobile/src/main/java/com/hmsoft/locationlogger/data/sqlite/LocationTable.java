@@ -9,7 +9,7 @@ import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.data.LocationSet;
-import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
+import com.hmsoft.locationlogger.data.LocatrackLocation;
 
 import java.util.Iterator;
 
@@ -182,7 +182,7 @@ public class LocationTable {
         long c = 1;
 
 
-        boolean update = ("".equals(location.event)) && (sLastInsertedLocation != null) &&
+        boolean update = (TextUtils.isEmpty(location.event)) && (sLastInsertedLocation != null) &&
                 TextUtils.isEmpty(sLastInsertedLocation.event)
                 && (sLastInsertedLocation.distanceTo(location) < minDistance);
 

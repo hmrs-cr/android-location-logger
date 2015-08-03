@@ -22,7 +22,7 @@ import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
-import com.hmsoft.locationlogger.data.locatrack.LocatrackLocation;
+import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
 import com.hmsoft.locationlogger.ui.MainActivity;
 import com.hmsoft.locationlogger.ui.SettingsActivity;
@@ -187,51 +187,53 @@ public class SyncService extends Service {
                         SyncAdapter.sStorer.configure();
                         syncResult.stats.numIoExceptions = 0;
                         syncResult.stats.numEntries = 0;
-                        // Get all not uploaded from DB
-                        try {
-                            SyncAdapter.sStorer.open();
-                            // upload each one
-                            for (LocatrackLocation loc : toUpload) {
-                                if(builder != null) {
-                                    int progress = (int)syncResult.stats.numEntries +
-                                            (int)syncResult.stats.numIoExceptions + 1;
-                                    
-                                    builder.setProgress(toUploadCount, progress, false);
-                                    builder.setContentText(context.getString(R.string.sync_progress_advance,
+                        if (SyncAdapter.sStorer.isConfigured()) {
+                            // Get all not uploaded from DB
+                            try {
+                                SyncAdapter.sStorer.open();
+                                // upload each one
+                                for (LocatrackLocation loc : toUpload) {
+                                    if (builder != null) {
+                                        int progress = (int) syncResult.stats.numEntries +
+                                                (int) syncResult.stats.numIoExceptions + 1;
+
+                                        builder.setProgress(toUploadCount, progress, false);
+                                        builder.setContentText(context.getString(R.string.sync_progress_advance,
                                                 progress, toUploadCount,
-                                                Math.round((float)progress/(float)toUploadCount*100.0F)));
-                                    notifyManager.notify(NOTIFICATION_ID, builder.build());
-                                }
+                                                Math.round((float) progress / (float) toUploadCount * 100.0F)));
+                                        notifyManager.notify(NOTIFICATION_ID, builder.build());
+                                    }
 
-                                boolean ok = SyncAdapter.sStorer.storeLocation(loc);
-                                if (ok) {
-                                    LocatrackDb.setUploadDate(loc);
-                                    syncResult.stats.numEntries++;
+                                    boolean ok = SyncAdapter.sStorer.storeLocation(loc);
+                                    if (ok) {
+                                        LocatrackDb.setUploadDate(loc);
+                                        syncResult.stats.numEntries++;
+                                    } else {
+                                        allUploaded = false;
+                                        syncResult.stats.numIoExceptions++;
+                                        syncResult.delayUntil = 60;
+                                    }
+
+                                    if (cancelled) {
+                                        if (Logger.DEBUG) Logger.debug(TAG, "Sync cancelled.");
+                                        allUploaded = false;
+                                        break;
+                                    }
+                                }
+                                if (syncResult.stats.numIoExceptions == toUploadCount) {
+                                    if (++sAllFailCount >= 3) {
+                                        if (Logger.DEBUG) Logger.debug(TAG, "Too many fails.");
+                                        syncResult.tooManyRetries = true;
+                                        sAllFailCount = 0;
+                                    }
                                 } else {
-                                    allUploaded = false;
-                                    syncResult.stats.numIoExceptions++;
-                                    syncResult.delayUntil = 60;
-                                }
-
-                                if(cancelled) {
-                                    if(Logger.DEBUG) Logger.debug(TAG, "Sync cancelled.");
-                                    allUploaded = false;
-                                    break;
-                                }
-                            }
-                            if (syncResult.stats.numIoExceptions == toUploadCount) {
-                                if (++sAllFailCount >= 3) {
-                                    if(Logger.DEBUG) Logger.debug(TAG, "Too many fails.");
-                                    syncResult.tooManyRetries = true;
                                     sAllFailCount = 0;
                                 }
-                            } else {
-                                sAllFailCount = 0;
+                            } finally {
+                                sStorer.close();
+                                updateSyncNotification((int) syncResult.stats.numEntries,
+                                        (int) syncResult.stats.numIoExceptions);
                             }
-                        } finally {
-                            sStorer.close();
-                            updateSyncNotification((int)syncResult.stats.numEntries,
-                                    (int)syncResult.stats.numIoExceptions);
                         }
                     }
                 }
@@ -239,12 +241,7 @@ public class SyncService extends Service {
                     syncResult.tooManyRetries = true;
                     allUploaded = true;
                     Logger.warning(TAG, "PerformSync IOException", e);
-                } catch (LocatrackOnlineStorer.MissingConfigurationException e) {
-                    syncResult.tooManyRetries = true;
-                    allUploaded = true;
-                    Logger.warning(TAG, "PerformSync Missing config", e);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     syncResult.tooManyRetries = true;
                     allUploaded = true;
                     Logger.warning(TAG, "PerformSync unknown error", e);
