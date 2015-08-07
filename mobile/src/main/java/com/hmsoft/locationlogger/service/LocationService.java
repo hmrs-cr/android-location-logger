@@ -480,7 +480,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             destroyExecutorThread(); // Start with a new created thread
             acquireWakeLock();
             startLocationListener();
-            setLocationAlarm();
+            setLocationAlarm(900);
         }
     }
 
@@ -771,6 +771,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
 
     private void sendUploadLocationMsg(LocatrackLocation location) {
+        if(mLocationCount % 100 == 0) destroyExecutorThread();
         if(mExecutorThread == null) {
             mExecutorThread = new HandlerThread(BuildConfig.APPLICATION_ID + "." + TAG);
             mExecutorThread.start();
@@ -1087,22 +1088,28 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
 
     void setLocationAlarm() {
-        int interval =  mAutoLocationInterval;
-        if(mTrackingMode) {
-            interval = 600;
-        } else{
-            if(mVehicleMode) {
-                int i = BAT_100_75;
-                if(mLastBatteryLevel > 100) {
-                    i = CHARGING;
-                } else if(mLastBatteryLevel < 25) {
-                    i = BAT_25_0;
-                } else if(mLastBatteryLevel < 50) {
-                    i = BAT_50_25;
-                } else if(mLastBatteryLevel < 75) {
-                    i = BAT_75_50;
+        setLocationAlarm(-1);
+    }
+
+    void setLocationAlarm(int interval) {
+        if (interval == -1) {
+            interval = mAutoLocationInterval;
+            if (mTrackingMode) {
+                interval = 600;
+            } else {
+                if (mVehicleMode) {
+                    int i = BAT_100_75;
+                    if (mLastBatteryLevel > 100) {
+                        i = CHARGING;
+                    } else if (mLastBatteryLevel < 25) {
+                        i = BAT_25_0;
+                    } else if (mLastBatteryLevel < 50) {
+                        i = BAT_50_25;
+                    } else if (mLastBatteryLevel < 75) {
+                        i = BAT_75_50;
+                    }
+                    interval = VEHICLE_MODE_LOCATION_INTERVAL_SETTINGS[i];
                 }
-                interval = VEHICLE_MODE_LOCATION_INTERVAL_SETTINGS[i];
             }
         }
 

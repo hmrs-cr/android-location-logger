@@ -51,6 +51,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
     public int retryCount;
     public int retryDelaySeconds;
     private boolean mConfigured;
+    private boolean mBatteryAlertSent;
 
     public LocatrackOnlineStorer(Context context) {
         mContext = context;
@@ -95,10 +96,21 @@ public class LocatrackOnlineStorer extends LocationStorer {
             }
         }
 
+        if(location.batteryLevel > 0 && location.batteryLevel < 25 && !mBatteryAlertSent &&
+                TextUtils.isEmpty(location.event)) {
+            location.event = LocatrackLocation.EVENT_LOW_BATTERY;
+        } else if (location.batteryLevel > 100){
+            mBatteryAlertSent = false;
+        }
         boolean uploadOk = internalUploadLocation(location, updateId);
-        if (uploadOk && !update) {
-            synchronized (this) {
-                mLastUploadedLocation = new LocatrackLocation(location);
+        if (uploadOk) {
+            if(LocatrackLocation.EVENT_LOW_BATTERY.equals(location.event)) {
+                mBatteryAlertSent = true;
+            }
+            if(update) {
+                synchronized (this) {
+                    mLastUploadedLocation = new LocatrackLocation(location);
+                }
             }
         }
 
