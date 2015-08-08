@@ -11,23 +11,20 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
-import com.hmsoft.locationlogger.data.ExifGeotager;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.service.LocationService;
 import com.hmsoft.locationlogger.service.SyncService;
 
@@ -35,20 +32,14 @@ public class MainActivity extends ActionBarActivity {
     private static final String TAG = "MainActivity";
 
     static Bundle sLastBundle = null;
-    static int sGeotagContentUriCount;
 
     TextView labelLastEntryValue;
-    ToggleButton chkAutoGeotag;
     ToggleButton chkServiceEnabled;
-    Button btnGeotagNow;
     Menu mMenu;
-    View layoutGeotagger;
     View layoutServiceEnabled;
     TextView labelDeviceId;
+    int updateUIFreq = 1000;
 
-    private ExifGeotager.GeotagFinishListener mGeoTagContentFinishListener = null;
-    int mGeotagContentTotalCount;
-    int mGeotagContentTaggedCount;
     private boolean mVehicleMode;
     private boolean mConfigured;
     private String mDeviceId;
@@ -77,10 +68,12 @@ public class MainActivity extends ActionBarActivity {
 
         @Override
         public void run() {
-            if(activity != null && activity.mUpdateHandler != null){
-                activity.updateUI();
-                activity.mUpdateHandler.postDelayed(this, 6000);
-                Logger.debug(TAG, "Upating UI");
+            if(activity != null && activity.mUpdateHandler != null) {
+                if(!LoadUITask.running) {
+                    activity.updateUI();
+                    activity.mUpdateHandler.postDelayed(this, activity.updateUIFreq);
+                    Logger.debug(TAG, "Upating UI");
+                }
             }
         }
     }
@@ -123,6 +116,8 @@ public class MainActivity extends ActionBarActivity {
 
     private static class LoadUITask extends AsyncTask<Void, Void, Bundle> {
 
+        private static LoadUITask sInstance;
+
         private MainActivity mActivity;
         private String mTimeText;
         private int mTimeValue;
@@ -132,6 +127,8 @@ public class MainActivity extends ActionBarActivity {
         private String mDistanceText;
         private Location mLastLocation;
 
+        public static boolean running;
+
         private LoadUITask(MainActivity activity) {
             mActivity = activity;
             mDistanceText = mActivity.getString(R.string.generic_meters);
@@ -139,7 +136,11 @@ public class MainActivity extends ActionBarActivity {
         }
 
         public static void run(MainActivity activity) {
-            (new LoadUITask(activity)).execute();
+            if(sInstance == null) {
+                sInstance = new LoadUITask(activity);
+                sInstance.execute();
+                running = true;
+            }
         }
 
         @Override
@@ -185,6 +186,8 @@ public class MainActivity extends ActionBarActivity {
             sLastBundle = result;
             mActivity.setUiValuesFromBundle(result);
             mActivity = null;
+            sInstance = null;
+            running = false;
         }
 
         private void setTimeValueText(long millis, boolean negative) {
@@ -200,22 +203,29 @@ public class MainActivity extends ActionBarActivity {
             if(days == 1) {
                 mTimeText = mActivity.getString(R.string.generic_day);
                 mTimeValue = 1;
+                mActivity.updateUIFreq  = 60000 * 60;
             } else if(days > 1) {
                 mTimeText = mActivity.getString(R.string.generic_days);
                 mTimeValue = days;
+                mActivity.updateUIFreq  = 60000 * 60;
             } else if(hours == 1) {
                 mTimeValue = 1;
+                mActivity.updateUIFreq  = 60000 * 60;
                 mTimeText = mActivity.getString(R.string.generic_hour);
             } else if(hours > 1) {
                 mTimeValue = hours;
                 mTimeText = mActivity.getString(R.string.generic_hours);
+                mActivity.updateUIFreq  = 60000 * 60;
             } else if(minutes == 1) {
                 mTimeValue = 1;
                 mTimeText = mActivity.getString(R.string.generic_minute);
+                mActivity.updateUIFreq  = 60000;
             } else if(minutes > 1) {
                 mTimeValue = minutes;
+                mActivity.updateUIFreq  = 60000;
                 mTimeText = mActivity.getString(R.string.generic_minutes);
             } else {
+                mActivity.updateUIFreq  = 1000;
                 mTimeValue = seconds;
                 mTimeText = mActivity.getString(R.string.generic_seconds);
             }
@@ -227,6 +237,7 @@ public class MainActivity extends ActionBarActivity {
         public void onReceive(Context context, Intent intent) {
             if(Logger.DEBUG) Logger.debug(TAG, "onReceive");
 			MainActivity.this.updateUI();
+            mUpdateHandler.postDelayed(mUpdateRunnable, 6010);
         }
 	};
 
@@ -292,22 +303,9 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
 
         labelLastEntryValue = (TextView)findViewById(R.id.labelLastEntryValue);
-        chkAutoGeotag = (ToggleButton)findViewById(R.id.chkAutoGeotag);
         chkServiceEnabled = (ToggleButton)findViewById(R.id.chkServiceEnabled);
-        layoutGeotagger = findViewById(R.id.layoutGeotagger);
         layoutServiceEnabled = findViewById(R.id.layoutServiceEnabled);
         labelDeviceId = (TextView)findViewById(R.id.labelDeviceId);
-
-        btnGeotagNow = (Button)findViewById(R.id.btnGeotagNow);
-
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-        chkAutoGeotag.setChecked(pref.getBoolean(getString(R.string.pref_auto_exif_geotager_enabled_key),
-                true));
-
-        chkServiceEnabled.setChecked(pref.getBoolean(getString(R.string.pref_service_enabled_key),
-                true));
-
-        btnGeotagNow.setEnabled(sGeotagContentUriCount <= 0);
 
         if(savedInstanceState == null) savedInstanceState = sLastBundle;
         setUiValuesFromBundle(savedInstanceState);
@@ -333,19 +331,6 @@ public class MainActivity extends ActionBarActivity {
 		LocationService.updateLocation(this);
 	}
 
-    public void toggleTrackingMode(MenuItem item) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean trackingMode = !prefs.getBoolean(Constants.PREF_TRAKING_MODE_KEY, false);
-        if(trackingMode) {
-            LocationService.startTrackingMode(this);
-        } else {
-            LocationService.stopTrackingMode(this);
-        }
-        int iconId = trackingMode ? R.drawable.ic_action_traking : R.drawable.ic_action_not_traking;
-        item.setIcon(iconId);
-        item.setChecked(trackingMode);
-    }
-
     public void setServiceEnabled(View view) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String key = getString(R.string.pref_service_enabled_key);
@@ -359,74 +344,16 @@ public class MainActivity extends ActionBarActivity {
         }        
     }
 
-    public void setAutoGeotag(View view) {
-        boolean enable = chkAutoGeotag.isChecked();
-        LocationService.setAutoExifGeotag(this, enable);
-    }
-
-    public void geotagPictures(View view) {
-        final Context context = this;
-        if(mGeoTagContentFinishListener ==null) {
-            mGeoTagContentFinishListener = new ExifGeotager.GeotagFinishListener() {
-                @Override
-                protected void onGeotagTaskFinished(int totalCount, int geotagedCount) {
-                    mGeotagContentTotalCount += totalCount;
-                    mGeotagContentTaggedCount += geotagedCount;
-                    if(--sGeotagContentUriCount <= 0) {
-                        btnGeotagNow.setEnabled(true);
-                        ExifGeotager.notify(context, mGeotagContentTotalCount, mGeotagContentTaggedCount);
-                        String text;
-                        if(mGeotagContentTotalCount == mGeotagContentTaggedCount) {
-                            text = context.getString(R.string.geotagger_notify_text_ok, mGeotagContentTotalCount);
-                        } else {
-                            text = context.getString(R.string.geotagger_notify_text_failed,
-                                    mGeotagContentTaggedCount, mGeotagContentTotalCount);
-                        }
-                        Toast.makeText(context, text, Toast.LENGTH_LONG).show();
-                    }
-                }
-            };
-        }
-
-        btnGeotagNow.setEnabled(false);
-
-        sGeotagContentUriCount = 2;
-        mGeotagContentTotalCount = 0;
-        mGeotagContentTaggedCount = 0;
-        ExifGeotager.geoTagContent(context, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true,
-                true, mGeoTagContentFinishListener);
-        ExifGeotager.geoTagContent(context, MediaStore.Images.Media.INTERNAL_CONTENT_URI, true,
-                true, mGeoTagContentFinishListener);
-    }
-
     void updateUI() {
         chkServiceEnabled.setEnabled(!mVehicleMode);
-        chkAutoGeotag.setEnabled(!mVehicleMode);
-        layoutGeotagger.setVisibility(mVehicleMode ? View.GONE : View.VISIBLE);
         layoutServiceEnabled.setVisibility(mVehicleMode ? View.GONE : View.VISIBLE);
-        labelDeviceId.setVisibility(mVehicleMode ? View.VISIBLE : View.GONE);
-        labelDeviceId.setText(mDeviceId);
         if(mVehicleMode) {
-            chkAutoGeotag.setChecked(false);
             if(!chkServiceEnabled.isChecked()) {
                 setServiceEnabled(chkServiceEnabled);
+                chkServiceEnabled.setChecked(true);
             }
         }
-        if(mMenu != null) {
-            updateTrackingMenuItem(mMenu.findItem(R.id.action_toggle_trackmode));
-        }
         LoadUITask.run(this);
-    }
-
-    private void updateTrackingMenuItem(MenuItem item) {
-        boolean isTracking = !mVehicleMode && PreferenceManager.getDefaultSharedPreferences(this)
-                .getBoolean(Constants.PREF_TRAKING_MODE_KEY, false);
-
-        item.setChecked(isTracking);
-        int iconId = isTracking ? R.drawable.ic_action_traking : R.drawable.ic_action_not_traking;
-        item.setIcon(iconId);
-        item.setChecked(isTracking);
-        item.setEnabled(!mVehicleMode);
     }
 
     @Override
@@ -435,18 +362,6 @@ public class MainActivity extends ActionBarActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
         mMenu = menu;
-
-        MenuItem menuItemToggleTRackingMode = menu.findItem(R.id.action_toggle_trackmode);
-        updateTrackingMenuItem(menuItemToggleTRackingMode);
-
-        menuItemToggleTRackingMode.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                toggleTrackingMode(item);
-                return false;
-            }
-        });
-
         return true;
     }
 
@@ -486,13 +401,18 @@ public class MainActivity extends ActionBarActivity {
         if(Logger.DEBUG) Logger.debug(TAG, "onResume");
         super.onResume();
         if(!mConfigured) return;
-        mVehicleMode = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getBoolean(getString(R.string.pref_vehiclemode_enabled_key), false);
+        PreferenceProfile preferences = PreferenceProfile.get(getApplicationContext());
+        mVehicleMode = preferences.activeProfile == PreferenceProfile.PROFILE_BICYCLE ||
+                preferences.activeProfile == PreferenceProfile.PROFILE_CAR;
         updateUI();
 		registerReceiver(mUpdateUiReceiver, new IntentFilter(Constants.ACTION_UPDATE_UI));
         //servicesConnected();
         mUpdateHandler = new Handler();
         mUpdateRunnable = new UpdateUIRunnable(this);
         mUpdateHandler.postDelayed(mUpdateRunnable, 6000);
+        chkServiceEnabled.setChecked(preferences.getBoolean(R.string.pref_service_enabled_key, true));
+        String[] names = getResources().getStringArray(R.array.pref_active_profile_entries);
+        labelDeviceId.setText(mDeviceId + " (" + names[preferences.activeProfile] + ")");
     }
 	
 	@Override

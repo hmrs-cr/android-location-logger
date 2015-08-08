@@ -1,16 +1,15 @@
 package com.hmsoft.locationlogger.data.locatrack;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
-import android.preference.PreferenceManager;
 
 import com.hmsoft.locationlogger.R;
-import com.hmsoft.locationlogger.data.LocationSet;
 import com.hmsoft.locationlogger.common.Logger;
+import com.hmsoft.locationlogger.data.LocationSet;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.data.sqlite.Helper;
 import com.hmsoft.locationlogger.data.sqlite.LocationTable;
 
@@ -98,9 +97,9 @@ public class LocatrackDb extends LocationStorer {
 
     @Override
     public void configure() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-
-        mMinimunDistance = Integer.valueOf(preferences.getString(mContext.getString(R.string.pref_minimun_distance_key), String.valueOf(mMinimunDistance)));
+        PreferenceProfile preferences = PreferenceProfile.get(mContext);
+        mMinimunDistance = Integer.valueOf(preferences.getString(R.string.pref_minimun_distance_key,
+                String.valueOf(mMinimunDistance)));
     }
 
     @Override

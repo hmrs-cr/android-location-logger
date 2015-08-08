@@ -2,13 +2,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.hmsoft.locationlogger.ui.MainActivity" >
-    <item android:id="@+id/action_toggle_trackmode"
-        android:title="Track Mode"
-        android:checkable="true"
-        android:checked="true"
-        android:icon="@drawable/ic_action_place"
-        android:orderInCategory="100"
-        app:showAsAction="always"/>
     <item android:id="@+id/action_locatrac_sync"
         android:title="@string/action_locatrac_sync"
         android:orderInCategory="100"

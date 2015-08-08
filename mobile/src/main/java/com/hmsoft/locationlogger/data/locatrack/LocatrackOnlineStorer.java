@@ -2,10 +2,8 @@ package com.hmsoft.locationlogger.data.locatrack;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.BuildConfig;
@@ -14,6 +12,7 @@ import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.service.SyncAuthenticatorService;
 
 import org.apache.http.HttpResponse;
@@ -196,13 +195,13 @@ public class LocatrackOnlineStorer extends LocationStorer {
     @Override
     public void configure() {
         if (Logger.DEBUG) Logger.debug(TAG, "configure");
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        PreferenceProfile preferences = PreferenceProfile.get(mContext);
 
-        mMinimumDistance = Integer.valueOf(preferences.getString(mContext.getString(R.string.pref_minimun_distance_key), String.valueOf(mMinimumDistance)));
+        mMinimumDistance = preferences.getInt(R.string.pref_minimun_distance_key, String.valueOf(mMinimumDistance));
 
-        mMyLatitudeUrl = preferences.getString(mContext.getString(R.string.pref_locatrack_uri_key), mMyLatitudeUrl);
-        mMyLatitudeKey = preferences.getString(mContext.getString(R.string.pref_locatrack_key_key), mMyLatitudeKey);
-        mDeviceId = preferences.getString(mContext.getString(R.string.pref_locatrack_deviceid_key), SyncAuthenticatorService.getGoogleAccount(mContext));
+        mMyLatitudeUrl = preferences.getString(R.string.pref_locatrack_uri_key, mMyLatitudeUrl);
+        mMyLatitudeKey = preferences.getString(R.string.pref_locatrack_key_key, mMyLatitudeKey);
+        mDeviceId = preferences.getString(R.string.pref_locatrack_deviceid_key, SyncAuthenticatorService.getGoogleAccount(mContext));
 
         mConfigured = !TextUtils.isEmpty(mMyLatitudeUrl) && !TextUtils.isEmpty(mMyLatitudeKey) &&
                 !TextUtils.isEmpty(mDeviceId);

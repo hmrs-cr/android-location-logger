@@ -93,7 +93,7 @@ public class LoginActivity extends Activity  {
                 PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                         .edit()
                         .putBoolean(getString(R.string.pref_locatrack_activated_key), true)
-                        .putBoolean(getString(R.string.pref_vehiclemode_enabled_key), false)
+                        .putString(getString(R.string.pref_active_profile_key), "0")
                         .putBoolean(getString(R.string.pref_instant_upload_enabled_key), false)
                         .putString(getString(R.string.pref_locatrack_key_key), "")
                         .putString(getString(R.string.pref_locatrack_deviceid_key), "")
@@ -253,7 +253,7 @@ public class LoginActivity extends Activity  {
                 preferences
                         .edit()
                         .putBoolean(getString(R.string.pref_locatrack_activated_key), success)
-                        .putBoolean(getString(R.string.pref_vehiclemode_enabled_key), true)
+                        .putString(getString(R.string.pref_active_profile_key), "1")
                         .commit();
             }
 

@@ -20,17 +20,14 @@ import android.widget.TimePicker;
 
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.service.LocationService;
 import com.hmsoft.locationlogger.service.SyncAuthenticatorService;
 import com.hmsoft.locationlogger.service.SyncService;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.Properties;
 
 import static com.hmsoft.locationlogger.R.string;
 import static com.hmsoft.locationlogger.R.xml;
@@ -45,66 +42,7 @@ public class SettingsActivity extends PreferenceActivity
 
     private boolean mServicePrefChanged;
     private boolean mSyncPrefChanged;
-    private AdvancedSettings mAdvancedSettings;
 
-    private static class AdvancedSettings extends Properties {
-        private SettingsActivity mActivity;
-
-        private void putAllPreferences(PreferenceGroup group) {
-            int c = 0;
-            String advancedPrefix = mActivity.getString(string.pref_advanced_prefix);
-            while(c < group.getPreferenceCount()) {
-                String key;
-                Preference preference = group.getPreference(c);
-                if(preference instanceof PreferenceGroup) {
-                    putAllPreferences((PreferenceGroup)preference);
-                    key = preference.getKey();
-                } else {
-                    key = String.format("%s.%s", group.getKey(), preference.getKey());
-                }
-                setProperty(key, String.valueOf(!preference.getKey().startsWith(advancedPrefix)));
-                c++;
-            }
-        }
-
-        private boolean showAll() {
-            return true;//"true".equals(getProperty("show_all", "false"));
-        }
-
-        private boolean isVisible(PreferenceGroup parent, Preference preference) {
-            String key;
-            if(preference instanceof PreferenceGroup) {
-                key = preference.getKey();
-            } else {
-                key = String.format("%s.%s", parent.getKey(), preference.getKey());
-            }
-            return "true".equals(getProperty(key, "true"));
-        }
-
-        public AdvancedSettings(SettingsActivity activity) {
-            mActivity = activity;
-            File file = new File(activity.getExternalFilesDir("config"), "pref-settings.txt");
-            if(!file.exists()) {
-                setProperty("show_all", "false");
-                //noinspection deprecation
-                putAllPreferences(activity.getPreferenceScreen());
-                try {
-                    FileOutputStream fo = new FileOutputStream(file);
-                    this.store(fo, "");
-                    fo.close();
-                } catch (IOException e) {
-                    Logger.warning(TAG, "Error storing advanced.txt", e);
-                }
-            }
-            try {
-                FileInputStream fi = new FileInputStream(file);
-                load(fi);
-                fi.close();
-            } catch (IOException e) {
-               Logger.warning(TAG, "Error loading advanced.txt", e);
-            }
-        }
-    }
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -115,7 +53,6 @@ public class SettingsActivity extends PreferenceActivity
         setPrefDefaults();
 		addPreferencesFromResource(xml.settings);
         addCustomPreferecences();
-        mAdvancedSettings = new AdvancedSettings(this);
 
      	mPrefCategoryService = (PreferenceCategory)findPreference(getString(string.pref_service_settings_key));
         mPrefCategorySync = (PreferenceCategory)findPreference(getString(string.pref_locatrack_settings_key));
@@ -125,9 +62,10 @@ public class SettingsActivity extends PreferenceActivity
             if(gmspref != null) {
                 mPrefCategoryService.removePreference(gmspref);
             }
-        }*/
+        }
         Preference gmspref = mPrefCategoryService.findPreference(getString(R.string.pref_use_gms_if_available_key));
         mPrefCategoryService.removePreference(gmspref);
+        */
 
         if(getString(R.string.action_sync_settings).equals(getIntent().getAction())) {
             getPreferenceScreen().removePreference(mPrefCategoryService);
@@ -136,9 +74,41 @@ public class SettingsActivity extends PreferenceActivity
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) {
                 mPrefCategoryService.removePreference(mPrefCategoryService.findPreference(getString(string.pref_set_airplanemode_key)));
             }
+            if(PreferenceProfile.get(getApplicationContext()).activeProfile != PreferenceProfile.PROFILE_MANUAL) {
+                mPrefCategoryService.removePreference(mPrefCategoryService.findPreference(getString(string.pref_update_interval_key)));
+            }
         }
-        bindPreferencesSummaryToValue(getPreferenceScreen());
+
+        PreferenceGroup screen = getPreferenceScreen();
+        removePreferencesWithDefaults(screen);
+        bindPreferencesSummaryToValue(screen);
 	}
+
+    private void removePreferencesWithDefaults(PreferenceGroup group) {
+        int prefCount = group.getPreferenceCount();
+        PreferenceProfile prefProf = PreferenceProfile.get(getApplicationContext());
+        ArrayList<Preference> toRemove = new ArrayList<>();
+        String mainKey = getString(string.pref_service_enabled_key);
+        boolean removeDependency = false;
+        for(int c = 0; c < prefCount; c++) {
+            Preference preference = group.getPreference(c);
+            if(preference instanceof PreferenceGroup) {
+                removePreferencesWithDefaults((PreferenceGroup) preference);
+            } else {
+                String key = preference.getKey();
+                if(mainKey.equals(key)) {
+                    removeDependency = true;
+                }
+                if(prefProf.hasProfileDefault(key)) {
+                    toRemove.add(preference);
+                }
+            }
+        }
+        for(Preference pref : toRemove) {
+            if(removeDependency) pref.setDependency(null);
+            group.removePreference(pref);
+        }
+    }
 
     /*private void hideAdvancedPreferences(PreferenceGroup group) {
         if(mAdvancedSettings.showAll()) {
@@ -231,7 +201,15 @@ public class SettingsActivity extends PreferenceActivity
 					LocationService.configure(this);
 					mServicePrefChanged = false;
 				}
-			}
+			} else if(key.equals(getString(string.pref_active_profile_key))) {
+                PreferenceProfile.reset();
+                Context ctx = getApplicationContext();
+                if(PreferenceProfile.get(ctx).getBoolean(string.pref_service_enabled_key, true)) {
+                    if(!LocationService.isRunning(ctx)) {
+                        LocationService.enable(ctx);
+                    }
+                }
+            }
 			if(Logger.DEBUG) Logger.debug(TAG, "Preference %s chaged. (Service)", key);
 		} 
 		else if(mPrefCategorySync.findPreference(key) != null) {
@@ -301,11 +279,15 @@ public class SettingsActivity extends PreferenceActivity
 	
 	private void bindPreferencesSummaryToValue(PreferenceGroup group) {
 		int prefCount = group.getPreferenceCount();
-		for(int c = 0; c < prefCount; c++) {
+        for(int c = 0; c < prefCount; c++) {
 			Preference preference = group.getPreference(c);
             if(preference instanceof PreferenceGroup) {
                 bindPreferencesSummaryToValue((PreferenceGroup)preference);
             } else {
+                String dep = preference.getDependency();
+                if(!TextUtils.isEmpty(dep) && group.findPreference(dep) == null) {
+                    preference.setDependency(null);
+                }
                 bindPreferenceSummaryToValue(preference);
             }
 		}

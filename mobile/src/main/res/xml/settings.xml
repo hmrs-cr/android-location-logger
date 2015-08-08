@@ -15,11 +15,14 @@
             android:title="@string/pref_service_enabled_title"
             android:summary="@string/pref_service_enabled_summary" />
 
-        <CheckBoxPreference
-            android:key="@string/pref_vehiclemode_enabled_key"
-            android:defaultValue="@string/pref_vehiclemode_enabled_default"
-            android:title="@string/pref_vehiclemode_enabled_title"
-            android:dependency="@string/pref_service_enabled_key" />
+        <ListPreference
+            android:key="@string/pref_active_profile_key"
+            android:defaultValue="0"
+            android:negativeButtonText="@null"
+            android:positiveButtonText="@null"
+            android:title="@string/pref_active_profile_title"
+            android:entries="@array/pref_active_profile_entries"
+            android:entryValues="@array/pref_active_profile_values" />
 
         <ListPreference
             android:key="@string/pref_update_interval_key"
@@ -115,12 +118,6 @@
             android:title="@string/pref_set_airplanemode_title"
             android:dependency="@string/pref_service_enabled_key" />
 
-
-        <CheckBoxPreference
-            android:key="@string/pref_use_gms_if_available_key"
-            android:defaultValue="true"
-            android:title="@string/pref_use_gms_if_available_title"
-            android:dependency="@string/pref_service_enabled_key" />
 
     </PreferenceCategory>
 

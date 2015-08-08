@@ -43,11 +43,17 @@
 
             </LinearLayout>
 
+            <View
+                android:id="@+id/separator6"
+                style="@style/lineSeparator2" />
+
+
             <TextView
                 android:id="@+id/labelDeviceId"
                 style="@style/valueTitleLabel"
                 android:layout_height="wrap_content"
-                android:layout_width="wrap_content" />
+                android:layout_width="wrap_content"
+                android:text="Hola"/>
 
             <View
                 android:id="@+id/separator4"
@@ -75,65 +81,12 @@
 
             </com.hmsoft.locationlogger.ui.TouchLinearLayout>
 
-            <View
-                android:id="@+id/separator41"
-                style="@style/lineSeparator2" />
+
 
 
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dip"
-            android:orientation="vertical"
-            android:id="@+id/layoutGeotagger">
 
-            <TextView
-                android:id="@+id/tbGEotag"
-                style="@style/headerLabel"
-                android:text="Geotagger"
-                android:layout_height="match_parent" />
-
-            <View
-                android:id="@+id/separator17"
-                style="@style/lineSeparator" />
-
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/labelAutoGeotag"
-                    style="@style/valueTitleLabel"
-                    android:text="@string/label_auto_geotag"
-                    android:layout_weight="1"
-                    android:layout_width="0dp" />
-
-                <ToggleButton
-                    android:id="@+id/chkAutoGeotag"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/generic_loading"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:onClick="setAutoGeotag"/>
-
-            </LinearLayout>
-
-            <View
-                android:id="@+id/separator18"
-                style="@style/lineSeparator2" />
-
-            <Button
-                style="?android:attr/buttonStyleSmall"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/button_geotag_now"
-                android:id="@+id/btnGeotagNow"
-                android:onClick="geotagPictures"/>
-
-        </LinearLayout>
 
         <View
             android:id="@+id/separator12"

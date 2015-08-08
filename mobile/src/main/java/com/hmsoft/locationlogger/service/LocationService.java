@@ -8,13 +8,10 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.database.ContentObserver;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
@@ -30,8 +27,6 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
-import android.preference.PreferenceManager;
-import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
@@ -44,12 +39,12 @@ import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.common.TaskExecutor;
-import com.hmsoft.locationlogger.data.ExifGeotager;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
-import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
+import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
 import java.util.Date;
@@ -64,24 +59,10 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final boolean DIAGNOSTICS = DEBUG;
     private static final int HALF_MINUTE = 1000 * 30;
-    //private static final int CRITICAL_BATTERY_LEVEL = 25;
 
-    private static final int CHARGING   = 0;
-    private static final int BAT_100_75 = 1;
-    private static final int BAT_75_50  = 2;
-    private static final int BAT_50_25  = 3;
-    private static final int BAT_25_0   = 4;
-    private static final int[] VEHICLE_MODE_LOCATION_INTERVAL_SETTINGS = {
-            120  /* 2 minutes */,   // CHARGING
-            1800 /* 30 minutes */,  // BAT_100_75
-            2600 /* 1 hour */,      // BAT_75_50
-            5400 /* 1.5 hours */,   // BAT_50_25
-            7200 /* 2 hours */      // BAT_25_0
-    };
     //endregion Static fields
 
     //region Settings fields
-    private int mAutoLocationInterval = 300; // seconds
     boolean mVehicleMode = false;
     private int mMinimumDistance = 20; //meters
     private int mGpsTimeout = 60; //seconds
@@ -102,13 +83,13 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private LocationListener mNetLocationListener;
     private LocationListener mGpsLocationListener;
     private LocationListener mPassiveLocationListener;
-    private LocationListener mGmsLocationListener;
+    //private LocationListener mGmsLocationListener;
     private LocatrackLocation mCurrentBestLocation;
     private PowerManager mPowerManager;
     private ComponentName mMapIntentComponent = null;
-    private boolean mAutoExifGeotagerEnabled;
-    private boolean mUseGmsIgAvailable;
+    //private boolean mUseGmsIgAvailable;
     private boolean mInstantUploadEnabled = false;
+    private PreferenceProfile mPreferences;
 
     //endregion Settings fields
 
@@ -125,7 +106,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private PendingIntent mLocationActivityIntent = null;
     private Intent mMapIntent = null;
     private PendingIntent mUpdateLocationIntent = null;
-    private PendingIntent mStopTrackingIntent;
     //private LocationRequest mLocationRequest = null;
     //private LocationClient mGpLocationClient = null;
     private final boolean mGooglePlayServiceAvailable = false;
@@ -133,7 +113,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private LocatrackOnlineStorer mOnlineStorer = null;
     LocationStorer mLocationStorer;
 
-    boolean mTrackingMode;
     boolean mNeedsToUpdateUI;
     private WakeLock mWakeLock;
 
@@ -342,89 +321,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
     }
 
-    private static class PictureContentObserver extends ContentObserver {
-
-        private static final String TAG = "PictureContentObserver";
-
-        private static PictureContentObserver sExternalInstance = null;
-        private static PictureContentObserver sInternalInstance = null;
-
-        private Uri mUri;
-        private Context mContext;
-        private ExifGeotager.GeotagFinishListener mFinishListener = null;
-
-        private PictureContentObserver(Context context, Uri uri) {
-            super(null);
-            mUri = uri;
-            mContext = context;
-        }
-
-        public void onChange(boolean selfChange, Uri uri) {
-            if(Logger.DEBUG) Logger.debug(TAG, "onChange:%s,%s", selfChange, uri);
-            boolean geotag = false;
-            if(uri != null) {
-                if(uri.equals(mUri)) {
-                    geotag = true;
-                }
-            }  else {
-                geotag = true;
-            }
-
-            if(geotag) {
-                if(mFinishListener == null) {
-                    mFinishListener = new ExifGeotager.GeotagFinishListener() {
-                        @Override
-                        protected void onGeotagTaskFinished(int totalCount, int geotagedCount) {
-                            if(Logger.DEBUG) Logger.debug(TAG, "onGeotagTaskFinished:%d/%d", totalCount, geotagedCount);
-                            ExifGeotager.notify(mContext, totalCount, geotagedCount);
-                        }
-                    };
-                }
-                ExifGeotager.geoTagContent(mContext, mUri, false, false, mFinishListener);
-            }
-        }
-
-        @Override
-        public void onChange(boolean selfChange) {
-            onChange(selfChange, null);
-        }
-
-        public static void register(Context context) {
-            if(sExternalInstance == null) {
-                sExternalInstance = new PictureContentObserver(context,
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            }
-            if(sInternalInstance == null) {
-                sInternalInstance = new PictureContentObserver(context,
-                        MediaStore.Images.Media.INTERNAL_CONTENT_URI);
-            }
-
-            ContentResolver resolver = context.getContentResolver();
-            resolver.registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                    false, sExternalInstance);
-            resolver.registerContentObserver(MediaStore.Images.Media.INTERNAL_CONTENT_URI,
-                    false, sInternalInstance);
-
-            if(Logger.DEBUG) Logger.debug(TAG, "ContentObserver registered");
-        }
-
-        public static void unregister(Context context) {
-            ContentResolver resolver = context.getContentResolver();
-            if(sExternalInstance != null) {
-                resolver.unregisterContentObserver(sExternalInstance);
-                sExternalInstance.mContext = null;
-                sExternalInstance = null;
-                if(Logger.DEBUG) Logger.debug(TAG, "ContentObserver UNregistered (external)");
-            }
-            if(sInternalInstance != null) {
-                resolver.unregisterContentObserver(sInternalInstance);
-                sInternalInstance.mContext = null;
-                sInternalInstance = null;
-                if(Logger.DEBUG) Logger.debug(TAG, "ContentObserver UNregistered (internal)");
-            }
-        }
-    }
-
     //endregion Helper Inner Classes
 
     //region Google Play location service helper functions
@@ -480,7 +376,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             destroyExecutorThread(); // Start with a new created thread
             acquireWakeLock();
             startLocationListener();
-            setLocationAlarm(900);
+            int intv = -1;
+            if(mChargingStop && mPreferences.getInterval(mLastBatteryLevel)  > 900) {
+                intv = 900;
+            }
+            setLocationAlarm(intv);
         }
     }
 
@@ -495,9 +395,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         String message;
 
         long timeDelta = HALF_MINUTE;
-        if (mTrackingMode) {
-            timeDelta = 2500;
-        }
 
         if(Logger.DEBUG) Logger.debug(TAG, "handleLocation %s", location);
 
@@ -518,9 +415,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                         (isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
                     saveLocation(mCurrentBestLocation, true);
                     message = "*** Location saved";
-                    if (!mTrackingMode) {
-                        stopLocationListener();
-                    }
+                    stopLocationListener();
                 } else {
                     message = "No good GPS location.";
                 }
@@ -762,7 +657,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         updateUIIfNeeded();
 
         if(upload) {
-            if (!mTrackingMode && mInstantUploadEnabled) {
+            if (mInstantUploadEnabled) {
                 sendUploadLocationMsg(location);
             } else {
                 releaseWakeLock();
@@ -904,25 +799,16 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && !mVehicleMode) {
-                if (mTrackingMode) {
-                    if (mStopTrackingIntent == null) {
-                        Intent updateIntent = new Intent(context, LocationService.class);
-                        updateIntent.putExtra(Constants.EXTRA_STOP_TRACKING_MODE, 1);
-                        updateIntent.addCategory(Constants.CATEGORY_TRACKING);
-                        mStopTrackingIntent = PendingIntent.getService(context, 0, updateIntent, 0);
-                    }
-                    notificationBuilder.addAction(R.drawable.ic_action_not_traking,
-                            getString(R.string.action_stop_tracking), mStopTrackingIntent);
-                } else {
-                    if (mUpdateLocationIntent == null) {
-                        Intent updateIntent = new Intent(context, LocationService.class);
-                        updateIntent.putExtra(Constants.EXTRA_UPDATE_LOCATION, 1);
-                        updateIntent.setAction(Constants.ACTION_NOTIFICATION_UPDATE_LOCATION);
-                        mUpdateLocationIntent = PendingIntent.getService(context, 0, updateIntent, 0);
-                    }
-                    notificationBuilder.addAction(R.drawable.ic_action_place,
-                            getString(R.string.action_update_location), mUpdateLocationIntent);
+
+                if (mUpdateLocationIntent == null) {
+                    Intent updateIntent = new Intent(context, LocationService.class);
+                    updateIntent.putExtra(Constants.EXTRA_UPDATE_LOCATION, 1);
+                    updateIntent.setAction(Constants.ACTION_NOTIFICATION_UPDATE_LOCATION);
+                    mUpdateLocationIntent = PendingIntent.getService(context, 0, updateIntent, 0);
                 }
+                notificationBuilder.addAction(R.drawable.ic_action_place,
+                        getString(R.string.action_update_location), mUpdateLocationIntent);
+
             }
 
             Notification notif = notificationBuilder.build();
@@ -956,9 +842,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             mGpsProviderEnabled = mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
             long time = mGpsTimeout;
-            if (!mTrackingMode) {
-                time = mGpsTimeout / 4;
-            }
+            time = mGpsTimeout / 4;
 
             float minDistance = mMinimumDistance / 2;
 
@@ -982,8 +866,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
 
         if (!mTimeoutRoutinePending) {
-            if(Logger.DEBUG) Logger.debug(TAG, "Executing gps timeout in %d seconds, TM:%s",
-                    mGpsTimeout, mTrackingMode);
+            if(Logger.DEBUG) Logger.debug(TAG, "Executing gps timeout in %d seconds", mGpsTimeout);
             mTimeoutRoutinePending = true;
             TaskExecutor.executeOnUIThread(new Runnable() {
                 @Override
@@ -992,9 +875,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     if (mLocationManager != null /*|| mLocationRequest != null*/) {
                         if(Logger.DEBUG) Logger.debug(TAG, "GPS Timeout");
                         saveLastLocation();
-                        if (!LocationService.this.mTrackingMode) {
-                            stopLocationListener();
-                        }
+                        stopLocationListener();
                     }
                 }
             }, mGpsTimeout);
@@ -1002,7 +883,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
 
     private void startPassiveLocationListener() {
-        if (!mTrackingMode && mRequestPassiveLocationUpdates && mPassiveLocationListener == null) {
+        if (mRequestPassiveLocationUpdates && mPassiveLocationListener == null) {
             if(Logger.DEBUG) Logger.debug(TAG, "startPassiveLocationListener");
             mPassiveLocationListener = new LocationListener(this, LocationManager.PASSIVE_PROVIDER);
 
@@ -1093,24 +974,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     void setLocationAlarm(int interval) {
         if (interval == -1) {
-            interval = mAutoLocationInterval;
-            if (mTrackingMode) {
-                interval = 600;
-            } else {
-                if (mVehicleMode) {
-                    int i = BAT_100_75;
-                    if (mLastBatteryLevel > 100) {
-                        i = CHARGING;
-                    } else if (mLastBatteryLevel < 25) {
-                        i = BAT_25_0;
-                    } else if (mLastBatteryLevel < 50) {
-                        i = BAT_50_25;
-                    } else if (mLastBatteryLevel < 75) {
-                        i = BAT_75_50;
-                    }
-                    interval = VEHICLE_MODE_LOCATION_INTERVAL_SETTINGS[i];
-                }
-            }
+            interval = mPreferences.getInterval(mLastBatteryLevel);
         }
 
         if(DEBUG) {
@@ -1134,18 +998,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         boolean alarmCallBack = intent.hasExtra(Constants.EXTRA_ALARM_CALLBACK);
         boolean startAlarm = intent.hasExtra(Constants.EXTRA_START_ALARM);
-        boolean tracking = intent.hasExtra(Constants.EXTRA_START_TRACKING_MODE);
-        if(tracking) mTrackingMode = true;
-        if(Logger.DEBUG && tracking) Logger.debug(TAG, "Starting tracking mode");
 
         if (startAlarm) {
             mNeedsToUpdateUI = true;
             updateNotification();
             setSyncAlarm();
-
-            if(mAutoExifGeotagerEnabled) {
-                PictureContentObserver.register(getApplicationContext());
-            }
         }
 
         if (intent.hasExtra(Constants.EXTRA_STOP_ALARM)) {
@@ -1155,7 +1012,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             releaseWakeLock();
         }
 
-        if(alarmCallBack || (startAlarm && !tracking)) {
+        if(alarmCallBack || (startAlarm)) {
             acquireWakeLock();
             startLocationListener();
         }
@@ -1170,6 +1027,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
 
         if (intent.hasExtra(Constants.EXTRA_CONFIGURE)) {
+            PreferenceProfile.reset();
+            mPreferences = PreferenceProfile.get(getApplicationContext());
             configure(true);
         }
 
@@ -1183,112 +1042,38 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
             setSyncAlarm();
         }
-
-        if(intent.hasExtra(Constants.EXTRA_STOP_TRACKING_MODE)) {
-            stopLocationListener();
-            mTrackingMode = false;
-            setLocationAlarm();
-            PreferenceManager.
-                    getDefaultSharedPreferences(this).
-                    edit().
-                    putBoolean(Constants.PREF_TRAKING_MODE_KEY, false).
-                    apply();
-
-            mNeedsToUpdateUI = true;
-            updateUIIfNeeded();
-
-            Toast.makeText(this, R.string.toast_tracking_stop, Toast.LENGTH_LONG).show();
-        }
-
-        if(tracking) {
-            stopLocationListener();
-            mTrackingMode = true;
-            startLocationListener();
-            stopPassiveLocationListener();
-            PreferenceManager.
-                    getDefaultSharedPreferences(this).
-                    edit().
-                    putBoolean(Constants.PREF_TRAKING_MODE_KEY, true).
-                    apply();
-
-            mNeedsToUpdateUI = true;
-            updateUIIfNeeded();
-
-            Toast.makeText(this, R.string.toast_tracking_start, Toast.LENGTH_LONG).show();
-        }
-
-        if(intent.hasExtra(Constants.EXTRA_SET_AUTO_GEOTAG)) {
-            boolean setAutoGeotag = intent.getBooleanExtra(Constants.EXTRA_SET_AUTO_GEOTAG, true);
-            if(setAutoGeotag != mAutoExifGeotagerEnabled) {
-                mAutoExifGeotagerEnabled = setAutoGeotag;
-
-               PreferenceManager.getDefaultSharedPreferences(this)
-                       .edit()
-                       .putBoolean(getString(R.string.pref_auto_exif_geotager_enabled_key), setAutoGeotag)
-                       .apply();
-
-                PictureContentObserver.unregister(this);
-                if(mAutoExifGeotagerEnabled) {
-                    PictureContentObserver.register(this);
-                }
-            }
-        }
-
-        if(intent.hasExtra(Constants.EXTRA_NOTIFICATION_DELETED)) {
-            int notificationId = intent.getIntExtra(Constants.EXTRA_NOTIFICATION_DELETED, 0);
-            switch (notificationId) {
-                case ExifGeotager.NOTIFICATION_ID:
-                    ExifGeotager.clearNotifyCounts();
-                    break;
-            }
-        }
     }
 
     private void configure(boolean setup) {
         if(Logger.DEBUG) Logger.debug(TAG, "configure(setup:%s)", setup);
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-        if (!preferences.getBoolean(getString(R.string.pref_service_enabled_key), true)) {
+        if (!mPreferences.getBoolean(R.string.pref_service_enabled_key, true)) {
             disable(getApplicationContext());
             return;
         }
 
-        int oldAutoLocationInterval = mAutoLocationInterval;
         int oldSyncHour = mSyncHour;
         int oldSynMinute = mSyncMinute;
-        boolean oldUseGmsIgAvailable = mUseGmsIgAvailable;
-        mAutoLocationInterval = Integer.parseInt(preferences.getString(getString(R.string.pref_update_interval_key), String.valueOf(mAutoLocationInterval))); // seconds
-        mTrackingMode = mAutoLocationInterval <= 20;
-        mMinimumDistance = Integer.parseInt(preferences.getString(getString(R.string.pref_minimun_distance_key), String.valueOf(mMinimumDistance))); //meters
-        mGpsTimeout = Integer.parseInt(preferences.getString(getString(R.string.pref_gps_timeout_key), String.valueOf(mGpsTimeout))); //seconds
-        mRequestPassiveLocationUpdates = preferences.getBoolean(getString(R.string.pref_passive_enabled_key), Boolean.parseBoolean(getString(R.string.pref_passive_enabled_default)));
-        mMaxReasonableSpeed = Float.parseFloat(preferences.getString(getString(R.string.pref_max_speed_key), String.valueOf(mMaxReasonableSpeed))); // meters/seconds
-        mMinimumAccuracy = Integer.parseInt(preferences.getString(getString(R.string.pref_minimun_accuracy_key), String.valueOf(mMinimumAccuracy))); // meters
-        mBestAccuracy = Integer.parseInt(preferences.getString(getString(R.string.pref_best_accuracy_key), String.valueOf(mBestAccuracy))); // meters
-        mNotificationEnabled = preferences.getBoolean(getString(R.string.pref_notificationicon_enabled_key), Boolean.parseBoolean(getString(R.string.pref_passive_enabled_default)));
-        mWakeLockEnabled = preferences.getBoolean(getString(R.string.pref_wackelock_enabled_key), Boolean.parseBoolean(getString(R.string.pref_wackelock_enabled_default)));
-        mLocationLogEnabled = preferences.getBoolean(getString(R.string.pref_loglocations_key), Boolean.parseBoolean(getString(R.string.pref_loglocations_default)));
-        String[] syncTime = preferences.getString(getString(R.string.pref_synctime_key), mSyncHour + ":" + mSyncMinute).split(":");
+        //boolean oldUseGmsIgAvailable = mUseGmsIgAvailable;
+        mMinimumDistance = mPreferences.getInt(R.string.pref_minimun_distance_key, String.valueOf(mMinimumDistance)); //meters
+        mGpsTimeout = mPreferences.getInt(R.string.pref_gps_timeout_key, String.valueOf(mGpsTimeout)); //seconds
+        mRequestPassiveLocationUpdates = mPreferences.getBoolean(R.string.pref_passive_enabled_key, Boolean.parseBoolean(getString(R.string.pref_passive_enabled_default)));
+        mMaxReasonableSpeed = mPreferences.getFloat(R.string.pref_max_speed_key, String.valueOf(mMaxReasonableSpeed)); // meters/seconds
+        mMinimumAccuracy = mPreferences.getInt(R.string.pref_minimun_accuracy_key, String.valueOf(mMinimumAccuracy)); // meters
+        mBestAccuracy = mPreferences.getInt(R.string.pref_best_accuracy_key, String.valueOf(mBestAccuracy)); // meters
+        mNotificationEnabled = mPreferences.getBoolean(R.string.pref_notificationicon_enabled_key, Boolean.parseBoolean(getString(R.string.pref_passive_enabled_default)));
+        mWakeLockEnabled = mPreferences.getBoolean(R.string.pref_wackelock_enabled_key, Boolean.parseBoolean(getString(R.string.pref_wackelock_enabled_default)));
+        mLocationLogEnabled = mPreferences.getBoolean(R.string.pref_loglocations_key, Boolean.parseBoolean(getString(R.string.pref_loglocations_default)));
+        String[] syncTime = mPreferences.getString(R.string.pref_synctime_key, mSyncHour + ":" + mSyncMinute).split(":");
         mSyncHour = Integer.parseInt(syncTime[0]);
         mSyncMinute = Integer.parseInt(syncTime[1]);
-        mAutoExifGeotagerEnabled = preferences.getBoolean(getString(R.string.pref_auto_exif_geotager_enabled_key), true);
-        mUseGmsIgAvailable = preferences.getBoolean(getString(R.string.pref_use_gms_if_available_key), true);
-        mInstantUploadEnabled = preferences.getBoolean(getString(R.string.pref_instant_upload_enabled_key), true);
-        mVehicleMode =  preferences.getBoolean(getString(R.string.pref_vehiclemode_enabled_key), mVehicleMode);
-        mSetAirplaneMode =  preferences.getBoolean(getString(R.string.pref_set_airplanemode_key), mSetAirplaneMode);
+        //mUseGmsIgAvailable = preferences.getBoolean(getString(R.string.pref_use_gms_if_available_key), true);
+        mInstantUploadEnabled = mPreferences.getBoolean(R.string.pref_instant_upload_enabled_key, true);
+        mSetAirplaneMode =  mPreferences.getBoolean(R.string.pref_set_airplanemode_key, mSetAirplaneMode);
 
-        if(mVehicleMode) {
-            mInstantUploadEnabled = true;
-            mAutoExifGeotagerEnabled = false;
-            mNotificationEnabled = true;
-            mMaxReasonableSpeed = 49;
-            mGpsTimeout = 61;
-            mTrackingMode = false;
-            mMinimumAccuracy = 3000;
-            mBestAccuracy = 8;
-        }
-
+        mVehicleMode = mPreferences.activeProfile == PreferenceProfile.PROFILE_BICYCLE ||
+                mPreferences.activeProfile == PreferenceProfile.PROFILE_CAR;
 
         if (setup) {
             if (mRequestPassiveLocationUpdates) {
@@ -1298,16 +1083,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 /*if(mLocationRequest == null) {
                     stopLocationListener();
                 }*/
-            }
-
-            if (mAutoLocationInterval != oldAutoLocationInterval) {
-                setLocationAlarm();
-                if(mTrackingMode) {
-                    startLocationListener();
-					stopPassiveLocationListener();
-                } else {
-                    stopLocationListener();
-                }
             }
 
             if(oldSyncHour != mSyncHour || oldSynMinute != mSyncMinute) {
@@ -1329,11 +1104,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
             }
             */
-
-            PictureContentObserver.unregister(getApplicationContext());
-            if(mAutoExifGeotagerEnabled) {
-                PictureContentObserver.register(getApplicationContext());
-            }
         }
     }
 
@@ -1359,6 +1129,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         mLocationStorer = createStorer();
         mLocationStorer.configure();
+        mPreferences = PreferenceProfile.get(getApplicationContext());
         configure(false);
         
         /*mGooglePlayServiceAvailable = mUseGmsIgAvailable &&
@@ -1384,7 +1155,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         if(Logger.DEBUG) Logger.debug(TAG, "onDestroy");
 
         releaseWakeLock();
-        PictureContentObserver.unregister(getApplicationContext());
         ActionReceiver.unregister(this);
         mAlarm.cancel(mAlarmLocationCallback);
         mAlarm.cancel(mAlarmSyncCallback);
@@ -1394,6 +1164,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         stopForeground(true);
 
         destroyExecutorThread();
+        PreferenceProfile.reset();
 
         super.onDestroy();
     }
@@ -1442,16 +1213,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
 
     public static void start(Context context) {
-        boolean isTracking = PreferenceManager.
-                getDefaultSharedPreferences(context).
-                getBoolean(Constants.PREF_TRAKING_MODE_KEY, false);
-
         Intent i = new Intent();
         i.putExtra(Constants.EXTRA_START_ALARM, 1);
-        if(isTracking) {
-           i.putExtra(Constants.EXTRA_START_TRACKING_MODE, 1);
-        }
-
         start(context, i);
     }
 
@@ -1459,22 +1222,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         start(context, Constants.EXTRA_CONFIGURE);
     }
 
-    public static void startTrackingMode(Context context) {
-        start(context, Constants.EXTRA_START_TRACKING_MODE);
-    }
-
-    public static void stopTrackingMode(Context context) {
-        start(context, Constants.EXTRA_STOP_TRACKING_MODE);
-    }
-
     public static void updateLocation(Context context) {
         start(context, Constants.EXTRA_UPDATE_LOCATION);
-    }
-
-    public static void setAutoExifGeotag(Context context, boolean enabled) {
-        Intent intent = new Intent();
-        intent.putExtra(Constants.EXTRA_SET_AUTO_GEOTAG, enabled);
-        start(context, intent);
     }
 
     public static void enable(Context context) {

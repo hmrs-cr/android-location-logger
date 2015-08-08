@@ -23,7 +23,7 @@
     <string name="sync_notif_content_title">Location Logger Cloud Sync</string>
     <string name="sync_notif_content_text">%d uploaded.</string>
     <string name="sync_fail_notif_content_text">%1$d uploaded, %2$d failed.</string>
-    <string name="action_about">About...</string>
+    <string name="action_about">About…</string>
     <string name="sync_progress_title">Location Upload</string>
     <string name="sync_progress_text">Upload in progress</string>
     <string name="sync_progress_advance">Uploading %1$d of %2$d (%3$d%%)</string>
@@ -37,6 +37,5 @@
     <string name="connect_wifi_label">Please connect this device to a WiFi network.</string>
     <string name="webserver_error_label">Error starting server.</string>
     <string name="log_label">Server log:</string>
-
 
 </resources>
