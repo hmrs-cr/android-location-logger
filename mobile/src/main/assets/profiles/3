@@ -1,0 +1,11 @@
+intervals=3600
+update_interval=3600
+pref_instant_upload_enabled=false
+pref_advanced_notificationicon_enabled=true
+pref_advanced_passive_enabled=true
+pref_advanced_wackelock_enabled=false
+pref_advanced_max_speed=49.0
+gps_timeout=30
+pref_advanced_minimun_accuracy=500
+pref_advanced_best_accuracy=16
+pref_advanced_minimun_distance=15

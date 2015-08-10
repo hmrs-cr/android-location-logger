@@ -31,4 +31,7 @@
     <string name="pref_set_airplanemode_key">pref_set_airplanemode</string>
     <string name="pref_active_profile_key">pref_active_profile</string>
 
+    <string name="profile_settings_restricted_key">profile_settings_restricted</string>
+    <string name="profile_notify_events_key">profile_notify_events</string>
+
 </resources>

@@ -1,0 +1,12 @@
+intervals=7200,5400,2600,1800,1800,900,900,600,600,600,600,120
+update_interval=300
+service_enabled=true
+pref_instant_upload_enabled=true
+pref_advanced_notificationicon_enabled=true
+pref_advanced_max_speed=49.0
+gps_timeout=61
+pref_advanced_minimun_accuracy=3000
+pref_advanced_best_accuracy=8
+pref_advanced_minimun_distance=40
+profile_settings_restricted=true
+profile_notify_events=true

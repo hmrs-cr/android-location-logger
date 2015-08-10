@@ -207,6 +207,7 @@ public class SettingsActivity extends PreferenceActivity
                 if(PreferenceProfile.get(ctx).getBoolean(string.pref_service_enabled_key, true)) {
                     if(!LocationService.isRunning(ctx)) {
                         LocationService.enable(ctx);
+                        mServicePrefChanged = false;
                     }
                 }
             }

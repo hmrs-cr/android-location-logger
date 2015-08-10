@@ -98,8 +98,7 @@ public class LocatrackDb extends LocationStorer {
     @Override
     public void configure() {
         PreferenceProfile preferences = PreferenceProfile.get(mContext);
-        mMinimunDistance = Integer.valueOf(preferences.getString(R.string.pref_minimun_distance_key,
-                String.valueOf(mMinimunDistance)));
+        mMinimunDistance = preferences.getInt(R.string.pref_minimun_distance_key, String.valueOf(mMinimunDistance));
     }
 
     @Override

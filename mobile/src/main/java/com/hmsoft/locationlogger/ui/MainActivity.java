@@ -40,11 +40,11 @@ public class MainActivity extends ActionBarActivity {
     TextView labelDeviceId;
     int updateUIFreq = 1000;
 
-    private boolean mVehicleMode;
+    private boolean mRestrictedSettings;
     private boolean mConfigured;
     private String mDeviceId;
 
-    private int mVehicleModeSettingsCount = 6;
+    private int mRestrictedSettingsCount = 6;
 
     Handler mUpdateHandler;
     UpdateUIRunnable mUpdateRunnable;
@@ -345,14 +345,6 @@ public class MainActivity extends ActionBarActivity {
     }
 
     void updateUI() {
-        chkServiceEnabled.setEnabled(!mVehicleMode);
-        layoutServiceEnabled.setVisibility(mVehicleMode ? View.GONE : View.VISIBLE);
-        if(mVehicleMode) {
-            if(!chkServiceEnabled.isChecked()) {
-                setServiceEnabled(chkServiceEnabled);
-                chkServiceEnabled.setChecked(true);
-            }
-        }
         LoadUITask.run(this);
     }
 
@@ -370,11 +362,11 @@ public class MainActivity extends ActionBarActivity {
         if (menu == null) menu = mMenu;
         MenuItem settingsMenu = menu.findItem(R.id.action_settings);
         if(settingsMenu != null) {
-            if (mVehicleMode && mVehicleModeSettingsCount > 0) {
-                mVehicleModeSettingsCount--;
+            if (mRestrictedSettings && mRestrictedSettingsCount > 0) {
+                mRestrictedSettingsCount--;
                 settingsMenu.setVisible(false);
             } else {
-                mVehicleModeSettingsCount = 6;
+                mRestrictedSettingsCount = 6;
                 settingsMenu.setVisible(true);
             }
         }
@@ -402,10 +394,15 @@ public class MainActivity extends ActionBarActivity {
         super.onResume();
         if(!mConfigured) return;
         PreferenceProfile preferences = PreferenceProfile.get(getApplicationContext());
-        mVehicleMode = preferences.activeProfile == PreferenceProfile.PROFILE_BICYCLE ||
-                preferences.activeProfile == PreferenceProfile.PROFILE_CAR;
+        mRestrictedSettings = preferences.getBoolean(R.string.profile_settings_restricted_key, false);
+
+        chkServiceEnabled.setEnabled(!mRestrictedSettings);
+        layoutServiceEnabled.setVisibility(mRestrictedSettings ? View.GONE : View.VISIBLE);
+        chkServiceEnabled.setChecked(preferences.getBoolean(R.string.pref_service_enabled_key, true));
+
         updateUI();
-		registerReceiver(mUpdateUiReceiver, new IntentFilter(Constants.ACTION_UPDATE_UI));
+
+        registerReceiver(mUpdateUiReceiver, new IntentFilter(Constants.ACTION_UPDATE_UI));
         //servicesConnected();
         mUpdateHandler = new Handler();
         mUpdateRunnable = new UpdateUIRunnable(this);

@@ -67,6 +67,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private int mMinimumDistance = 20; //meters
     private int mGpsTimeout = 60; //seconds
     /*private*/ boolean mRequestPassiveLocationUpdates = true;
+    boolean mNotifyEvents;
+    boolean mRestrictedSettings;
     boolean mSetAirplaneMode = false;
     private float mMaxReasonableSpeed = 55; // meters/seconds
     private int mMinimumAccuracy = 750; // meters
@@ -198,7 +200,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         private static final String TAG = "LocationListener";
 
-        private LocationService mService;
+        LocationService mService;
         String mProvider;
 
         public LocationListener(LocationService service, String provider) {
@@ -209,7 +211,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         @Override
         public void onLocationChanged(Location location) {
             if(Logger.DEBUG) Logger.debug(TAG, "onLocationChanged:%s", mProvider);
-            mService.handleLocation(location, mProvider);
+            if(mService != null) mService.handleLocation(location, mProvider);
         }
 
         @Override
@@ -602,7 +604,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 pw = PerfWatch.start(TAG, "Start: Upload location");
             }
 
-            if (mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
+            if (mSetAirplaneMode && mLastBatteryLevel <= 100) {
                 mOnlineStorer.retryDelaySeconds = 10;
                 mOnlineStorer.retryCount = 3;
             } else {
@@ -615,7 +617,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     pw.stop(TAG, "End: Upload location Success: " + locationUploaded);
                 }
             }
-            if (mSetAirplaneMode && mVehicleMode && mLastBatteryLevel <= 100) {
+            if (mSetAirplaneMode && mLastBatteryLevel <= 100) {
                 setAirplaneMode(context, true);
             }
         } finally {
@@ -639,7 +641,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private void saveLocation(final LocatrackLocation location, final boolean upload) {
 
         location.batteryLevel = mLastBatteryLevel;
-        if(mVehicleMode) {
+        if(mNotifyEvents) {
             if(mChargingStart) {
                 location.event = LocatrackLocation.EVENT_START;
             } else if(mChargingStop) {
@@ -798,7 +800,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                         mLocationCount, accuracy));
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && !mVehicleMode) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && !mRestrictedSettings) {
 
                 if (mUpdateLocationIntent == null) {
                     Intent updateIntent = new Intent(context, LocationService.class);
@@ -817,7 +819,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
 
     void startLocationListener() {
-        if(mSetAirplaneMode && mVehicleMode) setAirplaneMode(this, false);
+        if(mSetAirplaneMode) setAirplaneMode(this, false);
         if(mGooglePlayServiceAvailable) {
             /*if (mLocationRequest == null) {
                 if(Logger.DEBUG) Logger.debug(TAG, "startLocationListener: Google Play Services available.");
@@ -1027,7 +1029,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
 
         if (intent.hasExtra(Constants.EXTRA_CONFIGURE)) {
-            PreferenceProfile.reset();
             mPreferences = PreferenceProfile.get(getApplicationContext());
             configure(true);
         }
@@ -1071,6 +1072,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         //mUseGmsIgAvailable = preferences.getBoolean(getString(R.string.pref_use_gms_if_available_key), true);
         mInstantUploadEnabled = mPreferences.getBoolean(R.string.pref_instant_upload_enabled_key, true);
         mSetAirplaneMode =  mPreferences.getBoolean(R.string.pref_set_airplanemode_key, mSetAirplaneMode);
+        mNotifyEvents =  mPreferences.getBoolean(R.string.profile_notify_events_key, false);
+        mRestrictedSettings =  mPreferences.getBoolean(R.string.profile_settings_restricted_key, false);
 
         mVehicleMode = mPreferences.activeProfile == PreferenceProfile.PROFILE_BICYCLE ||
                 mPreferences.activeProfile == PreferenceProfile.PROFILE_CAR;
@@ -1202,6 +1205,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     //region Helper functions
 
     public static void start(Context context, Intent intent) {
+        context = context.getApplicationContext();
         intent.setClass(context, LocationService.class);
         context.startService(intent);
     }
@@ -1285,7 +1289,10 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 bestResult = location;
             }
         }
-        return new LocatrackLocation(bestResult);
+        if(bestResult != null) {
+            return new LocatrackLocation(bestResult);
+        }
+        return null;
     }
 
     static void setAirplaneMode(Context context, boolean  isEnabled) {
