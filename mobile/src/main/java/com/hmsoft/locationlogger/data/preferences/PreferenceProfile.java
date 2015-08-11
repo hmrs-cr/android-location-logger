@@ -25,7 +25,6 @@ public class PreferenceProfile {
     private static PreferenceProfile sInstance;
 
     private final Context mContext;
-    private final Resources mResources;
     private final SharedPreferences mPreferences;
     private final HashMap<String, String> mDefaults;
     private int mBlockSize = 1;
@@ -44,7 +43,6 @@ public class PreferenceProfile {
 
     private PreferenceProfile(Context context) {
         mContext = context.getApplicationContext();
-        mResources = mContext.getResources();
         mPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         mDefaults = new HashMap<>();
         activeProfile = getInt(R.string.pref_active_profile_key, "0");
@@ -105,7 +103,7 @@ public class PreferenceProfile {
     }
 
     public String getString(int keyId, String defValue) {
-        String key = mResources.getString(keyId);
+        String key = mContext.getString(keyId);
 
         Object value = mDefaults.get(key);
         if(value != null) return (String)value;
