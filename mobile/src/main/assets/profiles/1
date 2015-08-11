@@ -7,6 +7,6 @@ pref_advanced_max_speed=49.0
 gps_timeout=61
 pref_advanced_minimun_accuracy=3000
 pref_advanced_best_accuracy=8
-pref_advanced_minimun_distance=40
+pref_advanced_minimun_distance=50
 profile_settings_restricted=true
 profile_notify_events=true
