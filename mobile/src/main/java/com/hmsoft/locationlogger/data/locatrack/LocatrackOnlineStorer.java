@@ -151,7 +151,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
             urlParameters.add(new BasicNameValuePair("accuracy", String.valueOf(location.getAccuracy())));
             urlParameters.add(new BasicNameValuePair("speed", String.valueOf(location.getSpeed())));
             urlParameters.add(new BasicNameValuePair("utc_timestamp", String.valueOf(location.getTime())));
-            if (!TextUtils.isDigitsOnly(location.event)) {
+            if (!TextUtils.isEmpty(location.event)) {
                 urlParameters.add(new BasicNameValuePair("notify", location.event));
             }
             if (updateId > 0) {
