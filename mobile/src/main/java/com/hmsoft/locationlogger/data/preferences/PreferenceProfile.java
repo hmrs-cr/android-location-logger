@@ -45,7 +45,7 @@ public class PreferenceProfile {
         mContext = context.getApplicationContext();
         mPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         mDefaults = new HashMap<>();
-        activeProfile = getInt(R.string.pref_active_profile_key, "0");
+        activeProfile = getInt(R.string.pref_active_profile_key, mContext.getString(R.string.default_profile));
         if(activeProfile != PROFILE_MANUAL) {
             createDefaults();
         } else {

@@ -291,7 +291,8 @@ public class MainActivity extends ActionBarActivity {
 
         SettingsActivity.setPrefDefaults(this);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        mConfigured = preferences.getBoolean(getString(R.string.pref_locatrack_activated_key), false);
+        boolean defaultConfigured = getResources().getBoolean(R.bool.default_configured);
+        mConfigured = preferences.getBoolean(getString(R.string.pref_locatrack_activated_key), defaultConfigured);
         mDeviceId = preferences.getString(getString(R.string.pref_locatrack_deviceid_key), "");
         if(!mConfigured) {
             LoginActivity.start(getApplicationContext());
@@ -310,12 +311,12 @@ public class MainActivity extends ActionBarActivity {
         if(savedInstanceState == null) savedInstanceState = sLastBundle;
         setUiValuesFromBundle(savedInstanceState);
 
-        ((TextView)findViewById(R.id.labelVersion)).setText(String.format("%s - %s",
-                getString(R.string.app_name), Constants.VERSION_STRING));
+        ((TextView)findViewById(R.id.labelVersion)).setText(String.format("%s - %s - %s edition",
+                getString(R.string.app_name), Constants.VERSION_STRING, getString(R.string.edition_name)));
 
        // Start service if not running.
         if(!LocationService.isRunning(this)) {
-            LocationService.start(this);
+            LocationService.enable(this);
         }
     }
 
