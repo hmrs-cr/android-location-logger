@@ -3,7 +3,6 @@ package com.hmsoft.locationlogger.data.preferences;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
@@ -45,7 +44,8 @@ public class PreferenceProfile {
         mContext = context.getApplicationContext();
         mPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         mDefaults = new HashMap<>();
-        activeProfile = getInt(R.string.pref_active_profile_key, mContext.getString(R.string.default_profile));
+        String defaultProfile = mContext.getString(R.string.pref_active_profile_default);
+        activeProfile = getInt(R.string.pref_active_profile_key, defaultProfile);
         if(activeProfile != PROFILE_MANUAL) {
             createDefaults();
         } else {

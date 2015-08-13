@@ -17,7 +17,7 @@
 
         <ListPreference
             android:key="@string/pref_active_profile_key"
-            android:defaultValue="@string/default_profile"
+            android:defaultValue="@string/pref_active_profile_default"
             android:negativeButtonText="@null"
             android:positiveButtonText="@null"
             android:title="@string/pref_active_profile_title"

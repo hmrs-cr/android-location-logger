@@ -2,8 +2,8 @@
 <resources>
 
     <string name="app_name">Location Logger</string>
-    <string name="sync_account_type">hmlocatrack.appspot.com</string>
-    <string name="location_provider_authority">com.hmsoft.nmealogger.location.provider</string>
+    <string name="sync_account_type">hmlocatrack.com</string>
+    <string name="location_provider_authority">com.hmsoft.locationlogger.location.provider</string>
     <string name="service_title">Location Logger</string>
     <string name="service_content">Count: %1$d ~ %2$dM</string>
     <string name="action_update_location">Update Now</string>
@@ -12,26 +12,13 @@
     <string name="disabled_string">Disabled</string>
     <string name="unknow_string">Unknown</string>
     <string name="generic_ok">OK</string>
-    <string name="export_export">Export</string>
-    <string name="export_exporting">Exporting ...</string>
-    <string name="export_complete"><![CDATA[Export complete!<br><br>You can find the exported file in the <b>SD Card</b> folder on your device\'s storage]]></string>
-    <string name="export_complete_sync"><![CDATA[Export complete!<br><br>Your locations will be uploaded to the cloud in a few moments.]]></string>
-    <string name="export_failed">A problem occurred while exporting!</string>
-    <string name="export_preference_title">Export</string>
-    <string name="export_preference_title_records">Export - %d records</string>
-    <string name="export_preference_calculating">Calculating ...</string>
     <string name="sync_notif_content_title">Location Logger Cloud Sync</string>
     <string name="sync_notif_content_text">%d uploaded.</string>
     <string name="sync_fail_notif_content_text">%1$d uploaded, %2$d failed.</string>
-    <string name="action_about">About…</string>
     <string name="sync_progress_title">Location Upload</string>
     <string name="sync_progress_text">Upload in progress</string>
     <string name="sync_progress_advance">Uploading %1$d of %2$d (%3$d%%)</string>
     <string name="sync_progress_geotag">Geotaging %1$d of %2$d (%3$s)</string>
-    <string name="geotagger_notify_title">Picture Geotagger</string>
-    <string name="geotagger_notify_text_ok">%d pictures tagged</string>
-    <string name="toast_tracking_start">Tracking Started</string>
-    <string name="toast_tracking_stop">Tracking Stoped</string>
     <string name="title_activity_web_server">Export Web Server</string>
     <string name="listenting_add_label">Address:</string>
     <string name="connect_wifi_label">Please connect this device to a WiFi network.</string>

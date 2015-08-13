@@ -54,22 +54,7 @@
             android:name=".ui.WebServerActivity"
             android:label="@string/title_activity_web_server" >
         </activity>
-        <activity
-            android:name=".ui.LoginActivity"
-            android:label="@string/title_activity_login"
-            android:windowSoftInputMode="adjustResize|stateVisible"
-            android:theme="@style/LoginActivityNoActionBar">
-
-            <intent-filter>
-                <category android:name="android.intent.category.ALTERNATIVE" />
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:host="hmlocatrack.appspot.com" android:scheme="https"
-                    android:pathPrefix="/device/register/" />
-            </intent-filter>
-        </activity>
-
+        
         <service android:name=".service.LocationService" >
         </service>
 

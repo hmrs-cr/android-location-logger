@@ -19,6 +19,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import com.hmsoft.locationlogger.BuildConfig;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
@@ -291,14 +292,17 @@ public class MainActivity extends ActionBarActivity {
 
         SettingsActivity.setPrefDefaults(this);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        boolean defaultConfigured = getResources().getBoolean(R.bool.default_configured);
-        mConfigured = preferences.getBoolean(getString(R.string.pref_locatrack_activated_key), defaultConfigured);
         mDeviceId = preferences.getString(getString(R.string.pref_locatrack_deviceid_key), "");
-        if(!mConfigured) {
-            LoginActivity.start(getApplicationContext());
-            LocationService.disable(getApplicationContext());
-            finish();
-            return;
+        if(BuildConfig.DEFAULT_CONFIGURED) {
+            mConfigured = true;
+        } else {
+            mConfigured = preferences.getBoolean(getString(R.string.pref_locatrack_activated_key), false);            
+            if(!mConfigured) {
+                LoginActivity.start(getApplicationContext());
+                LocationService.disable(getApplicationContext());
+                finish();
+                return;
+            }
         }
 
         setContentView(R.layout.activity_main);
@@ -311,8 +315,8 @@ public class MainActivity extends ActionBarActivity {
         if(savedInstanceState == null) savedInstanceState = sLastBundle;
         setUiValuesFromBundle(savedInstanceState);
 
-        ((TextView)findViewById(R.id.labelVersion)).setText(String.format("%s - %s - %s edition",
-                getString(R.string.app_name), Constants.VERSION_STRING, getString(R.string.edition_name)));
+        ((TextView)findViewById(R.id.labelVersion)).setText(String.format("%s - %s",
+                getString(R.string.app_name), Constants.VERSION_STRING));
 
        // Start service if not running.
         if(!LocationService.isRunning(this)) {

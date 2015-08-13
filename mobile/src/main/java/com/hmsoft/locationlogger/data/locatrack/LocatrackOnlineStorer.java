@@ -220,7 +220,6 @@ public class LocatrackOnlineStorer extends LocationStorer {
 
         mTotalItems++;
 
-        Logger.info(TAG, "Uploading location...");
         int count = retryCount;
         boolean uploadOk = false;
         while (!uploadOk) {
@@ -237,11 +236,11 @@ public class LocatrackOnlineStorer extends LocationStorer {
             }
 
             uploadOk = isConnected && internalUploadLocation(location);
-            if (--count < 0) {
-                Logger.warning(TAG, "Too many retries");
-                break;
-            }
             if (!uploadOk) {
+                if (--count < 0) {
+                    Logger.warning(TAG, "Too many retries");
+                    break;
+                }
                 Logger.warning(TAG, "Upload failed retry %d of %d. Sleeping %d seconds", count + 1,
                         retryCount, retryDelaySeconds);
                 TaskExecutor.sleep(retryDelaySeconds);

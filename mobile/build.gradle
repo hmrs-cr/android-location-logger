@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 def versionMajor = 1
 def versionMinor = 1
-def verCode = 17;
+def verCode = 18;
 def APP_NAME = "LocationLogger"
 
 def buildTime() {
@@ -10,6 +10,8 @@ def buildTime() {
     def formattedDate = date.format('yyyyMMddHHmms')
     return formattedDate
 }
+
+def versionStringBase = "${versionMajor}.${versionMinor}.${verCode}-${buildTime()}"
 
 android {
     compileSdkVersion 21
@@ -19,7 +21,7 @@ android {
         applicationId "com.hmsoft." + APP_NAME.toLowerCase()
         minSdkVersion 9
         targetSdkVersion 21
-        versionName "${versionMajor}.${versionMinor}.${verCode}-${buildTime()}"
+        versionName versionStringBase
         versionCode verCode
     }
 
@@ -29,6 +31,23 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    
+     productFlavors {
+        bhp103 {
+            versionName versionStringBase + "-BHP103"
+            buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
+        }
+        
+        genTracker {
+            versionName versionStringBase + "-GenTracker"
+            buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
+        }
+        
+        publicEdition {
+            versionName versionStringBase + "-Public"
+            buildConfigField "boolean", "DEFAULT_CONFIGURED", "false"
+        }
+     }
 
     applicationVariants.all { variant ->
         if (variant.buildType.name == "release") {

@@ -154,6 +154,7 @@
 
 
     <string name="pref_active_profile_title">Device Profile</string>
+    <string name="pref_active_profile_default">0</string>
     <string-array name="pref_active_profile_entries">
         <item>Manual</item>
         <item>Car</item>
