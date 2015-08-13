@@ -4,10 +4,8 @@
     <string name="app_name">Location Logger</string>
     <string name="sync_account_type">hmlocatrack.com</string>
     <string name="location_provider_authority">com.hmsoft.locationlogger.location.provider</string>
-    <string name="service_title">Location Logger</string>
-    <string name="service_content">Count: %1$d ~ %2$dM</string>
+    <string name="service_content">Count: %1$d ~ %2$dM  [%3$s]</string>
     <string name="action_update_location">Update Now</string>
-    <string name="action_stop_tracking">Stop tracking</string>
     <string name="enabled_string">Enabled</string>
     <string name="disabled_string">Disabled</string>
     <string name="unknow_string">Unknown</string>

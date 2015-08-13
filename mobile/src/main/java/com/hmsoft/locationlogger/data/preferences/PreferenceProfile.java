@@ -30,6 +30,7 @@ public class PreferenceProfile {
     private int[] mIntervalValues = null;
 
     public final int activeProfile;
+    public final String activeProfileName;
 
     public static PreferenceProfile get(Context context) {
         if(sInstance == null) sInstance = new PreferenceProfile(context);
@@ -46,6 +47,8 @@ public class PreferenceProfile {
         mDefaults = new HashMap<>();
         String defaultProfile = mContext.getString(R.string.pref_active_profile_default);
         activeProfile = getInt(R.string.pref_active_profile_key, defaultProfile);
+        String[] names = mContext.getResources().getStringArray(R.array.pref_active_profile_entries);
+        activeProfileName = names[activeProfile];
         if(activeProfile != PROFILE_MANUAL) {
             createDefaults();
         } else {

@@ -413,8 +413,7 @@ public class MainActivity extends ActionBarActivity {
         mUpdateRunnable = new UpdateUIRunnable(this);
         mUpdateHandler.postDelayed(mUpdateRunnable, 6000);
         chkServiceEnabled.setChecked(preferences.getBoolean(R.string.pref_service_enabled_key, true));
-        String[] names = getResources().getStringArray(R.array.pref_active_profile_entries);
-        labelDeviceId.setText(mDeviceId + " (" + names[preferences.activeProfile] + ")");
+        labelDeviceId.setText(mDeviceId + " (" + preferences.activeProfileName + ")");
     }
 	
 	@Override

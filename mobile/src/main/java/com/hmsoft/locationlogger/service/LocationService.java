@@ -778,7 +778,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             } else {
                 contentTitle = (mLastSavedLocation != null ?
                         String.format(Locale.ENGLISH, "%f,%f", mLastSavedLocation.getLatitude(), mLastSavedLocation.getLongitude()) :
-                        getString(R.string.service_title));
+                        getString(R.string.app_name));
             }
 
             Builder notificationBuilder = (new NotificationCompat.Builder(this)).
@@ -797,7 +797,9 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
             if (mLocationCount > -1) {
                 notificationBuilder.setContentText(getString(R.string.service_content,
-                        mLocationCount, accuracy));
+                        mLocationCount, accuracy, mPreferences.activeProfileName));
+            } else {
+                notificationBuilder.setContentText(mPreferences.activeProfileName);
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && !mRestrictedSettings) {

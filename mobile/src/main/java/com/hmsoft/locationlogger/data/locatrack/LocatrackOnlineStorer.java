@@ -61,10 +61,6 @@ public class LocatrackOnlineStorer extends LocationStorer {
         boolean update = false;
         long updateId = 0;
 
-        if(mLastUploadedLocation == null) {
-            mLastUploadedLocation = LocatrackDb.last();
-        }
-
         boolean hasNotifyEvent = !TextUtils.isEmpty(location.event) ||
                 (mLastUploadedLocation != null && !TextUtils.isEmpty(mLastUploadedLocation.event));
 
