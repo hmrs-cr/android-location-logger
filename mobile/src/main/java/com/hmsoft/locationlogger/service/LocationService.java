@@ -110,6 +110,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private PendingIntent mUpdateLocationIntent = null;
     //private LocationRequest mLocationRequest = null;
     //private LocationClient mGpLocationClient = null;
+    private boolean mUploadHandlerRunning;
     private final boolean mGooglePlayServiceAvailable = false;
 
     LocatrackOnlineStorer mOnlineStorer = null;
@@ -336,7 +337,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         if (mChargingStart || mChargingStop) {
             setAirplaneMode(context, false);
             mAirplaneModeOn = false;
-            destroyExecutorThread(); // Start with a new created thread
+            destroyUploadThread(); // Start with a new created thread
             acquireWakeLock();
             startLocationListener();
             int intv = -1;
@@ -490,9 +491,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 (mCurrentBestLocation == mLastSavedLocation ||
                 mCurrentBestLocation.getTime() == mLastSavedLocation.getTime())) {
             logLocation(null, "currentBestLocation is the same lastSavedLocation. Saving nothing...");
-            releaseWakeLock();
-            mChargingStart = false;
-            mChargingStop = false;
+            cleanup();
             return;
         }
 
@@ -538,9 +537,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
         } else if (DEBUG) {
             logLocation(null, "No last location. Turn on GPS!");
-            releaseWakeLock();
-            mChargingStart = false;
-            mChargingStop = false;
+            cleanup();
         }
     }
 
@@ -551,19 +548,13 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private void saveLocation(final LocatrackLocation location, final boolean upload) {
 
         location.batteryLevel = mLastBatteryLevel;
-        if(mNotifyEvents) {
-            if(mChargingStart) {
+        if (mNotifyEvents) {
+            if (mChargingStart) {
                 location.event = LocatrackLocation.EVENT_START;
-            } else if(mChargingStop) {
+            } else if (mChargingStop) {
                 location.event = LocatrackLocation.EVENT_STOP;
             }
         }
-
-        mAirplaneModeOn = (mSetAirplaneMode && mLastBatteryLevel <= 100) ||
-                mLastBatteryLevel < CRITICAL_BATTERY_LEV;
-
-        mChargingStart = false;
-        mChargingStop = false;
 
         mLocationStorer.storeLocation(location);
 
@@ -572,79 +563,79 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         mLocationCount++;
         updateUIIfNeeded();
 
-        if(upload) {
-            if (mInstantUploadEnabled) {
-                final Context context = getApplicationContext();
-                if(mUploadThread == null) {
-                    mUploadThread = new HandlerThread(TAG);
-                    mUploadThread.start();
-                    Looper looper = mUploadThread.getLooper();
-                    mUploadHandler = new Handler(looper);
-                    Logger.info(TAG, "ExecutorThread created");
-                    if(DEBUG) Toast.makeText(this, "ExecutorThread created", Toast.LENGTH_SHORT).show();
-                }
-                mUploadHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mOnlineStorer == null) {
-                            mOnlineStorer = new LocatrackOnlineStorer(context);
-                            mOnlineStorer.configure();
-                        }
-                        boolean locationUploaded = false;
-
-                        try {
-                            if (DIAGNOSTICS && mLocationLogEnabled) {
-                                Logger.info(TAG, "Upload: %s", location);
-                            }
-
-                            PerfWatch pw = null;
-
-                            if (DIAGNOSTICS && mLocationLogEnabled) {
-                                pw = PerfWatch.start(TAG, "Start: Upload location");
-                            }
-
-                            if (mAirplaneModeOn) {
-                                mOnlineStorer.retryDelaySeconds = 15;
-                                mOnlineStorer.retryCount = 4;
-                            } else {
-                                mOnlineStorer.retryDelaySeconds = 3;
-                                mOnlineStorer.retryCount = 1;
-                            }
-                            locationUploaded = mOnlineStorer.storeLocation(location);
-                            if (DIAGNOSTICS && mLocationLogEnabled) {
-                                if (pw != null) {
-                                    pw.stop(TAG, "End: Upload location Success: " + locationUploaded);
-                                }
-                            }
-                            if (mAirplaneModeOn) {
-                                setAirplaneMode(context, true);
-                            }
-                        } finally {
-                            final boolean uploaded = locationUploaded;
-                            TaskExecutor.executeOnUIThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    releaseWakeLock();
-                                    if (uploaded) {
-                                        mLocationStorer.setUploadDateToday(location);
-                                    }
-                                }
-                            });
-                        }
-                    }
-                });
-            } else {
-                releaseWakeLock();
+        if (upload && mInstantUploadEnabled) {
+            if(mUploadHandlerRunning) {
+                if(DEBUG) Logger.debug(TAG, "Upload handler still running, Stuck?");
+                destroyUploadThread();
             }
+            final Context context = getApplicationContext();
+            if (mUploadThread == null) {
+                mUploadThread = new HandlerThread(TAG);
+                mUploadThread.start();
+                Looper looper = mUploadThread.getLooper();
+                mUploadHandler = new Handler(looper);
+                Logger.info(TAG, "UploadThread created");
+                if (DEBUG) Toast.makeText(this, "UploadThread created", Toast.LENGTH_SHORT).show();
+            }
+            mUploadHandlerRunning = true;
+            mUploadHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (mOnlineStorer == null) {
+                        mOnlineStorer = new LocatrackOnlineStorer(context);
+                        mOnlineStorer.configure();
+                    }
+                    boolean locationUploaded = false;
+
+                    try {
+                        if (DIAGNOSTICS && mLocationLogEnabled) {
+                            Logger.info(TAG, "Upload: %s", location);
+                        }
+
+                        PerfWatch pw = null;
+
+                        if (DIAGNOSTICS && mLocationLogEnabled) {
+                            pw = PerfWatch.start(TAG, "Start: Upload location");
+                        }
+
+                        if (mAirplaneModeOn) {
+                            mOnlineStorer.retryDelaySeconds = 15;
+                            mOnlineStorer.retryCount = 4;
+                        } else {
+                            mOnlineStorer.retryDelaySeconds = 3;
+                            mOnlineStorer.retryCount = 1;
+                        }
+                        locationUploaded = mOnlineStorer.storeLocation(location);
+                        if (DIAGNOSTICS && mLocationLogEnabled) {
+                            if (pw != null) {
+                                pw.stop(TAG, "End: Upload location Success: " + locationUploaded);
+                            }
+                        }
+                    } finally {
+                        final boolean uploaded = locationUploaded;
+                        TaskExecutor.executeOnUIThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                cleanup();
+                                if (uploaded) {
+                                    mLocationStorer.setUploadDateToday(location);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        } else {
+            cleanup();
         }
     }
 
-    void destroyExecutorThread() {
+    void destroyUploadThread() {
         if(mUploadThread != null) {
             mUploadThread.quit();
             mUploadThread = null;
-            Logger.info(TAG, "ExecutorThread destroyed");
-            if(DEBUG) Toast.makeText(this, "ExecutorThread destroyed", Toast.LENGTH_SHORT).show();
+            Logger.info(TAG, "UploadThread destroyed");
+            if(DEBUG) Toast.makeText(this, "UploadThread destroyed", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -670,7 +661,13 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
     }
 
-    public void releaseWakeLock() {
+    void cleanup() {
+        mUploadHandlerRunning = false;
+        mChargingStart = false;
+        mChargingStop = false;
+        if (mAirplaneModeOn) {
+            setAirplaneMode(getApplicationContext(), true);
+        }
         if (mWakeLock != null) {
             if(DIAGNOSTICS && mLocationLogEnabled) Logger.info(TAG, "releaseLocationLock");
             mWakeLock.release();
@@ -781,8 +778,13 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     void startLocationListener() {
         if(mAirplaneModeOn) {
             setAirplaneMode(this, false);
-            mAirplaneModeOn = false;
         }
+
+        mAirplaneModeOn = mInstantUploadEnabled &&
+                ((mSetAirplaneMode && mLastBatteryLevel <= 100) ||
+                        mLastBatteryLevel < CRITICAL_BATTERY_LEV);
+
+
         if(mGooglePlayServiceAvailable) {
             /*if (mLocationRequest == null) {
                 if(Logger.DEBUG) Logger.debug(TAG, "startLocationListener: Google Play Services available.");
@@ -806,8 +808,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             mNetProviderEnabled = mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
             mGpsProviderEnabled = mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
-            long time = mGpsTimeout;
-            time = mGpsTimeout / 4;
+            long time = mGpsTimeout / 4;
 
             float minDistance = mMinimumDistance / 2;
 
@@ -970,7 +971,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             mAlarm.cancel(mAlarmLocationCallback);
             stopLocationListener();
             stopPassiveLocationListener();
-            releaseWakeLock();
+            cleanup();
         }
 
         if(alarmCallBack || (startAlarm)) {
@@ -1007,9 +1008,9 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private void configure(boolean setup) {
         if(Logger.DEBUG) Logger.debug(TAG, "configure(setup:%s)", setup);
 
-
+        Context context = getApplicationContext();
         if (!mPreferences.getBoolean(R.string.pref_service_enabled_key, true)) {
-            disable(getApplicationContext());
+            disable(context);
             return;
         }
 
@@ -1036,6 +1037,9 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         mVehicleMode = mPreferences.activeProfile == PreferenceProfile.PROFILE_BICYCLE ||
                 mPreferences.activeProfile == PreferenceProfile.PROFILE_CAR;
+
+        mAirplaneModeOn = mInstantUploadEnabled && Settings.System.getInt(context.getContentResolver(),
+                Settings.System.AIRPLANE_MODE_ON, 0) == 1;
 
         if (setup) {
             if (mRequestPassiveLocationUpdates) {
@@ -1089,25 +1093,27 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         super.onCreate();
         if(Logger.DEBUG) Logger.debug(TAG, "onCreate");
 
+        Context context = getApplicationContext();
+
         mLocationStorer = createStorer();
         mLocationStorer.configure();
-        mPreferences = PreferenceProfile.get(getApplicationContext());
+        mPreferences = PreferenceProfile.get(context);
         configure(false);
-        
+
         /*mGooglePlayServiceAvailable = mUseGmsIgAvailable &&
                 GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS;*/
 
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mAlarm = (AlarmManager) getSystemService(ALARM_SERVICE);
-        Intent i = new Intent(getApplicationContext(), LocationService.class);
+        Intent i = new Intent(context, LocationService.class);
         i.setAction(Constants.ACTION_ALARM);
         i.putExtra(Constants.EXTRA_ALARM_CALLBACK, 1);
-        mAlarmLocationCallback = PendingIntent.getService(getApplicationContext(), 0, i, 0);
+        mAlarmLocationCallback = PendingIntent.getService(context, 0, i, 0);
 
-        i = new Intent(getApplicationContext(), LocationService.class);
+        i = new Intent(context, LocationService.class);
         i.setAction(Constants.ACTION_SYNC);
         i.putExtra(Constants.EXTRA_SYNC, 1);
-        mAlarmSyncCallback = PendingIntent.getService(getApplicationContext(), 0, i, 0);
+        mAlarmSyncCallback = PendingIntent.getService(context, 0, i, 0);
 
         ActionReceiver.register(this);
     }
@@ -1116,7 +1122,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     public void onDestroy() {
         if(Logger.DEBUG) Logger.debug(TAG, "onDestroy");
 
-        releaseWakeLock();
+        cleanup();
         ActionReceiver.unregister(this);
         mAlarm.cancel(mAlarmLocationCallback);
         mAlarm.cancel(mAlarmSyncCallback);
@@ -1125,7 +1131,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         stopLocationListener();
         stopForeground(true);
 
-        destroyExecutorThread();
+        destroyUploadThread();
         PreferenceProfile.reset();
 
         super.onDestroy();
@@ -1261,6 +1267,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     Settings.System.AIRPLANE_MODE_ON, 0) == 1;
 
             if(enabled == isEnabled) return;
+
+            if(DEBUG) Logger.debug(TAG, "setAirplaneMode:" + isEnabled);
 
             // Toggle airplane mode.
             Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON,
