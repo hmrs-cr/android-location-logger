@@ -24,6 +24,7 @@ import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.ui.MainActivity;
 import com.hmsoft.locationlogger.ui.SettingsActivity;
 
@@ -65,6 +66,14 @@ public class SyncService extends Service {
          */
         public SyncAdapter(Context context, boolean autoInitialize) {
             super(context, autoInitialize);
+        }
+
+        private static void restoreAirplaneModeIfNeeded(Context context) {
+            PreferenceProfile prefs = PreferenceProfile.get(context);
+            boolean airPlaneMode = prefs.getBoolean(R.string.pref_set_airplanemode_key, false);
+            if(airPlaneMode) {
+                LocationService.setAirplaneMode(context, true);
+            }
         }
 
         private void updateSyncNotification(int total, int fail) {
@@ -125,6 +134,7 @@ public class SyncService extends Service {
         public void onSyncCanceled() {
             if(Logger.DEBUG) Logger.debug(TAG, "onSyncCanceled");
             cancelled = true;
+            restoreAirplaneModeIfNeeded(getContext());
             super.onSyncCanceled();
         }
 
@@ -155,6 +165,7 @@ public class SyncService extends Service {
 
             NotificationCompat.Builder builder = null;
             NotificationManager notifyManager = null;
+            boolean allUploaded = true;
             try {
                 if(manual) {
                     Intent activityIntent = new Intent(context, SettingsActivity.class);
@@ -171,7 +182,6 @@ public class SyncService extends Service {
                 }
 
                 cancelled = false;
-                boolean allUploaded = true;
                 PerfWatch watch = PerfWatch.start(TAG, "PerformSync begin");
                 try {
                     LocatrackLocation[] toUpload = LocatrackDb.getNotUploadedLocations().toArray();
@@ -253,6 +263,9 @@ public class SyncService extends Service {
             } finally {
                 if(notifyManager != null) {
                     notifyManager.cancel(NOTIFICATION_ID);
+                }
+                if(allUploaded || syncResult.tooManyRetries) {
+                    restoreAirplaneModeIfNeeded(getContext());
                 }
                 synchronized (sLock) {
                     sIsSyncing = false;
