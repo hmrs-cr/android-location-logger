@@ -89,7 +89,7 @@ public class SyncService extends Service {
                 if(mLocatrackIntent == null) {
                     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
                     String locatrackUri = preferences.getString(context.getString(R.string.pref_locatrack_uri_key),
-                            context.getString(R.string.pref_locatrack_settings_title));
+                            context.getString(R.string.pref_locatrack_uri_default));
 
                     if(!TextUtils.isEmpty(locatrackUri)) {
                         Uri uri = Uri.parse(locatrackUri);

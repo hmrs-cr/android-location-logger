@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="generic_day">día</string>
+    <string name="generic_days">días</string>
+    <string name="generic_hour">hora</string>
+    <string name="generic_hours">horas</string>
+    <string name="generic_minute">minuto</string>
+    <string name="generic_minutes">minutos</string>
+    <string name="generic_seconds">segundos</string>
+    <string name="generic_meters">metros</string>
+    <string name="generic_kilometers">kilometros</string>
+    <string name="nmea_last_entry_text">Hace %1$d %2$s, en %3$s, %4$d %5$s desde aquí.</string>
+    <string name="nmea_last_entry_noaddress_text">Hace %1$d %2$s, %3$d %4$s desde aquí.</string>
+    <string name="generic_none">Ninguno</string>
+    <string name="last_sync_time_text">Hace %1$d %2$s</string>
+    <string name="next_sync_time_text">Dentro de %1$d %2$s</string>
+
+    <string name="action_settings">Opciones</string>
+    <string name="action_webserver">Iniciar servidor de exportacón</string>
+    <string name="action_locatrac_sync">Exportar a la nube Locatrack</string>
+
+    <string name="lable_last_entry">Ultima entrada:</string>
+    <string name="generic_loading">Cargando…</string>
+</resources>

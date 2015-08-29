@@ -2,19 +2,16 @@
 <resources>
     <string name="pref_service_settings_title">Service Settings</string>
     <string name="pref_service_enabled_title">Enable service</string>
-    <string name="pref_vehiclemode_enabled_title">Vehicle Mode</string>
     <string name="pref_set_airplanemode_title">Set Airplane Mode</string>
-    <string name="pref_service_enabled_summary"></string>
-    <string name="pref_service_enabled_default">true</string>
-    <string name="pref_vehiclemode_enabled_default">false</string>
-    <string name="pref_set_airplanemode_default">false</string>
+    <string name="pref_service_enabled_default" translatable="false">true</string>
+    <string name="pref_vehiclemode_enabled_default" translatable="false">false</string>
+    <string name="pref_set_airplanemode_default" translatable="false">false</string>
 
     <string name="pref_passive_enabled_title">Passive updates</string>
-    <string name="pref_passive_enabled_summary"></string>
-    <string name="pref_passive_enabled_default">true</string>
+    <string name="pref_passive_enabled_default" translatable="false">true</string>
 
     <string name="pref_update_interval_title">Update interval</string>
-    <string name="pref_update_interval_default">240</string>
+    <string name="pref_update_interval_default" translatable="false">240</string>
     <string-array name="pref_update_interval_entries">
         <item>Fastest</item>
         <item>1 minutes</item>
@@ -28,7 +25,7 @@
         <item>45 minutes</item>
         <item>1 hour</item>
     </string-array>
-    <string-array name="pref_update_interval_values">
+    <string-array name="pref_update_interval_values" translatable="false">
         <item>20</item>
         <item>60</item>
         <item>120</item>
@@ -43,7 +40,7 @@
     </string-array>
 
     <string name="pref_minimun_distance_title">Minimum Distance</string>
-    <string name="pref_minimun_distance_default">20</string>
+    <string name="pref_minimun_distance_default"  translatable="false">20</string>
     <string-array name="pref_minimun_distance_entries">
         <item>5 meters</item>
         <item>10 meters</item>
@@ -56,7 +53,7 @@
         <item>500 meters</item>
         <item>1 kilometer</item>
     </string-array>
-    <string-array name="pref_minimun_distance_values">
+    <string-array name="pref_minimun_distance_values" translatable="false">
         <item>5</item>
         <item>10</item>
         <item>20</item>
@@ -69,7 +66,7 @@
     </string-array>
 
     <string name="pref_max_speed_title">Max Reasonable Speed</string>
-    <string name="pref_max_speed_default">55.55</string>
+    <string name="pref_max_speed_default" translatable="false">55.55</string>
     <string-array name="pref_max_speed_entries">
         <item>100 Km/h</item>
         <item>200 Km/h</item>
@@ -77,7 +74,7 @@
         <item>750 Km/h</item>
         <item>1000 Km/h</item>
     </string-array>
-    <string-array name="pref_max_speed_values">
+    <string-array name="pref_max_speed_values" translatable="false">
         <item>27.78</item>
         <item>55.55</item>
         <item>138.89</item>
@@ -86,7 +83,7 @@
     </string-array>
 
     <string name="pref_minimun_accuracy_title">Minimum Accuracy</string>
-    <string name="pref_minimun_accuracy_default">750</string>
+    <string name="pref_minimun_accuracy_default" translatable="false">750</string>
     <string-array name="pref_minimun_accuracy_entries">
         <item>10 meters</item>
         <item>20 meters</item>
@@ -100,7 +97,7 @@
         <item>1.5 kilometers</item>
         <item>2 kilometers</item>
     </string-array>
-    <string-array name="pref_minimun_accuracy_values">
+    <string-array name="pref_minimun_accuracy_values" translatable="false">
         <item>10</item>
         <item>20</item>
         <item>50</item>
@@ -115,7 +112,7 @@
     </string-array>
 
     <string name="pref_best_accuracy_title">Acceptable GPS Accuracy</string>
-    <string name="pref_best_accuracy_default">8</string>
+    <string name="pref_best_accuracy_default" translatable="false">8</string>
     <string-array name="pref_best_accuracy_entries">
         <item>4 meters</item>
         <item>6 meters</item>
@@ -125,7 +122,7 @@
         <item>50 meters</item>
         <item>100 meters</item>
     </string-array>
-    <string-array name="pref_best_accuracy_values">
+    <string-array name="pref_best_accuracy_values" translatable="false">
         <item>4</item>
         <item>6</item>
         <item>8</item>
@@ -136,7 +133,7 @@
     </string-array>
 
     <string name="pref_gps_timeout_title">GPS Timeout</string>
-    <string name="pref_gps_timeout_default">20</string>
+    <string name="pref_gps_timeout_default" translatable="false">20</string>
     <string-array name="pref_gps_timeout_entries">
         <item>10 seconds</item>
         <item>20 seconds</item>
@@ -144,7 +141,7 @@
         <item>1 minute</item>
         <item>2 minutes</item>
     </string-array>
-    <string-array name="pref_gps_timeout_values">
+    <string-array name="pref_gps_timeout_values" translatable="false">
         <item>10</item>
         <item>20</item>
         <item>30</item>
@@ -154,52 +151,39 @@
 
 
     <string name="pref_active_profile_title">Device Profile</string>
-    <string name="pref_active_profile_default">0</string>
+    <string name="pref_active_profile_default" translatable="false">0</string>
     <string-array name="pref_active_profile_entries">
         <item>Manual</item>
         <item>Car</item>
         <item>Bicycle</item>
         <item>Hiking</item>
     </string-array>
-    <string-array name="pref_active_profile_values">
+    <string-array name="pref_active_profile_values" translatable="false">
         <item>0</item>
         <item>1</item>
         <item>2</item>
         <item>3</item>
     </string-array>
 
-    <string name="pref_advanced_tag">advanced</string>
     <string name="pref_wackelock_enabled_title">WackeLock</string>
-    <string name="pref_wackelock_enabled_summary"></string>
-    <string name="pref_wackelock_enabled_default">false</string>
+    <string name="pref_wackelock_enabled_default" translatable="false">false</string>
 
     <string name="pref_notificationicon_enabled_title">Notification Icon</string>
-    <string name="pref_notificationicon_enabled_summary"></string>
-    <string name="pref_notificationicon_enabled_default">true</string>
+    <string name="pref_notificationicon_enabled_default" translatable="false">true</string>
 
     <string name="pref_loglocations_title">Log Locations</string>
-    <string name="pref_loglocations_summary"></string>
-    <string name="pref_loglocations_default">false</string>
+    <string name="pref_loglocations_default" translatable="false">false</string>
 
-    <string name="pref_export_settings_title1">Export</string>
     <string name="pref_export_settings_title">Upload Settings</string>
-    <string name="pref_export_settings_summary">Open export settings options screen</string>
-    <string name="pref_locatrack_settings_title">Locatrack Settings</string>
-    <string name="pref_locatrack_enabled_summary"></string>
-    <string name="pref_locatrack_enabled_default">false</string>
+    <string name="pref_locatrack_enabled_default"  translatable="false">false</string>
     <string name="pref_synctime_title">Sync Time</string>
-    <string name="pref_synctime_default">00:30</string>
+    <string name="pref_synctime_default" translatable="false">00:30</string>
 
     <string name="pref_locatrack_uri_title">Locatrack URL</string>
     <string name="pref_locatrack_key_title">Locatrack Key</string>
 
     <string name="pref_locatrack_deviceid_title">Device ID</string>
 
-    <string name="pref_nmea_settings_title">NMEA Settings</string>
-
-    <string name="pref_nmealog_directory_title">NMEA Log Folder</string>
-    <string name="pref_nmealog_directory_default"></string>
-    <string name="pref_use_gms_if_available_title">Google Play Location Service</string>
     <string name="pref_instant_upload_enabled_title">Instant Upload</string>
-    <string name="pref_nmealog_enabled_title">NMEA Log Enabled</string>
+
 </resources>

@@ -16,7 +16,6 @@
     <string name="sync_progress_title">Location Upload</string>
     <string name="sync_progress_text">Upload in progress</string>
     <string name="sync_progress_advance">Uploading %1$d of %2$d (%3$d%%)</string>
-    <string name="sync_progress_geotag">Geotaging %1$d of %2$d (%3$s)</string>
     <string name="title_activity_web_server">Export Web Server</string>
     <string name="listenting_add_label">Address:</string>
     <string name="connect_wifi_label">Please connect this device to a WiFi network.</string>

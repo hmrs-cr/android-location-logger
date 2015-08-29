@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="pref_advanced_prefix">pref_advanced_</string>
     <!-- Keys -->
     <string name="pref_service_settings_key" translatable="false">service_settings</string>
     <string name="pref_service_enabled_key" translatable="false">service_enabled</string>
@@ -26,12 +25,12 @@
     <string name="pref_nmea_settings_key" translatable="false">pref_advanced_nmea_settings</string>
     <string name="pref_nmealog_directory_key" translatable="false">nmealog_directory</string>
     <!--<string name="pref_use_gms_if_available_key">use_gms_if_available</string>-->
-    <string name="pref_instant_upload_enabled_key">pref_instant_upload_enabled</string>
-    <string name="pref_nmealog_enabled_key">pref_nmealog_enabled</string>
-    <string name="pref_set_airplanemode_key">pref_set_airplanemode</string>
-    <string name="pref_active_profile_key">pref_active_profile</string>
+    <string name="pref_instant_upload_enabled_key" translatable="false">pref_instant_upload_enabled</string>
+    <string name="pref_nmealog_enabled_key" translatable="false">pref_nmealog_enabled</string>
+    <string name="pref_set_airplanemode_key" translatable="false">pref_set_airplanemode</string>
+    <string name="pref_active_profile_key" translatable="false">pref_active_profile</string>
 
-    <string name="profile_settings_restricted_key">profile_settings_restricted</string>
-    <string name="profile_notify_events_key">profile_notify_events</string>
+    <string name="profile_settings_restricted_key" translatable="false">profile_settings_restricted</string>
+    <string name="profile_notify_events_key" translatable="false">profile_notify_events</string>
 
 </resources>

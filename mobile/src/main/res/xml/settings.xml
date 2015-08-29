@@ -12,8 +12,7 @@
         <CheckBoxPreference
             android:key="@string/pref_service_enabled_key"
             android:defaultValue="@string/pref_service_enabled_default"
-            android:title="@string/pref_service_enabled_title"
-            android:summary="@string/pref_service_enabled_summary" />
+            android:title="@string/pref_service_enabled_title" />
 
         <ListPreference
             android:key="@string/pref_active_profile_key"
@@ -88,28 +87,24 @@
             android:key="@string/pref_passive_enabled_key"
             android:defaultValue="@string/pref_passive_enabled_default"
             android:title="@string/pref_passive_enabled_title"
-            android:summary="@string/pref_passive_enabled_summary"
             android:dependency="@string/pref_service_enabled_key" />
 
         <CheckBoxPreference
             android:key="@string/pref_wackelock_enabled_key"
             android:defaultValue="@string/pref_wackelock_enabled_default"
             android:title="@string/pref_wackelock_enabled_title"
-            android:summary="@string/pref_wackelock_enabled_summary"
             android:dependency="@string/pref_service_enabled_key" />
 
         <CheckBoxPreference
             android:key="@string/pref_notificationicon_enabled_key"
             android:defaultValue="@string/pref_notificationicon_enabled_default"
             android:title="@string/pref_notificationicon_enabled_title"
-            android:summary="@string/pref_notificationicon_enabled_summary"
             android:dependency="@string/pref_service_enabled_key" />
 
         <CheckBoxPreference
             android:key="@string/pref_loglocations_key"
             android:defaultValue="@string/pref_loglocations_default"
             android:title="@string/pref_loglocations_title"
-            android:summary="@string/pref_loglocations_summary"
             android:dependency="@string/pref_service_enabled_key" />
 
         <CheckBoxPreference
@@ -123,7 +118,6 @@
 
     <PreferenceCategory
         android:title="@string/pref_export_settings_title"
-        android:summary="@string/pref_export_settings_summary"
         android:key="@string/pref_locatrack_settings_key" >
 
                 <CheckBoxPreference

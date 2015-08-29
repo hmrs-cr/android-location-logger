@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Registrador de Ubicaciones</string>
+    <string name="sync_account_type">hmlocatrack.com</string>
+    <string name="location_provider_authority">com.hmsoft.locationlogger.location.provider</string>
+    <string name="service_content">%1$d ~ %2$dM  [%3$s]</string>
+    <string name="action_update_location">Actualizar</string>
+    <string name="enabled_string">Habilitado</string>
+    <string name="disabled_string">Deshabilitado</string>
+    <string name="unknow_string">Desconocido</string>
+    <string name="generic_ok">OK</string>
+    <string name="sync_notif_content_title">Location Logger Cloud Sync</string>
+    <string name="sync_notif_content_text">%d subidas.</string>
+    <string name="sync_fail_notif_content_text">%1$d subidas, %2$d fallidas.</string>
+    <string name="sync_progress_title">Subida de ubicaciones</string>
+    <string name="sync_progress_text">Subida en progreso</string>
+    <string name="sync_progress_advance">Subiendo %1$d de %2$d (%3$d%%)</string>
+    <string name="title_activity_web_server">Servidor Web de Exportación</string>
+    <string name="listenting_add_label">Direccón:</string>
+    <string name="connect_wifi_label">Conecte este dispositivo a una red WiFi.</string>
+    <string name="webserver_error_label">Error iniciado servidor.</string>
+    <string name="log_label">Server log:</string>
+
+</resources>

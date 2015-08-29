@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pref_service_settings_title">Opciones del Servicio</string>
+    <string name="pref_service_enabled_title">Activar Servicio</string>
+    <string name="pref_set_airplanemode_title">Activar Modo Avión</string>
+
+    <string name="pref_passive_enabled_title">Ubicaciones pasivas</string>
+
+    <string name="pref_update_interval_title">Intervalo de actualización</string>
+
+    <string-array name="pref_update_interval_entries">
+        <item>Mas rápido</item>
+        <item>1 minutos</item>
+        <item>2 minutos</item>
+        <item>4 minutos</item>
+        <item>5 minutos</item>
+        <item>10 minutos</item>
+        <item>15 minutos</item>
+        <item>20 minutos</item>
+        <item>30 minutos</item>
+        <item>45 minutos</item>
+        <item>1 houra</item>
+    </string-array>
+
+    <string name="pref_minimun_distance_title">Distancia Mínima</string>
+    <string-array name="pref_minimun_distance_entries">
+        <item>5 metros</item>
+        <item>10 metros</item>
+        <item>20 metros</item>
+        <item>30 metros</item>
+        <item>40 metros</item>
+        <item>50 metros</item>
+        <item>100 metros</item>
+        <item>250 metros</item>
+        <item>500 metros</item>
+        <item>1 kilometro</item>
+    </string-array>
+
+    <string name="pref_max_speed_title">Velocidad Máxima Rasonable</string>
+    <string-array name="pref_max_speed_entries">
+        <item>100 km/h</item>
+        <item>200 km/h</item>
+        <item>500 km/h</item>
+        <item>750 km/h</item>
+        <item>1000 km/h</item>
+    </string-array>
+
+    <string name="pref_minimun_accuracy_title">Exactitud Mínima</string>
+    <string-array name="pref_minimun_accuracy_entries">
+        <item>10 metros</item>
+        <item>20 metros</item>
+        <item>50 metros</item>
+        <item>75 metros</item>
+        <item>100 metros</item>
+        <item>200 metros</item>
+        <item>500 metros</item>
+        <item>750 metros</item>
+        <item>1 kilometro</item>
+        <item>1.5 kilometros</item>
+        <item>2 kilometros</item>
+    </string-array>
+
+    <string name="pref_best_accuracy_title">Exactitud GPS Aceptable</string>
+    <string-array name="pref_best_accuracy_entries">
+        <item>4 metros</item>
+        <item>6 metros</item>
+        <item>8 metros</item>
+        <item>10 metros</item>
+        <item>20 metros</item>
+        <item>50 metros</item>
+        <item>100 metros</item>
+    </string-array>
+
+    <string name="pref_gps_timeout_title">GPS Timeout</string>
+    <string-array name="pref_gps_timeout_entries">
+        <item>10 segundos</item>
+        <item>20 segundos</item>
+        <item>30 segundos</item>
+        <item>1 minuto</item>
+        <item>2 minutos</item>
+    </string-array>
+
+
+    <string name="pref_active_profile_title">Perfil del dispositivo</string>
+    <string-array name="pref_active_profile_entries">
+        <item>Manual</item>
+        <item>Automóvil</item>
+        <item>Bicicleta</item>
+        <item>Caminata</item>
+    </string-array>
+
+    <string name="pref_wackelock_enabled_title">WackeLock</string>
+
+    <string name="pref_notificationicon_enabled_title">Icono de Notificación</string>
+
+    <string name="pref_loglocations_title">Registrar ubicaciones</string>
+
+    <string name="pref_export_settings_title">Opciones de subida</string>
+    <string name="pref_synctime_title">Hora de sincronización</string>
+
+    <string name="pref_locatrack_uri_title">Locatrack URL</string>
+    <string name="pref_locatrack_key_title">Locatrack Key</string>
+
+    <string name="pref_locatrack_deviceid_title">Device ID</string>
+
+    <string name="pref_instant_upload_enabled_title">Subida instantanea</string>
+</resources>

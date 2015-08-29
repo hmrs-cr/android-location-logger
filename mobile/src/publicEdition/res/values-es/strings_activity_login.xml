@@ -1,0 +1,14 @@
+<resources>
+    <string name="title_activity_login">Registrar Dispositivo</string>
+
+    <!-- Strings related to login -->
+    <string name="prompt_deviceid">Id</string>
+    <string name="prompt_devicekey">Llave</string>
+    <string name="action_sign_in">Registrar Dispositivo</string>
+    <string name="action_sign_in_short">Registrar</string>
+
+    <string name="error_invalid_deviceid">El ID del dispositivo no es valido</string>
+    <string name="error_invalid_devicekey">La llave del dispositivo es muy corta</string>
+    <string name="error_incorrect_devicekey">La llave del dispositivo no es correcta</string>
+    <string name="error_field_required">Este campo es requerido</string>
+</resources>

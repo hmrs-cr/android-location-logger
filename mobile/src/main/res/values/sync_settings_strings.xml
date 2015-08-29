@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="action_sync_settings">com.hmsoft.nmealogger.ACTION.SYNC_SETTINGS</string>
+    <string name="action_sync_settings"  translatable="false">com.hmsoft.nmealogger.ACTION.SYNC_SETTINGS</string>
     <string name="pref_sync_category">Settings</string>
     <string name="pref_sync_title">Locatrack account</string>
     <string name="pref_synctime_summary">Configure Locatrack account settings</string>
