@@ -29,7 +29,7 @@
                 <TextView
                     android:id="@+id/labelServiceEnabled"
                     style="@style/valueTitleLabel"
-                    android:text="Service Enabled"
+                    android:text="@string/service_enabled"
                     android:layout_weight="1"
                     android:layout_width="0dp" />
 

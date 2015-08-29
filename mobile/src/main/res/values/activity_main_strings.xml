@@ -20,5 +20,6 @@
     <string name="action_locatrac_sync">Export to Locatrack cloud</string>
 
     <string name="lable_last_entry">Last Entry:</string>
-    <string name="generic_loading">Loading...</string>
+    <string name="generic_loading">Loading…</string>
+    <string name="service_enabled">Service Enabled</string>
 </resources>
