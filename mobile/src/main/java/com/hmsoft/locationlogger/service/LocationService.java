@@ -29,6 +29,8 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
+import android.telephony.SmsManager;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.widget.Toast;
 
@@ -117,7 +119,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private HandlerThread mUploadThread = null;
     private Handler mUploadHandler;
 
-    int mLastBatteryLevel = 99;
+    static int mLastBatteryLevel = 99;
     boolean mChargingStart;
     boolean mChargingStop;
     boolean mAirplaneModeOn;
@@ -136,6 +138,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 Toast.makeText(context, "" + intent, Toast.LENGTH_LONG).show();
             }
             LocationService.start(context);
+            LocationService.performSimCheck(context);
         }
     }
 
@@ -155,7 +158,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             if(Logger.DEBUG) Logger.debug(TAG, "onReceive:" + intent.getAction());
             switch (intent.getAction()) {
                 case Intent.ACTION_USER_PRESENT:
-                    mService.handleUserPresent();
+                    if(mService != null) mService.handleUserPresent();
                     break;
                 case Intent.ACTION_BATTERY_CHANGED:
                     int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
@@ -169,7 +172,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
                     if (charging) level += 100;
 
-                    mService.handleBatteryLevelChange(level);
+                    if(mService != null) mService.handleBatteryLevelChange(level);
                     break;
             }
         }
@@ -311,6 +314,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 intv = 900;
             }
             setLocationAlarm(intv);
+            performSimCheck(context);
         }
     }
 
@@ -1183,6 +1187,72 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         } catch (Exception ignored) {
             Logger.error(TAG, ignored.getMessage());
         }
+    }
+
+    public static boolean performSimCheck(final Context context) {
+        String oldSimNumber = context.getString(R.string.pref_sim_number);
+        if (TextUtils.isEmpty(oldSimNumber)) {
+            Logger.debug(TAG, "SIM check is disabled.");
+            return false;
+        }
+
+        final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+
+        String currentSimNumber = "";
+
+        if (telephonyManager == null) {
+            Logger.warning(TAG, "No TelephonyManager found");
+        } else {
+            currentSimNumber = telephonyManager.getSimSerialNumber();
+        }
+
+        boolean isDifferent = !oldSimNumber.equals(currentSimNumber);
+        if (isDifferent) {
+            Logger.warning(TAG, "Different SIM detected! '%s' != '%s'",
+                    currentSimNumber, oldSimNumber);
+
+            TaskExecutor.executeOnNewThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        String deviceId = context.getString(R.string.pref_locatrack_deviceid_default, "NoDevId");
+                        LocatrackLocation location = LocationService.getBestLastLocation(context);
+                        if (location == null)
+                            location = LocatrackDb.last();
+                        if (location == null)
+                            location = new LocatrackLocation("");
+
+                        SmsManager smsManager = SmsManager.getDefault();
+                        if (smsManager != null) {
+                            String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
+                            String message = deviceId + " has a new SIM!!!, Time:" + (new Date()) +
+                                    ", Location: " + location.getLatitude() + "," + location.getLongitude();
+                            for (String phoneNumber : phoneNumbers) {
+                                if (!TextUtils.isEmpty(phoneNumber)) {
+                                    TaskExecutor.sleep(1);
+                                    smsManager.sendTextMessage(phoneNumber, null, message, null, null);
+                                }
+                            }
+                        } else {
+                            Logger.warning(TAG, "No SmsManager found");
+                        }
+
+                        location.event = LocatrackLocation.EVENT_NEW_SIM;
+                        location.batteryLevel = mLastBatteryLevel;
+                        LocatrackOnlineStorer onlineStorer = new LocatrackOnlineStorer(context);
+                        onlineStorer.configure();
+                        onlineStorer.retryCount = 11;
+                        onlineStorer.retryDelaySeconds = 5;
+                        onlineStorer.storeLocation(location);
+                    } catch (Exception e) {
+                        Logger.warning(TAG, e.getMessage());
+                    }
+                }
+            });
+        } else {
+            Logger.debug(TAG, " Same SIM. Everything OK");
+        }
+        return isDifferent;
     }
 
 
