@@ -21,10 +21,10 @@ import android.text.TextUtils;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
-import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
+import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
+import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
-import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.ui.MainActivity;
 import com.hmsoft.locationlogger.ui.SettingsActivity;
 
@@ -69,11 +69,8 @@ public class SyncService extends Service {
         }
 
         private static void restoreAirplaneModeIfNeeded(Context context) {
-            PreferenceProfile prefs = PreferenceProfile.get(context);
-            boolean airPlaneMode = prefs.getBoolean(R.string.pref_set_airplanemode_key, false);
-            if(airPlaneMode) {
-                LocationService.setAirplaneMode(context, true);
-            }
+            TaskExecutor.sleep(30);
+            LocationService.restoreAirplaneMode(context);
         }
 
         private void updateSyncNotification(int total, int fail) {

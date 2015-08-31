@@ -23,6 +23,7 @@ public final class Constants {
     public static final String EXTRA_CONFIGURE = EXTRA_NAMESPACE + ".CONFIGURE";
     public static final String EXTRA_CONFIGURE_STORER = EXTRA_NAMESPACE + ".CONFIGURE_STORER";
     public static final String EXTRA_SYNC = EXTRA_NAMESPACE + ".SYNC";
+    public static final String EXTRA_RESTORE_AIRPLANE_MODE = EXTRA_NAMESPACE + ".RESTORE_AIRPLANE_MODE";
 
 
     private Constants() {

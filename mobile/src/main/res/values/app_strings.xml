@@ -20,4 +20,6 @@
     <string name="webserver_error_label">Error starting server.</string>
     <string name="log_label">Server log:</string>
 
+    <string name="sim_notify_sms">%1$s has a new SIM!, Operator: %2$s, Time: %3$s, Location: %4$f,%5$f</string>
+
 </resources>

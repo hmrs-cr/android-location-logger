@@ -19,4 +19,5 @@
     <string name="webserver_error_label">Error iniciado servidor.</string>
     <string name="log_label">Server log:</string>
 
+    <string name="sim_notify_sms">%1$s tiene un nuevo SIM!, Operador: %2$s, Fecha: %3$s, Ubicacion: %4$f,%5$f</string>
 </resources>

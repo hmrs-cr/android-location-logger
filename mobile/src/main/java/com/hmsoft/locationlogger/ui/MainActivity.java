@@ -260,31 +260,6 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-    /*
-    private void servicesConnected() {
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        if(prefs.getBoolean("gms_checked", false)) {
-            return;
-        }
-
-        prefs.edit().putBoolean("gms_checked", true).apply();
-
-        // Check that Google Play services is available
-        int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
-        // If Google Play services is available
-        if (ConnectionResult.SUCCESS == resultCode) {
-            // In debug mode, log the status
-            if(Logger.DEBUG) Logger.debug(TAG, "Google Play services is available.");
-            // Continue
-            return ;
-            // Google Play services was not available for some reason
-        } else {
-            Logger.debug(TAG, "Google Play Services error code %d", resultCode);
-        }
-    }*/
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if(Logger.DEBUG) Logger.debug(TAG, "onCreate");
@@ -322,6 +297,8 @@ public class MainActivity extends ActionBarActivity {
         if(!LocationService.isRunning(this)) {
             LocationService.enable(this);
         }
+
+        LocationService.performSimCheck(this);
     }
 
 
@@ -365,17 +342,18 @@ public class MainActivity extends ActionBarActivity {
     @Override
     public boolean onMenuOpened(int featureId, Menu menu) {
         if (menu == null) menu = mMenu;
-        MenuItem settingsMenu = menu.findItem(R.id.action_settings);
-        if(settingsMenu != null) {
-            if (mRestrictedSettings && mRestrictedSettingsCount > 0) {
-                mRestrictedSettingsCount--;
-                settingsMenu.setVisible(false);
-            } else {
-                mRestrictedSettingsCount = 6;
-                settingsMenu.setVisible(true);
+        if(menu != null) {
+            MenuItem settingsMenu = menu.findItem(R.id.action_settings);
+            if (settingsMenu != null) {
+                if (mRestrictedSettings && mRestrictedSettingsCount > 0) {
+                    mRestrictedSettingsCount--;
+                    settingsMenu.setVisible(false);
+                } else {
+                    mRestrictedSettingsCount = 6;
+                    settingsMenu.setVisible(true);
+                }
             }
         }
-
         return super.onMenuOpened(featureId, menu);
     }
 

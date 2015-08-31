@@ -13,6 +13,7 @@ public class LocatrackLocation extends Location {
     public static final String EVENT_NEW_SIM = "new-sim";
 
     public String event = "";
+    public String extraInfo;
     public int batteryLevel = -1;
     public long uploadTime;
 

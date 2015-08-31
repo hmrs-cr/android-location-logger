@@ -150,6 +150,9 @@ public class LocatrackOnlineStorer extends LocationStorer {
             if (!TextUtils.isEmpty(location.event)) {
                 urlParameters.add(new BasicNameValuePair("notify", location.event));
             }
+            if (!TextUtils.isEmpty(location.extraInfo)) {
+                urlParameters.add(new BasicNameValuePair("extra-info", location.extraInfo));
+            }
             if (updateId > 0) {
                 urlParameters.add(new BasicNameValuePair("update_id", String.valueOf(updateId)));
             }
