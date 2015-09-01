@@ -240,7 +240,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
                     Logger.warning(TAG, "Too many retries");
                     break;
                 }
-                Logger.warning(TAG, "Upload failed retry %d of %d. Sleeping %d seconds", count + 1,
+                Logger.warning(TAG, "Upload failed retry %d of %d. Sleeping %d seconds", (retryCount-count) + 1,
                         retryCount, retryDelaySeconds);
                 TaskExecutor.sleep(retryDelaySeconds);
             }

@@ -13,6 +13,7 @@ public final class Constants {
     public static final String ACTION_NOTIFICATION_UPDATE_LOCATION = ACTION_NAMESPACE + ".NOTIFICATION_UPDATE_LOCATION";
     public static final String ACTION_SYNC = ACTION_NAMESPACE + ".SYNC";
     public static final String ACTION_ALARM = ACTION_NAMESPACE + ".ALARM";
+    public static final String ACTION_BALANCE_SMS = ACTION_NAMESPACE + ".BALANCE_SMS";
 	
 	public static final String ACTION_UPDATE_UI = ACTION_NAMESPACE + ".ACTION_UPDATE_UI";
 

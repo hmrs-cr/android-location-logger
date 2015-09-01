@@ -106,10 +106,12 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private AlarmManager mAlarm = null;
     private PendingIntent mAlarmLocationCallback = null;
     private PendingIntent mAlarmSyncCallback = null;
+    private PendingIntent mAvailBalanceSmsCallback = null;
     private PendingIntent mLocationActivityIntent = null;
     private Intent mMapIntent = null;
     private PendingIntent mUpdateLocationIntent = null;
     private boolean mUploadHandlerRunning;
+    private int mRetrySmsCount;
 
     LocatrackOnlineStorer mOnlineStorer = null;
     LocationStorer mLocationStorer;
@@ -193,6 +195,9 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                         }
                     }
                     break;
+                case Constants.ACTION_BALANCE_SMS:
+                    if (mService != null) mService.handleSmsResult(getResultCode());
+                    break;
             }
         }
 
@@ -203,6 +208,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 filter.addAction(Intent.ACTION_BATTERY_CHANGED);
                 filter.addAction(Intent.ACTION_USER_PRESENT);
                 filter.addAction(SMS_RECEIVED_ACTION);
+                filter.addAction(Constants.ACTION_BALANCE_SMS);
                 service.getApplicationContext().registerReceiver(sInstance, filter);
             }
         }
@@ -304,11 +310,31 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     //region Core functions
 
+    void handleSmsResult(int resultCode) {
+        if(resultCode != -1) {
+            if(DEBUG) Logger.debug(TAG, "SMS failed with status: " + resultCode);
+            if (--mRetrySmsCount > 0) {
+                TaskExecutor.executeOnUIThread(new Runnable() {
+                   @Override
+                   public void run() {
+                       sendAvailBalanceSms();
+                   }
+               }, 1);
+            } else {
+                // not sending
+                Logger.warning(TAG, "Too many retries to send SMS");
+            }
+        } else if(DEBUG) {
+            Logger.debug(TAG, "SMS successfully sent");
+        }
+    }
+
     void handleSms(String address, String smsBody) {
         if(DEBUG) {
             Logger.debug(TAG, "SMS From %s: %s", address, smsBody);
         }
         if(getString(R.string.pref_balance_sms_number).equals(address) && !TextUtils.isEmpty(smsBody)) {
+            // not sending
             if(mPendingNotifyInfo == null) {
                 mPendingNotifyInfo = new StringBuilder();
             }
@@ -554,9 +580,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
         }
 
-        if(mPendingNotifyInfo != null && mPendingNotifyInfo.length() > 0) {
+        if(mPendingNotifyInfo != null) {
             location.extraInfo = mPendingNotifyInfo.toString();
-            mPendingNotifyInfo.setLength(0);
         }
 
         mLocationStorer.storeLocation(location);
@@ -622,8 +647,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                                 cleanup();
                                 if (uploaded) {
                                     mLocationStorer.setUploadDateToday(location);
-                                } else if(!TextUtils.isEmpty(location.extraInfo)) {
-                                    mPendingNotifyInfo.append(location.extraInfo);
+                                    mPendingNotifyInfo = null;
                                 }
                             }
                         });
@@ -959,7 +983,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 Context context = getApplicationContext();
                 SyncService.setAutoSync(context, true);
                 setAirplaneMode(context, false);
-                sendAvailBalanceSms(context);
+                mRetrySmsCount = 10;
+                sendAvailBalanceSms();
             }
             setSyncAlarm();
         }
@@ -1221,14 +1246,29 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
     }
 
-    public static void sendAvailBalanceSms(Context context) {
-        String phoneNumber = context.getString(R.string.pref_balance_sms_number);
+    void sendAvailBalanceSms() {
+        String phoneNumber = getString(R.string.pref_balance_sms_number);
         if(TextUtils.isEmpty(phoneNumber)) return;
-        String message = context.getString(R.string.pref_balance_sms_message);
+        String message = getString(R.string.pref_balance_sms_message);
         if(TextUtils.isEmpty(message)) return;
+
+        if(mAvailBalanceSmsCallback == null) {
+            Context context = getApplicationContext();
+            Intent i = new Intent(Constants.ACTION_BALANCE_SMS);
+            mAvailBalanceSmsCallback = PendingIntent.getBroadcast(context, 0, i, 0);
+        }
+        // sending
+        sendSms(phoneNumber, message, mAvailBalanceSmsCallback);
+    }
+
+    public static void sendSms(String toNumber, String smsMessage, PendingIntent sentIntent)  {
         SmsManager smsManager = SmsManager.getDefault();
-        if(smsManager == null) return;
-        smsManager.sendTextMessage(phoneNumber, null, message, null, null);
+        if(smsManager == null) {
+            Logger.warning(TAG, "No SmsManager found");
+            return;
+        }
+        smsManager.sendTextMessage(toNumber, null, smsMessage, sentIntent, null);
+        if(DEBUG) Logger.debug(TAG, "Send SMS to %s: %s", toNumber, smsMessage);
     }
 
     private static long lastSimNotifyTime;
@@ -1278,21 +1318,17 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                         if (location == null)
                             location = new LocatrackLocation("");
 
-                        SmsManager smsManager = SmsManager.getDefault();
-                        if (smsManager != null) {
-                            String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
-                            String message= context.getString(R.string.sim_notify_sms,
-                                    deviceId, telephonyManager.getNetworkOperatorName(),
-                                    (new Date()).toString(), location.getLatitude(), location.getLongitude());
 
-                            for (String phoneNumber : phoneNumbers) {
-                                if (!TextUtils.isEmpty(phoneNumber)) {
-                                    TaskExecutor.sleep(1);
-                                    smsManager.sendTextMessage(phoneNumber, null, message, null, null);
-                                }
+                        String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
+                        String message= context.getString(R.string.sim_notify_sms,
+                                deviceId, telephonyManager.getNetworkOperatorName(),
+                                (new Date()).toString(), location.getLatitude(), location.getLongitude());
+
+                        for (String phoneNumber : phoneNumbers) {
+                            if (!TextUtils.isEmpty(phoneNumber)) {
+                                TaskExecutor.sleep(1);
+                                sendSms(phoneNumber, message, null);
                             }
-                        } else {
-                            Logger.warning(TAG, "No SmsManager found");
                         }
 
                         String phoneNumber = telephonyManager.getLine1Number();
@@ -1313,7 +1349,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 }
             });
         } else {
-            Logger.debug(TAG, " Same SIM. Everything OK");
+            Logger.debug(TAG, "Same SIM. Everything OK");
         }
         return isDifferent;
     }
