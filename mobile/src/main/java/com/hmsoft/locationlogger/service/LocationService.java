@@ -1319,10 +1319,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                             location = new LocatrackLocation("");
 
 
+                        String operator = telephonyManager.getNetworkOperatorName();
                         String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
-                        String message= context.getString(R.string.sim_notify_sms,
-                                deviceId, telephonyManager.getNetworkOperatorName(),
-                                (new Date()).toString(), location.getLatitude(), location.getLongitude());
+                        String message= context.getString(R.string.sim_notify_sms,deviceId,
+                                operator, (new Date()).toString(), location.getLatitude(),
+                                location.getLongitude());
 
                         for (String phoneNumber : phoneNumbers) {
                             if (!TextUtils.isEmpty(phoneNumber)) {
@@ -1332,9 +1333,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                         }
 
                         String phoneNumber = telephonyManager.getLine1Number();
+                        location.extraInfo = "";
                         if(!TextUtils.isEmpty(phoneNumber)) {
                             location.extraInfo = "\nPhone number: " + phoneNumber;
                         }
+                        location.extraInfo += "\nOperator: " + operator;
 
                         location.event = LocatrackLocation.EVENT_NEW_SIM;
                         location.batteryLevel = sLastBatteryLevel;
