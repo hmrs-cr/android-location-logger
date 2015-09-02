@@ -980,11 +980,17 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         if(intent.hasExtra(Constants.EXTRA_SYNC)) {
             if(sLastBatteryLevel > 49) {
-                Context context = getApplicationContext();
+                final Context context = getApplicationContext();
                 SyncService.setAutoSync(context, true);
                 setAirplaneMode(context, false);
                 mRetrySmsCount = 10;
-                sendAvailBalanceSms();
+                TaskExecutor.executeOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        sendAvailBalanceSms();
+                        performSimCheck(context);
+                    }
+                }, 2);
             }
             setSyncAlarm();
         }
@@ -1288,12 +1294,26 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 
         String currentSimNumber;
+        int simState;
 
         if (telephonyManager == null) {
             Logger.warning(TAG, "No TelephonyManager found");
             return false;
         } else {
             currentSimNumber = telephonyManager.getSimSerialNumber();
+            simState = telephonyManager.getSimState();
+        }
+
+        if(simState == TelephonyManager.SIM_STATE_ABSENT) {
+            currentSimNumber = "";
+        } else if(simState != TelephonyManager.SIM_STATE_READY) {
+            if(DEBUG) Logger.debug(TAG, "SIM is not ready, not performing SIM check.");
+            return false;
+        }
+
+        if(currentSimNumber == null) {
+            Logger.warning(TAG, "Current SIM number is null. State %d", simState);
+            return false;
         }
 
         boolean isDifferent = !oldSimNumber.equals(currentSimNumber);
@@ -1320,6 +1340,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
 
                         String operator = telephonyManager.getNetworkOperatorName();
+                        String country = telephonyManager.getSimCountryIso();
                         String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
                         String message= context.getString(R.string.sim_notify_sms,deviceId,
                                 operator, (new Date()).toString(), location.getLatitude(),
@@ -1337,7 +1358,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                         if(!TextUtils.isEmpty(phoneNumber)) {
                             location.extraInfo = "\nPhone number: " + phoneNumber;
                         }
-                        location.extraInfo += "\nOperator: " + operator;
+                        location.extraInfo += "\nOperator: " + operator + " (" + country + ")";
 
                         location.event = LocatrackLocation.EVENT_NEW_SIM;
                         location.batteryLevel = sLastBatteryLevel;
