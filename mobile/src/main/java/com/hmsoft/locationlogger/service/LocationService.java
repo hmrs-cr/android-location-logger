@@ -351,19 +351,22 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     void handleBatteryLevelChange(int newLevel) {
         final Context context = getApplicationContext();
+        boolean fireEvents = false;
         if (sLastBatteryLevel <= 100 && newLevel > 100) {
             SyncService.setAutoSync(context, true);
             Logger.info(TAG, "Charging start");
             mChargingStart = true;
             mChargingStop = false;
+            fireEvents = true;
         } else if (sLastBatteryLevel > 100 && newLevel <= 100) {
             SyncService.setAutoSync(context, false);
             Logger.info(TAG, "Charging stop");
             mChargingStop = true;
             mChargingStart = false;
+            fireEvents = true;
         }
         sLastBatteryLevel = newLevel;
-        if (mChargingStart || mChargingStop) {
+        if (fireEvents) {
             setAirplaneMode(context, false);
             mAirplaneModeOn = false;
             destroyUploadThread(); // Start with a new created thread
@@ -984,13 +987,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 SyncService.setAutoSync(context, true);
                 setAirplaneMode(context, false);
                 mRetrySmsCount = 10;
-                TaskExecutor.executeOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        sendAvailBalanceSms();
-                        performSimCheck(context);
-                    }
-                }, 2);
+                sendAvailBalanceSms();
+                performSimCheck(context);
             }
             setSyncAlarm();
         }
@@ -1277,107 +1275,105 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         if(DEBUG) Logger.debug(TAG, "Send SMS to %s: %s", toNumber, smsMessage);
     }
 
-    private static long lastSimNotifyTime;
-    public static boolean performSimCheck(final Context context) {
+    private static long sLastSimCheckTime;
+    public static void performSimCheck(final Context context) {
+        
+        final String oldSimNumber = context.getString(R.string.pref_sim_number);
+        if (TextUtils.isEmpty(oldSimNumber)) {
+            Logger.debug(TAG, "SIM check is disabled.");
+            return /*false*/;
+        }
+        
+        if(System.currentTimeMillis() - sLastSimCheckTime <= 60000 ) {
+            if(DEBUG) Logger.debug(TAG, "SIM notifications too fast");
+            return /*true*/;
+        }
+        
         if(Settings.System.getInt(context.getContentResolver(),
                 Settings.System.AIRPLANE_MODE_ON, 0) == 1) {
             if(DEBUG) Logger.debug(TAG, "Airplane mode enabled, not performing SIM check.");
-            return false;
+            return /*false*/;
         }
+        
 
-        String oldSimNumber = context.getString(R.string.pref_sim_number);
-        if (TextUtils.isEmpty(oldSimNumber)) {
-            Logger.debug(TAG, "SIM check is disabled.");
-            return false;
-        }
-
-        final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-
-        String currentSimNumber;
-        int simState;
-
+        final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);        
         if (telephonyManager == null) {
             Logger.warning(TAG, "No TelephonyManager found");
-            return false;
-        } else {
-            currentSimNumber = telephonyManager.getSimSerialNumber();
-            simState = telephonyManager.getSimState();
+            return /*false*/;
         }
-
-        if(simState == TelephonyManager.SIM_STATE_ABSENT) {
-            currentSimNumber = "";
-        } else if(simState != TelephonyManager.SIM_STATE_READY) {
-            if(DEBUG) Logger.debug(TAG, "SIM is not ready, not performing SIM check.");
-            return false;
-        }
-
-        if(currentSimNumber == null) {
-            Logger.warning(TAG, "Current SIM number is null. State %d", simState);
-            return false;
-        }
-
-        boolean isDifferent = !oldSimNumber.equals(currentSimNumber);
-        if (isDifferent) {
-            Logger.warning(TAG, "Different SIM detected! '%s' != '%s'",
-                    currentSimNumber, oldSimNumber);
-
-            if(System.currentTimeMillis() - lastSimNotifyTime <= 60000 ) {
-                if(DEBUG) Logger.debug(TAG, "SIM notifications too fast");
-                return true;
-            }
-
-            lastSimNotifyTime = System.currentTimeMillis();
-            TaskExecutor.executeOnNewThread(new Runnable() {
+        
+        sLastSimCheckTime = System.currentTimeMillis();
+        TaskExecutor.executeOnNewThread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        String deviceId = context.getString(R.string.pref_locatrack_deviceid_default, "NoDevId");
-                        LocatrackLocation location = LocationService.getBestLastLocation(context);
-                        if (location == null)
-                            location = LocatrackDb.last();
-                        if (location == null)
-                            location = new LocatrackLocation("");
-
-
-                        String operator = telephonyManager.getNetworkOperatorName();
-                        String country = telephonyManager.getSimCountryIso();
-                        String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
-                        String message= context.getString(R.string.sim_notify_sms,deviceId,
-                                operator, (new Date()).toString(), location.getLatitude(),
-                                location.getLongitude());
-
-                        for (String phoneNumber : phoneNumbers) {
-                            if (!TextUtils.isEmpty(phoneNumber)) {
-                                TaskExecutor.sleep(1);
-                                sendSms(phoneNumber, message, null);
+                        String currentSimNumber;
+                        int simState;
+                        int retryCount = 30;
+                        while((simState = telephonyManager.getSimState()) != TelephonyManager.SIM_STATE_READY ||
+                             TextUtils.isEmpty((currentSimNumber = telephonyManager.getSimSerialNumber()))) {
+                            if(simState == TelephonyManager.SIM_STATE_ABSENT) {
+                                if(DEBUG) Logger.debug(TAG, "SIM not present");
+                                currentSimNumber = "";
+                                break;
                             }
+                            if(--retryCount < 0) {
+                                Logger.warning(TAG, "SIM is not ready (too many retries), not performing SIM check.");
+                                return /*false*/;
+                            }
+                            if(DEBUG) Logger.debug(TAG, "SIM not ready, retrying...");
+                            TaskExecutor.sleep(1);
                         }
+                        boolean isDifferent = !oldSimNumber.equals(currentSimNumber);
+                        if (isDifferent) {
+                            Logger.warning(TAG, "Different SIM detected! '%s' != '%s'", 
+                                           currentSimNumber, oldSimNumber);
+                                    
+                            String deviceId = context.getString(R.string.pref_locatrack_deviceid_default, "NoDevId");
+                            LocatrackLocation location = LocationService.getBestLastLocation(context);
+                            if (location == null) {
+                                location = LocatrackDb.last();
+                            }
+                            if (location == null) {
+                                location = new LocatrackLocation("");
+                            }
 
-                        String phoneNumber = telephonyManager.getLine1Number();
-                        location.extraInfo = "";
-                        if(!TextUtils.isEmpty(phoneNumber)) {
-                            location.extraInfo = "\nPhone number: " + phoneNumber;
-                        }
-                        location.extraInfo += "\nOperator: " + operator + " (" + country + ")";
+                            String operator = telephonyManager.getNetworkOperatorName();
+                            String country = telephonyManager.getSimCountryIso();
+                            String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
+                            String message= context.getString(R.string.sim_notify_sms, deviceId, operator, 
+                                    (new Date()).toString(), location.getLatitude(), location.getLongitude());
 
-                        location.event = LocatrackLocation.EVENT_NEW_SIM;
-                        location.batteryLevel = sLastBatteryLevel;
-                        LocatrackOnlineStorer onlineStorer = new LocatrackOnlineStorer(context);
-                        onlineStorer.configure();
-                        onlineStorer.retryCount = 11;
-                        onlineStorer.retryDelaySeconds = 5;
-                        onlineStorer.storeLocation(location);
+                            for (String phoneNumber : phoneNumbers) {
+                                if (!TextUtils.isEmpty(phoneNumber)) {
+                                    TaskExecutor.sleep(1);
+                                    sendSms(phoneNumber, message, null);
+                                }
+                            }
+
+                            String phoneNumber = telephonyManager.getLine1Number();
+                            location.extraInfo = "";
+                            if(!TextUtils.isEmpty(phoneNumber)) {
+                                location.extraInfo = "\nPhone number: " + phoneNumber;
+                            }
+                            location.extraInfo += "\nOperator: " + operator + " (" + country + ")";
+
+                            location.event = LocatrackLocation.EVENT_NEW_SIM;
+                            location.batteryLevel = sLastBatteryLevel;
+                            LocatrackOnlineStorer onlineStorer = new LocatrackOnlineStorer(context);
+                            onlineStorer.configure();
+                            onlineStorer.retryCount = 11;
+                            onlineStorer.retryDelaySeconds = 5;
+                            onlineStorer.storeLocation(location);                        
+                        } else {
+                            Logger.debug(TAG, "Same SIM. Everything OK");
+                        }                 
                     } catch (Exception e) {
                         Logger.warning(TAG, e.getMessage());
-                    }
+                    }                        
                 }
-            });
-        } else {
-            Logger.debug(TAG, "Same SIM. Everything OK");
-        }
-        return isDifferent;
+        });
     }
-
 
     //endregionregion Helper functions
 }
