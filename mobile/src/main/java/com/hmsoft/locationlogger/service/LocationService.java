@@ -1276,6 +1276,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
 
     private static long sLastSimCheckTime;
+    private static final String NO_SIM = "NO_SIM";
     public static void performSimCheck(final Context context) {
         
         final String oldSimNumber = context.getString(R.string.pref_sim_number);
@@ -1314,7 +1315,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                              TextUtils.isEmpty((currentSimNumber = telephonyManager.getSimSerialNumber()))) {
                             if(simState == TelephonyManager.SIM_STATE_ABSENT) {
                                 if(DEBUG) Logger.debug(TAG, "SIM not present");
-                                currentSimNumber = "";
+                                currentSimNumber = NO_SIM;
                                 break;
                             }
                             if(--retryCount < 0) {
@@ -1338,25 +1339,28 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                                 location = new LocatrackLocation("");
                             }
 
-                            String operator = telephonyManager.getNetworkOperatorName();
-                            String country = telephonyManager.getSimCountryIso();
-                            String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
-                            String message= context.getString(R.string.sim_notify_sms, deviceId, operator, 
-                                    (new Date()).toString(), location.getLatitude(), location.getLongitude());
+                            if(currentSimNumber != NO_SIM) {
+                                String operator = telephonyManager.getNetworkOperatorName();
+                                String country = telephonyManager.getSimCountryIso();
+                                String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
+                                String message= context.getString(R.string.sim_notify_sms, deviceId, operator,
+                                        (new Date()).toString(), location.getLatitude(), location.getLongitude());
 
-                            for (String phoneNumber : phoneNumbers) {
-                                if (!TextUtils.isEmpty(phoneNumber)) {
-                                    TaskExecutor.sleep(1);
-                                    sendSms(phoneNumber, message, null);
+                                for (String phoneNumber : phoneNumbers) {
+                                    if (!TextUtils.isEmpty(phoneNumber)) {
+                                        TaskExecutor.sleep(1);
+                                        sendSms(phoneNumber, message, null);
+                                    }
                                 }
+                                String phoneNumber = telephonyManager.getLine1Number();
+                                location.extraInfo = "";
+                                if (!TextUtils.isEmpty(phoneNumber)) {
+                                    location.extraInfo = "\nPhone number: " + phoneNumber;
+                                }
+                                location.extraInfo += "\nOperator: " + operator + " (" + country + ")";
+                            } else {
+                                location.extraInfo = "No SIM";
                             }
-
-                            String phoneNumber = telephonyManager.getLine1Number();
-                            location.extraInfo = "";
-                            if(!TextUtils.isEmpty(phoneNumber)) {
-                                location.extraInfo = "\nPhone number: " + phoneNumber;
-                            }
-                            location.extraInfo += "\nOperator: " + operator + " (" + country + ")";
 
                             location.event = LocatrackLocation.EVENT_NEW_SIM;
                             location.batteryLevel = sLastBatteryLevel;

@@ -40,11 +40,11 @@ public final class Logger {
 		
 		try {
 			if(sLogsFolder == null) {
-				sLogsFolder = LocationLoggerApp.getContext().getExternalFilesDir(LOGS_FOLDER);
+				if((sLogsFolder = LocationLoggerApp.getContext().getExternalFilesDir(LOGS_FOLDER)) == null) {
+                    sLogsFolder = LocationLoggerApp.getContext().getFilesDir();
+                }
 			}
-			
-			if(sLogsFolder == null) return;
-			
+
 			Date now = new Date();
 			
 			File file = new File(sLogsFolder, String.format(fileName, LOG_DATE_FORMAT.format(now)));
