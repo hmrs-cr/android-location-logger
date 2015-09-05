@@ -162,9 +162,13 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         @Override
         public void onReceive(Context context, Intent intent) {
             if(Logger.DEBUG) Logger.debug(TAG, "onReceive:" + intent.getAction());
+            if(mService == null) {
+                if(Logger.DEBUG) Logger.debug(TAG, "mService is null");
+                return;
+            }
             switch (intent.getAction()) {
                 case Intent.ACTION_USER_PRESENT:
-                    if(mService != null) mService.handleUserPresent();
+                    mService.handleUserPresent();
                     break;
                 case Intent.ACTION_BATTERY_CHANGED:
                     int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
@@ -178,7 +182,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
                     if (charging) level += 100;
 
-                    if(mService != null) mService.handleBatteryLevelChange(level);
+                    mService.handleBatteryLevelChange(level);
                     break;
                 case SMS_RECEIVED_ACTION:
                     Bundle intentExtras = intent.getExtras();
@@ -191,12 +195,12 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                             String smsBody = smsMessage.getMessageBody();
                             String address = smsMessage.getOriginatingAddress();
 
-                            if (mService != null) mService.handleSms(address, smsBody);
+                            mService.handleSms(address, smsBody);
                         }
                     }
                     break;
                 case Constants.ACTION_BALANCE_SMS:
-                    if (mService != null) mService.handleSmsResult(getResultCode());
+                    mService.handleSmsResult(getResultCode());
                     break;
             }
         }
