@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class LocatrackOnlineStorer extends LocationStorer {
 
@@ -137,6 +138,8 @@ public class LocatrackOnlineStorer extends LocationStorer {
                 }
             }
 
+            boolean addLocale = false;
+
             List<NameValuePair> urlParameters = new ArrayList<>();
             urlParameters.add(new BasicNameValuePair("key", mMyLatitudeKey));
             urlParameters.add(new BasicNameValuePair("deviceid", mDeviceId));
@@ -149,12 +152,19 @@ public class LocatrackOnlineStorer extends LocationStorer {
             urlParameters.add(new BasicNameValuePair("utc_timestamp", String.valueOf(location.getTime())));
             if (!TextUtils.isEmpty(location.event)) {
                 urlParameters.add(new BasicNameValuePair("notify", location.event));
+                addLocale = true;
             }
             if (!TextUtils.isEmpty(location.extraInfo)) {
                 urlParameters.add(new BasicNameValuePair("extra-info", location.extraInfo));
+                addLocale = true;
             }
             if (updateId > 0) {
                 urlParameters.add(new BasicNameValuePair("update_id", String.valueOf(updateId)));
+            }
+            if(addLocale) {
+                String locale = Locale.getDefault().toString();
+                if(DEBUG) Logger.debug(TAG, "Locale:" + locale);
+                post.setHeader("Accept-Language", locale);
             }
             UrlEncodedFormEntity entity = new UrlEncodedFormEntity(urlParameters);
             post.setEntity(entity);
