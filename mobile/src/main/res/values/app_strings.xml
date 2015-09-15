@@ -2,7 +2,7 @@
 <resources>
 
     <string name="app_name">Location Logger</string>
-    <string name="sync_account_type">hmlocatrack.com</string>
+    <string name="sync_account_type" translatable="false">hmlocatrack.com</string>
     <string name="location_provider_authority" translatable="false">com.hmsoft.locationlogger.location.provider</string>
     <string name="service_content">Count: %1$d ~ %2$dM  [%3$s]</string>
     <string name="action_update_location">Update Now</string>

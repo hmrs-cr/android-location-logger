@@ -2,7 +2,6 @@
 <resources>
 
     <string name="app_name">Registrador de Ubicaciones</string>
-    <string name="sync_account_type">hmlocatrack.com</string>
     <string name="service_content">%1$d ~ %2$dM  [%3$s]</string>
     <string name="action_update_location">Actualizar</string>
     <string name="enabled_string">Habilitado</string>

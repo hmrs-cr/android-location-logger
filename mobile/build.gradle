@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 def versionMajor = 1
 def versionMinor = 1
-def verCode = 22;
+def verCode = 23;
 def APP_NAME = "LocationLogger"
 
 def buildTime() {
@@ -29,6 +29,9 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            applicationIdSuffix '.debug'
         }
     }
     
@@ -64,6 +67,6 @@ android {
 }
 
 dependencies {
-    compile "com.android.support:appcompat-v7:21.0.+"
+    compile 'com.android.support:appcompat-v7:21.0.+'
     /*compile 'com.google.android.gms:play-services:7.5.0'*/
 }
