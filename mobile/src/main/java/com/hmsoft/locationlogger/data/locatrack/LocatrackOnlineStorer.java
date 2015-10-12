@@ -223,8 +223,11 @@ public class LocatrackOnlineStorer extends LocationStorer {
     @Override
     public boolean storeLocation(LocatrackLocation location) {
         if(!mConfigured) {
-            Logger.error(TAG, "Not configured");
-            return false;
+            configure();
+            if(!mConfigured) {
+                Logger.error(TAG, "Not configured");
+                return false;
+            }
         }
 
         mTotalItems++;

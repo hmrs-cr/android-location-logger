@@ -25,6 +25,7 @@
     <string name="pref_nmea_settings_key" translatable="false">pref_advanced_nmea_settings</string>
     <string name="pref_nmealog_directory_key" translatable="false">nmealog_directory</string>
     <!--<string name="pref_use_gms_if_available_key">use_gms_if_available</string>-->
+    <string name="pref_auto_exif_geotager_enabled_key" translatable="false">pref_auto_exif_geotager_enabled</string>
     <string name="pref_instant_upload_enabled_key" translatable="false">pref_instant_upload_enabled</string>
     <string name="pref_nmealog_enabled_key" translatable="false">pref_nmealog_enabled</string>
     <string name="pref_set_airplanemode_key" translatable="false">pref_set_airplanemode</string>

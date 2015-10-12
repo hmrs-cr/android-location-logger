@@ -41,6 +41,7 @@ import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.common.TaskExecutor;
+import com.hmsoft.locationlogger.data.ExifGeotager;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
@@ -93,6 +94,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private ComponentName mMapIntentComponent = null;
     private boolean mInstantUploadEnabled = false;
     private PreferenceProfile mPreferences;
+    private boolean mAutoExifGeotagerEnabled;
 
     //endregion Settings fields
 
@@ -129,6 +131,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
 
     StringBuilder mPendingNotifyInfo;
+
     //endregion Core fields
 
     //region Helper Inner Classes
@@ -598,6 +601,10 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         mLocationCount++;
         updateUIIfNeeded();
 
+        if(mAutoExifGeotagerEnabled) {
+            ExifGeotager.geotagContentInQueue(getApplicationContext());
+        }
+
         if (upload && mInstantUploadEnabled) {
             if(mUploadHandlerRunning) {
                 if(DEBUG) Logger.debug(TAG, "Upload handler still running, Stuck?");
@@ -953,6 +960,10 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             mNeedsToUpdateUI = true;
             updateNotification();
             setSyncAlarm();
+
+            if(mAutoExifGeotagerEnabled) {
+                ExifGeotager.registerObserver(getApplicationContext());
+            }
         }
 
         if (intent.hasExtra(Constants.EXTRA_STOP_ALARM)) {
@@ -969,6 +980,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         if (alarmCallBack || startAlarm) {
             setLocationAlarm(-1);
+        }
+
+        if(intent.hasExtra(Constants.EXTRA_GEOTAG_CONTENT)) {
+            Uri content = intent.getParcelableExtra(Constants.EXTRA_GEOTAG_CONTENT);
+            ExifGeotager.addContentToQueue(content);
         }
 
         if (intent.hasExtra(Constants.EXTRA_UPDATE_LOCATION)) {
@@ -1029,6 +1045,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         String[] syncTime = mPreferences.getString(R.string.pref_synctime_key, mSyncHour + ":" + mSyncMinute).split(":");
         mSyncHour = Integer.parseInt(syncTime[0]);
         mSyncMinute = Integer.parseInt(syncTime[1]);
+        mAutoExifGeotagerEnabled = mPreferences.getBoolean(R.string.pref_auto_exif_geotager_enabled_key, false);
         //mUseGmsIgAvailable = preferences.getBoolean(getString(R.string.pref_use_gms_if_available_key), true);
         mInstantUploadEnabled = mPreferences.getBoolean(R.string.pref_instant_upload_enabled_key, true);
         mSetAirplaneMode =  mPreferences.getBoolean(R.string.pref_set_airplanemode_key, mSetAirplaneMode);
@@ -1059,6 +1076,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 updateNotification();
             } else {
                 stopForeground(true);
+            }
+
+            ExifGeotager.unregisterObserver(context);
+            if(mAutoExifGeotagerEnabled) {
+                ExifGeotager.registerObserver(context);
             }
         }
     }
@@ -1113,6 +1135,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         cleanup();
         ActionReceiver.unregister(this);
+        ExifGeotager.unregisterObserver(getApplicationContext());
         mAlarm.cancel(mAlarmLocationCallback);
         mAlarm.cancel(mAlarmSyncCallback);
 
@@ -1159,12 +1182,19 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         start(context, Constants.EXTRA_CONFIGURE);
     }
 
-    public static void updateLocation(Context context) {
-        start(context, Constants.EXTRA_UPDATE_LOCATION);
+    public static void geoTagContent(Context context, Uri uri) {
+        Intent intent = new Intent();
+        intent.putExtra(Constants.EXTRA_UPDATE_LOCATION, 1);
+        intent.putExtra(Constants.EXTRA_GEOTAG_CONTENT, uri);
+        start(context, intent);
     }
 
     public static void restoreAirplaneMode(Context context) {
         start(context, Constants.EXTRA_RESTORE_AIRPLANE_MODE);
+    }
+
+    public static void updateLocation(Context context) {
+        start(context, Constants.EXTRA_UPDATE_LOCATION);
     }
 
     public static void enable(Context context) {

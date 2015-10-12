@@ -87,6 +87,7 @@
         <item>Automóvil</item>
         <item>Bicicleta</item>
         <item>Caminata</item>
+        <item>Foto Caminata</item>
     </string-array>
 
     <string name="pref_wackelock_enabled_title">WackeLock</string>
