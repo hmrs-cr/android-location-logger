@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">      
 	<application>	
 		<activity
-		    android:name=".ui.LoginActivity"
+		    android:name="com.hmsoft.locationlogger.ui.LoginActivity"
 		    android:label="@string/title_activity_login"
 		    android:windowSoftInputMode="adjustResize|stateVisible"
 		    android:theme="@style/LoginActivityNoActionBar">
