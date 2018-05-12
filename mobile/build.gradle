@@ -14,16 +14,19 @@ def buildTime() {
 def versionStringBase = "${versionMajor}.${versionMinor}.${verCode}-${buildTime()}"
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion '21.1.2'
+    compileSdkVersion 27
+
+    useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
         applicationId "com.hmsoft." + APP_NAME.toLowerCase()
         minSdkVersion 9
-        targetSdkVersion 21
+        targetSdkVersion 23
         versionName versionStringBase
         versionCode verCode
     }
+
+    flavorDimensions "tier"
 
     buildTypes {
         release {
@@ -52,14 +55,14 @@ android {
         }
      }
 
-    applicationVariants.all { variant ->
-        if (variant.buildType.name == "release") {
-            variant.outputs.each { output ->
-                output.outputFile = new File(
-                        output.outputFile.parent, APP_NAME + "-${variant.versionName}.apk")
+    android.applicationVariants.all { variant ->
+        variant.outputs.all {
+            if (variant.buildType.name == "release") {
+                outputFileName = APP_NAME + "-${variant.versionName}.apk"
             }
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
@@ -67,6 +70,6 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:appcompat-v7:21.0.+'
+    implementation 'com.android.support:appcompat-v7:21.0.+'
     /*compile 'com.google.android.gms:play-services:7.5.0'*/
 }
