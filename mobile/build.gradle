@@ -39,6 +39,12 @@ android {
     }
     
      productFlavors {
+         Frontier {
+             versionName versionStringBase + "-frontier"
+             buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
+         }
+
+
         bhp103 {
             versionName versionStringBase + "-BHP103"
             buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
