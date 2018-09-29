@@ -340,7 +340,10 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         if(DEBUG) {
             Logger.debug(TAG, "SMS From %s: %s", address, smsBody);
         }
-        if(getString(R.string.pref_balance_sms_number).equals(address) && !TextUtils.isEmpty(smsBody)) {
+
+        String balanceKeyWord = getString(R.string.pref_balance_sms_message).toLowerCase();
+        String balanceSmsNumber = getString(R.string.pref_balance_sms_number);
+        if(!TextUtils.isEmpty(smsBody) && (balanceSmsNumber.equals(address) || smsBody.toLowerCase().contains(balanceKeyWord))) {
             // not sending
             if(mPendingNotifyInfo == null) {
                 mPendingNotifyInfo = new StringBuilder();
