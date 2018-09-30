@@ -158,6 +158,7 @@
         <item>Bicycle</item>
         <item>Hiking</item>
         <item>Photo Hike</item>
+        <item>Google Maps</item>
     </string-array>
     <string-array name="pref_active_profile_values" translatable="false">
         <item>0</item>
@@ -165,6 +166,7 @@
         <item>2</item>
         <item>3</item>
         <item>4</item>
+        <item>5</item>
     </string-array>
 
     <string name="pref_wackelock_enabled_title">WackeLock</string>

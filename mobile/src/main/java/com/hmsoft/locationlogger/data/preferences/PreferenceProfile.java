@@ -20,7 +20,8 @@ public class PreferenceProfile {
     public static final int PROFILE_BICYCLE = 2;
     public static final int PROFILE_HIKING = 3;
     public static final int PROFILE_PICTURE_HIKING = 4;
-    public static final int PROFILE_COUNT = 5;
+    public static final int PROFILE_GMAPS = 5;
+    public static final int PROFILE_COUNT = 6;
 
     private static PreferenceProfile sInstance;
 
