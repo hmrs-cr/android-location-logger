@@ -47,6 +47,7 @@ import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
+import com.hmsoft.locationlogger.data.locatrack.LocatrackSimNotifierStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
@@ -584,18 +585,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     
     private void saveLocation(final LocatrackLocation location, final boolean upload) {
 
-        location.batteryLevel = sLastBatteryLevel;
-        if (mNotifyEvents) {
-            if (mChargingStart) {
-                location.event = LocatrackLocation.EVENT_START;
-            } else if (mChargingStop) {
-                location.event = LocatrackLocation.EVENT_STOP;
-            }
-        }
-
-        if(mPendingNotifyInfo != null) {
-            location.extraInfo = mPendingNotifyInfo.toString();
-        }
+        setEventData(location);
 
         mLocationStorer.storeLocation(location);
 
@@ -609,71 +599,95 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
 
         if (upload && mInstantUploadEnabled) {
-            if(mUploadHandlerRunning) {
-                if(DEBUG) Logger.debug(TAG, "Upload handler still running, Stuck?");
-                destroyUploadThread();
-            }
-            final Context context = getApplicationContext();
-            if (mUploadThread == null) {
-                mUploadThread = new HandlerThread(TAG);
-                mUploadThread.start();
-                Looper looper = mUploadThread.getLooper();
-                mUploadHandler = new Handler(looper);
-                Logger.info(TAG, "UploadThread created");
-                if (DEBUG) Toast.makeText(this, "UploadThread created", Toast.LENGTH_SHORT).show();
-            }
-            mUploadHandlerRunning = true;
-            mUploadHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (mOnlineStorer == null) {
-                        mOnlineStorer = new LocatrackOnlineStorer(context);
-                        mOnlineStorer.configure();
-                    }
-                    boolean locationUploaded = false;
-
-                    try {
-                        if (DIAGNOSTICS && mLocationLogEnabled) {
-                            Logger.info(TAG, "Upload: %s", location);
-                        }
-
-                        PerfWatch pw = null;
-
-                        if (DIAGNOSTICS && mLocationLogEnabled) {
-                            pw = PerfWatch.start(TAG, "Start: Upload location");
-                        }
-
-                        if (mAirplaneModeOn) {
-                            mOnlineStorer.retryDelaySeconds = 15;
-                            mOnlineStorer.retryCount = 4;
-                        } else {
-                            mOnlineStorer.retryDelaySeconds = 3;
-                            mOnlineStorer.retryCount = 1;
-                        }
-                        locationUploaded = mOnlineStorer.storeLocation(location);
-                        if (DIAGNOSTICS && mLocationLogEnabled) {
-                            if (pw != null) {
-                                pw.stop(TAG, "End: Upload location Success: " + locationUploaded);
-                            }
-                        }
-                    } finally {
-                        final boolean uploaded = locationUploaded;
-                        TaskExecutor.executeOnUIThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                cleanup();
-                                if (uploaded) {
-                                    mLocationStorer.setUploadDateToday(location);
-                                    mPendingNotifyInfo = null;
-                                }
-                            }
-                        });
-                    }
-                }
-            });
+            uploadLocation(location);
         } else {
             cleanup();
         }
+    }
+
+    private void setEventData(LocatrackLocation location) {
+        location.batteryLevel = sLastBatteryLevel;
+        if (mNotifyEvents) {
+            if (mChargingStart) {
+                location.event = LocatrackLocation.EVENT_START;
+            } else if (mChargingStop) {
+                location.event = LocatrackLocation.EVENT_STOP;
+            }
+        }
+
+        if(location.batteryLevel > 0 && location.batteryLevel < 25  &&
+                TextUtils.isEmpty(location.event)) {
+            location.event = LocatrackLocation.EVENT_LOW_BATTERY;
+        }
+
+        if(mPendingNotifyInfo != null) {
+            location.extraInfo = mPendingNotifyInfo.toString();
+        }
+    }
+
+    private void uploadLocation(final LocatrackLocation location) {
+        if(mUploadHandlerRunning) {
+            if(DEBUG) Logger.debug(TAG, "Upload handler still running, Stuck?");
+            destroyUploadThread();
+        }
+        final Context context = getApplicationContext();
+        if (mUploadThread == null) {
+            mUploadThread = new HandlerThread(TAG);
+            mUploadThread.start();
+            Looper looper = mUploadThread.getLooper();
+            mUploadHandler = new Handler(looper);
+            Logger.info(TAG, "UploadThread created");
+            if (DEBUG) Toast.makeText(this, "UploadThread created", Toast.LENGTH_SHORT).show();
+        }
+        mUploadHandlerRunning = true;
+        mUploadHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mOnlineStorer == null) {
+                    mOnlineStorer = new LocatrackOnlineStorer(context);
+                    mOnlineStorer.configure();
+                }
+                boolean locationUploaded = false;
+
+                try {
+                    if (DIAGNOSTICS && mLocationLogEnabled) {
+                        Logger.info(TAG, "Upload: %s", location);
+                    }
+
+                    PerfWatch pw = null;
+
+                    if (DIAGNOSTICS && mLocationLogEnabled) {
+                        pw = PerfWatch.start(TAG, "Start: Upload location");
+                    }
+
+                    if (mAirplaneModeOn) {
+                        mOnlineStorer.retryDelaySeconds = 15;
+                        mOnlineStorer.retryCount = 4;
+                    } else {
+                        mOnlineStorer.retryDelaySeconds = 3;
+                        mOnlineStorer.retryCount = 1;
+                    }
+                    locationUploaded = mOnlineStorer.storeLocation(location);
+                    if (DIAGNOSTICS && mLocationLogEnabled) {
+                        if (pw != null) {
+                            pw.stop(TAG, "End: Upload location Success: " + locationUploaded);
+                        }
+                    }
+                } finally {
+                    final boolean uploaded = locationUploaded;
+                    TaskExecutor.executeOnUIThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            cleanup();
+                            if (uploaded) {
+                                mLocationStorer.setUploadDateToday(location);
+                                mPendingNotifyInfo = null;
+                            }
+                        }
+                    });
+                }
+            }
+        });
     }
 
     void destroyUploadThread() {
@@ -1401,10 +1415,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
                             location.event = LocatrackLocation.EVENT_NEW_SIM;
                             location.batteryLevel = sLastBatteryLevel;
-                            LocatrackOnlineStorer onlineStorer = new LocatrackOnlineStorer(context);
+                            LocatrackSimNotifierStorer onlineStorer = new LocatrackSimNotifierStorer(context);
                             onlineStorer.configure();
-                            onlineStorer.retryCount = 11;
-                            onlineStorer.retryDelaySeconds = 5;
                             onlineStorer.storeLocation(location);                        
                         } else {
                             Logger.debug(TAG, "Same SIM. Everything OK");

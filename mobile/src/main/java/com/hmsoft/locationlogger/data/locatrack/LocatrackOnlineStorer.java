@@ -96,9 +96,8 @@ public class LocatrackOnlineStorer extends LocationStorer {
             }
         }
 
-        if(location.batteryLevel > 0 && location.batteryLevel < 25 && !mBatteryAlertSent &&
-                TextUtils.isEmpty(location.event)) {
-            location.event = LocatrackLocation.EVENT_LOW_BATTERY;
+        if(mBatteryAlertSent && LocatrackLocation.EVENT_LOW_BATTERY.equals(location.event)) {
+            location.event = null;
         } else if (location.batteryLevel > 100){
             mBatteryAlertSent = false;
         }
