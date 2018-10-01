@@ -48,6 +48,7 @@ import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackSimNotifierStorer;
+import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
@@ -94,6 +95,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private PowerManager mPowerManager;
     private ComponentName mMapIntentComponent = null;
     private boolean mInstantUploadEnabled = false;
+    private boolean mTelegramNotifyEnabled = false;
     private PreferenceProfile mPreferences;
     private boolean mAutoExifGeotagerEnabled;
 
@@ -117,6 +119,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private int mRetrySmsCount;
 
     LocatrackOnlineStorer mOnlineStorer = null;
+    LocatrackTelegramStorer mTelegramStorer = null;
     LocationStorer mLocationStorer;
 
     boolean mNeedsToUpdateUI;
@@ -598,11 +601,52 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             ExifGeotager.geotagContentInQueue(getApplicationContext());
         }
 
+        if(mTelegramNotifyEnabled) {
+            notifyTelegram(location);
+        }
+
         if (upload && mInstantUploadEnabled) {
             uploadLocation(location);
         } else {
             cleanup();
         }
+    }
+
+    private void notifyTelegram(final LocatrackLocation location) {
+        if(TextUtils.isEmpty(location.event) && TextUtils.isEmpty(location.extraInfo)) {
+            if (Logger.DEBUG)
+                Logger.debug(TAG, "No event to notify.");
+
+            return;
+        }
+
+
+        if(mTelegramStorer == null) {
+            final Context context = getApplicationContext();
+            mTelegramStorer = new LocatrackTelegramStorer(context);
+            mTelegramStorer.configure();
+        }
+
+        if(!mTelegramStorer.isConfigured()) {
+            if (Logger.DEBUG)
+                Logger.debug(TAG, "Telegram Storer not configured.");
+            return;
+        }
+
+        TaskExecutor.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                final boolean notified = mTelegramStorer.storeLocation(location);
+                TaskExecutor.executeOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (notified) {
+                            mPendingNotifyInfo = null;
+                        }
+                    }
+                });
+            }
+        });
     }
 
     private void setEventData(LocatrackLocation location) {
@@ -1067,6 +1111,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         mInstantUploadEnabled = mPreferences.getBoolean(R.string.pref_instant_upload_enabled_key, true);
         mSetAirplaneMode =  mPreferences.getBoolean(R.string.pref_set_airplanemode_key, mSetAirplaneMode);
         mNotifyEvents =  mPreferences.getBoolean(R.string.profile_notify_events_key, false);
+        mTelegramNotifyEnabled = mNotifyEvents;
         mRestrictedSettings =  mPreferences.getBoolean(R.string.profile_settings_restricted_key, false);
 
         mVehicleMode = mPreferences.activeProfile == PreferenceProfile.PROFILE_BICYCLE ||

@@ -109,8 +109,14 @@ public class Geocoder {
                  * city, and country name.
                  */
             // Return the text
-            String addressLine = address.getMaxAddressLineIndex() > 0 ?
+            String addressLine = address.getMaxAddressLineIndex() >= 0 ?
                     address.getAddressLine(0) : "";
+
+            if(!TextUtils.isEmpty(addressLine)) {
+                return addressLine;
+            }
+
+
             String locality = address.getLocality();
             String country = address.getCountryName();
 
@@ -120,13 +126,10 @@ public class Geocoder {
 
             String addressText;
 
-            if (TextUtils.isEmpty(locality) || TextUtils.isEmpty(addressLine) ||
-                    addressLine.equals(locality)) {
-                addressText = String.format("%s, %s", addressLine, country);
+            if (TextUtils.isEmpty(locality)) {
+                addressText = country;
             } else {
-                addressText = String.format("%s, %s, %s",
-                        // If there's a street address, add it
-                        addressLine,
+                addressText = String.format("%s, %s",
                         // Locality is usually a city
                         locality,
                         // The country of the address

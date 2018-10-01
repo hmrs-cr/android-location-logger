@@ -4,7 +4,7 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.R;
-import com.hmsoft.locationlogger.common.Logger;
+import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 
@@ -13,9 +13,11 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class LocatrackTelegramStorer extends LocationStorer {
 
@@ -35,18 +37,16 @@ public class LocatrackTelegramStorer extends LocationStorer {
     }
 
     public boolean sentTelegramMessage(String message) {
-
-        String messageUrl =  getMessageUrl(message);
-
-        HttpClient client = new DefaultHttpClient();
-        HttpGet get = new HttpGet(messageUrl);
-        get.setHeader("User-Agent", "Locatrack");
-
         try {
+            String messageUrl =  getMessageUrl(message);
+
+            HttpClient client = new DefaultHttpClient();
+            HttpGet get = new HttpGet(messageUrl);
+
             HttpResponse response = client.execute(get);
             int status = response.getStatusLine().getStatusCode();
             return (status == 200 || status == 201);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
@@ -66,28 +66,12 @@ public class LocatrackTelegramStorer extends LocationStorer {
             e.printStackTrace();
         }
 
-        return message.toString();
+        return messageUrl.toString();
     }
 
 
     @Override
     public boolean storeLocation(LocatrackLocation location) {
-        if(TextUtils.isEmpty(location.event) || TextUtils.isEmpty(location.extraInfo)) {
-            if (Logger.DEBUG)
-                Logger.debug(TAG, "internalUploadLocation UPDATE: distanceTo LUL: %f");
-            return false;
-        }
-
-        if(TextUtils.isEmpty(mChatId) || TextUtils.isEmpty(mChatId)) {
-            configure();
-        }
-
-        if(TextUtils.isEmpty(mChatId) || TextUtils.isEmpty(mChatId)) {
-            Logger.error(TAG, "Not configured");
-            return false;
-        }
-
-
         String message = getEventMessage(location);
         return  sentTelegramMessage(message);
     }
@@ -96,18 +80,46 @@ public class LocatrackTelegramStorer extends LocationStorer {
         StringBuilder message = new StringBuilder();
 
         String event = TextUtils.isEmpty(location.event) ? "INFO" : location.event.toUpperCase();
+        int batteryLevel = location.batteryLevel;
+        if(batteryLevel > 100) {
+            batteryLevel -= 100;
+        }
+
+
+
+
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd KK:mm:ss a");
 
         message
             .append("*").append(event).append("!").append("*\n\n")
-            .append("*Location:* _[").append(location.getLatitude()).append(",").append(location.getLongitude()).append("](http://maps.google.com/maps?daddr=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")_\n")
-            .append("*Time:*     _").append(location.getTime()).append("_\n")
-            .append("*Battery:*  _").append(location.batteryLevel).append("_");
+            .append("*Location:* [").append(getAddressLabel(location)).append("](http://maps.google.com/maps?daddr=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
+            .append("*Time:*      ").append(dateFormat.format(new Date(location.getTime()))).append("\n")
+            .append("*Battery:*   ").append(batteryLevel).append("%");
 
         if(!TextUtils.isEmpty(location.extraInfo)) {
-            message.append("%\n\n_").append(location.extraInfo).append("_");
+            message.append("\n\n_").append(location.extraInfo.trim()).append("_");
         }
 
         return message.toString();
+    }
+
+    private String getAddressLabel(LocatrackLocation location) {
+        String address = Geocoder.getFromCache(location);
+        if(TextUtils.isEmpty(address)) {
+            address = Geocoder.getFromRemote(mContext, location);
+            if (!TextUtils.isEmpty(address)) {
+                Geocoder.addToCache(location, address);
+            }
+        }
+        if(TextUtils.isEmpty(address)) {
+            address = location.getLatitude() + "," + location.getLongitude();
+        }
+
+        return address;
+    }
+
+    public boolean isConfigured() {
+        return !TextUtils.isEmpty(mChatId) && !TextUtils.isEmpty(mChatId);
     }
 
     @Override
