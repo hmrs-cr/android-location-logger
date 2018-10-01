@@ -25,6 +25,7 @@ import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.ui.MainActivity;
 import com.hmsoft.locationlogger.ui.SettingsActivity;
 
@@ -277,12 +278,26 @@ public class SyncService extends Service {
     private static final Object sSyncAdapterLock = new Object();
 
     public static void setAutoSync(Context context, boolean sync) {
+        PreferenceProfile preferences = PreferenceProfile.get(context);
+        String locatrackUri = preferences.getString(R.string.pref_locatrack_uri_key, "");
+        if(sync && TextUtils.isEmpty(locatrackUri)) {
+            if(Logger.DEBUG) Logger.debug(TAG, "No locatrack URL configured.");
+            return;
+        }
+
         Account account = SyncAuthenticatorService.getSyncAccount(context);
         String authority =  context.getString(R.string.location_provider_authority);
         ContentResolver.setSyncAutomatically(account, authority, sync);
     }
 
     public static void syncNow(Context context) {
+        PreferenceProfile preferences = PreferenceProfile.get(context);
+        String locatrackUri = preferences.getString(R.string.pref_locatrack_uri_key, "");
+        if(TextUtils.isEmpty(locatrackUri)) {
+            if(Logger.DEBUG) Logger.debug(TAG, "No locatrack URL configured.");
+            return;
+        }
+
         Bundle settingsBundle = new Bundle();
         settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
         settingsBundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);

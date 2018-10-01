@@ -353,6 +353,12 @@ public class MainActivity extends ActionBarActivity {
                     settingsMenu.setVisible(true);
                 }
             }
+            MenuItem locatracMenu = menu.findItem(R.id.action_locatrac_sync);
+            if(locatracMenu != null) {
+                PreferenceProfile preferences = PreferenceProfile.get(getApplicationContext());
+                String locatrackUri = preferences.getString(R.string.pref_locatrack_uri_key, "");
+                locatracMenu.setEnabled(!TextUtils.isEmpty(locatrackUri));
+            }
         }
         return super.onMenuOpened(featureId, menu);
     }

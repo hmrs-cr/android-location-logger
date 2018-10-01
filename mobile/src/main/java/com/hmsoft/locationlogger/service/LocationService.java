@@ -1068,9 +1068,13 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 SyncService.setAutoSync(context, true);
                 setAirplaneMode(context, false);
                 mRetrySmsCount = 10;
-                sendAvailBalanceSms();
                 performSimCheck(context);
             }
+
+            if(sLastBatteryLevel > 15) {
+                sendAvailBalanceSms();
+            }
+            
             setSyncAlarm();
         }
 
