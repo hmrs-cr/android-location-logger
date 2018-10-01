@@ -85,9 +85,6 @@ public class LocatrackTelegramStorer extends LocationStorer {
             batteryLevel -= 100;
         }
 
-
-
-
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd KK:mm:ss a");
 
         message
