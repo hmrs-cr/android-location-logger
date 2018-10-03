@@ -41,6 +41,11 @@ public class LocatrackTelegramStorer extends LocationStorer {
 
     public boolean sentTelegramMessage(String message) {
         try {
+
+            if(Logger.DEBUG) {
+                message = "* ***** DEBUG ***** *\n" + message;
+            }
+
             String messageUrl =  getMessageUrl(message);
 
             if(Logger.DEBUG) {
