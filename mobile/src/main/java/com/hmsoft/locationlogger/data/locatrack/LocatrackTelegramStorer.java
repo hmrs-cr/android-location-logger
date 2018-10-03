@@ -4,6 +4,7 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.R;
+import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
@@ -31,14 +32,21 @@ public class LocatrackTelegramStorer extends LocationStorer {
 
     private String mBotKey;
     private String mChatId;
+    private DateFormat mDateFormat;
 
     public LocatrackTelegramStorer(Context context) {
         mContext = context;
+        mDateFormat = new SimpleDateFormat("yyyy-MM-dd KK:mm:ss a");
     }
 
     public boolean sentTelegramMessage(String message) {
         try {
             String messageUrl =  getMessageUrl(message);
+
+            if(Logger.DEBUG) {
+                Logger.debug(TAG, "Sending Telegram message: %s", message.replace("%", ""));
+                Logger.debug(TAG, "Url length: %d", messageUrl.length());
+            }
 
             HttpClient client = new DefaultHttpClient();
             HttpGet get = new HttpGet(messageUrl);
@@ -53,7 +61,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
     }
 
     private String getMessageUrl(String message) {
-        StringBuilder messageUrl = new StringBuilder();
+        StringBuilder messageUrl = new StringBuilder(256);
 
         try {
             messageUrl
@@ -61,6 +69,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
                     .append(mBotKey).append("/sendMessage?")
                     .append("chat_id=").append(mChatId).append("&")
                     .append("parse_mode=Markdown&")
+                    .append("disable_web_page_preview=true&")
                     .append("text=").append(URLEncoder.encode(message, "UTF-8"));
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
@@ -77,7 +86,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
     }
 
     private String getEventMessage(LocatrackLocation location) {
-        StringBuilder message = new StringBuilder();
+        StringBuilder message = new StringBuilder(128);
 
         String event = TextUtils.isEmpty(location.event) ? "INFO" : location.event.toUpperCase();
         int batteryLevel = location.batteryLevel;
@@ -85,17 +94,18 @@ public class LocatrackTelegramStorer extends LocationStorer {
             batteryLevel -= 100;
         }
 
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd KK:mm:ss a");
 
-        message
-            .append("*").append(event).append("!").append("*\n\n")
-            .append("*Location:* [").append(getAddressLabel(location)).append("](http://maps.google.com/maps?daddr=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
-            .append("*Time:*      ").append(dateFormat.format(new Date(location.getTime()))).append("\n")
-            .append("*Battery:*   ").append(batteryLevel).append("%");
+        message.append("*").append(event).append("!").append("*\n\n");
 
         if(!TextUtils.isEmpty(location.extraInfo)) {
-            message.append("\n\n_").append(location.extraInfo.trim()).append("_");
+            message.append("_").append(location.extraInfo.trim()).append("_").append("\n\n");
         }
+
+        message
+            .append("*Location:*\t[").append(getAddressLabel(location)).append("](http://maps.google.com/maps?q=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
+            .append("*Accuracy:*\t").append(Math.round(location.getAccuracy() * 100.0) / 100.0).append("m\n")
+            .append("*Time:*\t").append(mDateFormat.format(new Date(location.getTime()))).append("\n")
+            .append("*Battery:*\t").append(batteryLevel).append("%");
 
         return message.toString();
     }
