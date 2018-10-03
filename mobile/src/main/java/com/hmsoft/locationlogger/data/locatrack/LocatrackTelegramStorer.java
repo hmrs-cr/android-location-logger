@@ -4,18 +4,11 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.R;
-import com.hmsoft.locationlogger.common.Logger;
+import com.hmsoft.locationlogger.common.TelegramHandler;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -24,10 +17,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
 
     private static final String TAG = "LocatrackTelegramStorer";
 
-    private final String TELEGRAM_API_PROTOCOL = "https://";
-    private final String TELEGRAM_API_HOST = "api.telegram.org";
-    private final String TELEGRAM_API_URL = TELEGRAM_API_PROTOCOL + TELEGRAM_API_HOST;
-    private final String TELEGRAM_API_BOT_URL = TELEGRAM_API_URL + "/bot";
+
     private final Context mContext;
 
     private String mBotKey;
@@ -39,55 +29,11 @@ public class LocatrackTelegramStorer extends LocationStorer {
         mDateFormat = new SimpleDateFormat("yyyy-MM-dd KK:mm:ss a");
     }
 
-    public boolean sentTelegramMessage(String message) {
-        try {
-
-            if(Logger.DEBUG) {
-                message = "* ***** DEBUG ***** *\n" + message;
-            }
-
-            String messageUrl =  getMessageUrl(message);
-
-            if(Logger.DEBUG) {
-                Logger.debug(TAG, "Sending Telegram message: %s", message.replace("%", ""));
-                Logger.debug(TAG, "Url length: %d", messageUrl.length());
-            }
-
-            HttpClient client = new DefaultHttpClient();
-            HttpGet get = new HttpGet(messageUrl);
-
-            HttpResponse response = client.execute(get);
-            int status = response.getStatusLine().getStatusCode();
-            return (status == 200 || status == 201);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private String getMessageUrl(String message) {
-        StringBuilder messageUrl = new StringBuilder(256);
-
-        try {
-            messageUrl
-                    .append(TELEGRAM_API_BOT_URL)
-                    .append(mBotKey).append("/sendMessage?")
-                    .append("chat_id=").append(mChatId).append("&")
-                    .append("parse_mode=Markdown&")
-                    .append("disable_web_page_preview=true&")
-                    .append("text=").append(URLEncoder.encode(message, "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
-        return messageUrl.toString();
-    }
-
 
     @Override
     public boolean storeLocation(LocatrackLocation location) {
         String message = getEventMessage(location);
-        return  sentTelegramMessage(message);
+        return TelegramHandler.sendTelegramMessage(mBotKey, mChatId, message);
     }
 
     private String getEventMessage(LocatrackLocation location) {
