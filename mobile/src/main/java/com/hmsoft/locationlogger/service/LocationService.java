@@ -41,6 +41,7 @@ import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.common.TaskExecutor;
+import com.hmsoft.locationlogger.common.TelegramHandler;
 import com.hmsoft.locationlogger.data.ExifGeotager;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
@@ -57,7 +58,8 @@ import java.util.List;
 import java.util.Locale;
 
 public class LocationService extends Service /*implements GooglePlayServicesClient.ConnectionCallbacks,
-        GooglePlayServicesClient.OnConnectionFailedListener*/ {
+        GooglePlayServicesClient.OnConnectionFailedListener*/
+    implements TelegramHandler.UpdateCallback {
 
     //region Static fields
     private static final String TAG = "LocationService";
@@ -135,6 +137,35 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
 
     StringBuilder mPendingNotifyInfo;
+
+    @Override
+    public void onUpdateReceived(String chatId, String text) {
+        if(DEBUG) Logger.debug(TAG, "Telegram:onUpdateReceived: ChatId: %s, Message: %s", chatId, text);
+
+        String masterId = getString(R.string.pref_telegram_masterid);
+        String channelId = getString(R.string.pref_telegram_chatid);
+        String botKey = getString(R.string.pref_telegram_botkey);
+
+        if(!masterId.equals(chatId) && !channelId.equals(chatId)) {
+            Logger.warning(TAG, "You are not my master! %s", chatId);
+            return;
+        }
+
+        if(text.contains("location")) {
+            TaskExecutor.executeOnUIThread(new Runnable() {
+                @Override
+                public void run() {
+                    if(mPendingNotifyInfo == null) {
+                        mPendingNotifyInfo = new StringBuilder();
+                    }
+                    mPendingNotifyInfo.insert(0, "Requested location\n");
+                    startLocationListener();
+                }
+            });
+        } else if(text.contains("saldo")) {
+            sendAvailBalanceSms();
+        }
+    }
 
     //endregion Core fields
 
@@ -933,6 +964,16 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     }
                 }
             }, mGpsTimeout);
+        }
+
+        requestTelegramUpdates();
+    }
+
+    private void requestTelegramUpdates() {
+        if(DEBUG) Logger.debug(TAG, "requestTelegramUpdates");
+        String botKey = getString(R.string.pref_telegram_botkey);
+        if(!TextUtils.isEmpty(botKey)) {
+            TelegramHandler.getUpdates(botKey, this);
         }
     }
 

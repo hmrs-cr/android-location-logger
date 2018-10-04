@@ -1,11 +1,19 @@
 package com.hmsoft.locationlogger.common;
 
+import android.text.TextUtils;
+
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
@@ -17,6 +25,14 @@ public class TelegramHandler {
     private static final String TELEGRAM_API_HOST = "api.telegram.org";
     private static final String TELEGRAM_API_URL = TELEGRAM_API_PROTOCOL + TELEGRAM_API_HOST;
     private static final String TELEGRAM_API_BOT_URL = TELEGRAM_API_URL + "/bot";
+
+
+    private static int updatesOffset = 0;
+
+    public interface UpdateCallback {
+        void onUpdateReceived(String chatId, String text);
+    }
+
 
     public static boolean sendTelegramMessage(String botKey, String chatId, String message) {
         try {
@@ -74,5 +90,107 @@ public class TelegramHandler {
         }
 
         return messageUrl.toString();
+    }
+
+    private static Thread updaterThread = null;
+    private static class Updater implements Runnable {
+
+        private String mUrl;
+        private UpdateCallback mUpdateCallback;
+
+        public Updater(String url, UpdateCallback updateCallback) {
+            mUrl = url;
+            mUpdateCallback = updateCallback;
+        }
+
+        @Override
+        public void run() {
+            boolean increaseUpdateOffset = false;
+            try {
+                HttpResponse response = httpGet(mUrl);
+                int status = response.getStatusLine().getStatusCode();
+              
+                if (status == 200 || status == 201) {
+                    if (mUpdateCallback != null) {
+
+                        String inputLine;
+                        HttpEntity entity = response.getEntity();
+                        StringBuilder sb = new StringBuilder((int) entity.getContentLength());
+                        BufferedReader br = new BufferedReader(new InputStreamReader(entity.getContent()));
+                        try {
+                            while ((inputLine = br.readLine()) != null) {
+                                sb.append(inputLine).append("\n");
+                            }
+                            br.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            return;
+                        }
+
+                        if(Logger.DEBUG) {
+                            Logger.debug(TAG, sb.toString());
+                        }
+
+                        JSONObject jsonObject = new JSONObject(sb.toString());
+
+                        if (jsonObject.getBoolean("ok")) {
+
+                            JSONArray results = jsonObject.getJSONArray("result");
+                            for (int c = 0; c < results.length(); c++) {
+
+                                JSONObject result = results.getJSONObject(c);
+
+                                increaseUpdateOffset = true;
+                                updatesOffset = result.getInt("update_id");
+                                JSONObject message = result.optJSONObject("channel_post");
+                                if(message == null) {
+                                    message = result.optJSONObject("message");
+                                }
+                                if(message != null) {
+                                    String text = message.optString("text");
+                                    if(!TextUtils.isEmpty(text)) {
+                                        String chatId = message.getJSONObject("chat").getString("id");
+                                        mUpdateCallback.onUpdateReceived(chatId, text);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } finally {
+                if(increaseUpdateOffset) {
+                    updatesOffset++;
+                }
+                updaterThread = null;
+                if(Logger.DEBUG) Logger.debug(TAG, "Ending telegram update thread.");
+            }
+        }
+    }
+
+    public static synchronized void getUpdates(String botKey, UpdateCallback updateCallback) {
+
+        if(updaterThread == null) {
+            StringBuilder updatesUrl = getTelegramApiUrl(botKey, "getUpdates");
+
+            updatesUrl
+                .append("?timeout=60")
+                .append("&limit=10")
+                .append("&allowed_updates=channel_post");
+
+            if(updatesOffset > 0) {
+                updatesUrl.append("&offset=").append(updatesOffset);
+            }
+
+            if(Logger.DEBUG) Logger.debug(TAG, "Starting telegram update thread.");
+            updaterThread = new Thread(new Updater(updatesUrl.toString(), updateCallback));
+            updaterThread.start();
+        } else {
+            if(Logger.DEBUG) Logger.debug(TAG, "Updater still running.");
+        }
+
     }
 }
