@@ -37,13 +37,13 @@ public class TelegramHandler {
     public static boolean sendTelegramMessage(String botKey, String chatId, String message) {
         try {
 
-            if(Logger.DEBUG) {
+            if (Logger.DEBUG) {
                 message = "* ***** DEBUG ***** *\n" + message;
             }
 
-            String messageUrl =  getMessageUrl(botKey, chatId, message);
+            String messageUrl = getMessageUrl(botKey, chatId, message);
 
-            if(Logger.DEBUG) {
+            if (Logger.DEBUG) {
                 Logger.debug(TAG, "Sending Telegram message: %s", message.replace("%", ""));
                 Logger.debug(TAG, "Url length: %d", messageUrl.length());
             }
@@ -75,7 +75,6 @@ public class TelegramHandler {
         return builderUrl;
     }
 
-
     private static String getMessageUrl(String botKey, String chatId, String message) {
         StringBuilder messageUrl = getTelegramApiUrl(botKey, "sendMessage");
 
@@ -93,103 +92,163 @@ public class TelegramHandler {
     }
 
     private static Thread updaterThread = null;
+
     private static class Updater implements Runnable {
 
-        private String mUrl;
+        private int mCount;
+        private String mBotKey;
         private UpdateCallback mUpdateCallback;
 
-        public Updater(String url, UpdateCallback updateCallback) {
-            mUrl = url;
+        public Updater(String botKey, UpdateCallback updateCallback, int count) {
+            mBotKey = botKey;
             mUpdateCallback = updateCallback;
+            mCount = count < 0 ? count * -1 : count;
         }
 
         @Override
         public void run() {
-            boolean increaseUpdateOffset = false;
             try {
-                HttpResponse response = httpGet(mUrl);
-                int status = response.getStatusLine().getStatusCode();
-              
-                if (status == 200 || status == 201) {
-                    if (mUpdateCallback != null) {
+                while (mCount-- > 0) {
+                    boolean increaseUpdateOffset = false;
+                    try {
 
-                        String inputLine;
-                        HttpEntity entity = response.getEntity();
-                        StringBuilder sb = new StringBuilder((int) entity.getContentLength());
-                        BufferedReader br = new BufferedReader(new InputStreamReader(entity.getContent()));
-                        try {
-                            while ((inputLine = br.readLine()) != null) {
-                                sb.append(inputLine).append("\n");
-                            }
-                            br.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            return;
+                        StringBuilder updatesUrl = getTelegramApiUrl(mBotKey, "getUpdates");
+
+                        updatesUrl
+                                .append("?timeout=60")
+                                .append("&limit=10")
+                                .append("&allowed_updates=channel_post");
+
+                        if (updatesOffset > 0) {
+                            updatesUrl.append("&offset=").append(updatesOffset);
                         }
 
-                        if(Logger.DEBUG) {
-                            Logger.debug(TAG, sb.toString());
-                        }
+                        String url = updatesUrl.toString();
 
-                        JSONObject jsonObject = new JSONObject(sb.toString());
+                        if (Logger.DEBUG)
+                            Logger.debug(TAG, url + " - ThreadId:" + Thread.currentThread().getId());
+                        HttpResponse response = httpGet(url);
+                        int status = response.getStatusLine().getStatusCode();
 
-                        if (jsonObject.getBoolean("ok")) {
+                        if (status == 200 || status == 201) {
+                            if (mUpdateCallback != null) {
 
-                            JSONArray results = jsonObject.getJSONArray("result");
-                            for (int c = 0; c < results.length(); c++) {
+                                String responseText = getResponseText(response);
 
-                                JSONObject result = results.getJSONObject(c);
-
-                                increaseUpdateOffset = true;
-                                updatesOffset = result.getInt("update_id");
-                                JSONObject message = result.optJSONObject("channel_post");
-                                if(message == null) {
-                                    message = result.optJSONObject("message");
+                                if (Logger.DEBUG) {
+                                    Logger.debug(TAG, responseText + " - Count:" + mCount);
                                 }
-                                if(message != null) {
-                                    String text = message.optString("text");
-                                    if(!TextUtils.isEmpty(text)) {
-                                        String chatId = message.getJSONObject("chat").getString("id");
-                                        mUpdateCallback.onUpdateReceived(chatId, text);
+
+                                JSONObject jsonObject = new JSONObject(responseText);
+
+                                if (jsonObject.getBoolean("ok")) {
+
+                                    JSONArray results = jsonObject.getJSONArray("result");
+                                    for (int c = 0; c < results.length(); c++) {
+
+                                        JSONObject result = results.getJSONObject(c);
+
+                                        increaseUpdateOffset = true;
+                                        updatesOffset = result.getInt("update_id");
+                                        JSONObject message = result.optJSONObject("channel_post");
+                                        if (message == null) {
+                                            message = result.optJSONObject("message");
+                                        }
+                                        if (message != null) {
+                                            String text = message.optString("text");
+                                            if(TextUtils.isEmpty(text)) {
+                                                JSONObject document = message.optJSONObject("document");
+                                                if(document != null) {
+                                                    text = String.format("document|%s|%s",
+                                                            document.getString("file_name"),
+                                                            document.getString("file_id"));
+                                                }
+                                            }
+                                            if (!TextUtils.isEmpty(text)) {
+                                                String chatId = message.getJSONObject("chat").getString("id");
+                                                mUpdateCallback.onUpdateReceived(chatId, text);
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    } finally {
+                        if (increaseUpdateOffset) {
+                            updatesOffset++;
+                        }
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (JSONException e) {
-                e.printStackTrace();
             } finally {
-                if(increaseUpdateOffset) {
-                    updatesOffset++;
-                }
                 updaterThread = null;
-                if(Logger.DEBUG) Logger.debug(TAG, "Ending telegram update thread.");
+                if (Logger.DEBUG)
+                    Logger.debug(TAG, "Ending telegram update thread. Offset: %d - ThreadId:%d", updatesOffset, Thread.currentThread().getId());
             }
         }
     }
 
-    public static synchronized void getUpdates(String botKey, UpdateCallback updateCallback) {
-
-        if(updaterThread == null) {
-            StringBuilder updatesUrl = getTelegramApiUrl(botKey, "getUpdates");
-
-            updatesUrl
-                .append("?timeout=60")
-                .append("&limit=10")
-                .append("&allowed_updates=channel_post");
-
-            if(updatesOffset > 0) {
-                updatesUrl.append("&offset=").append(updatesOffset);
+    private static String getResponseText(HttpResponse response) {
+        String inputLine;
+        HttpEntity entity = response.getEntity();
+        StringBuilder sb = new StringBuilder((int) entity.getContentLength());
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(entity.getContent()));
+            while ((inputLine = br.readLine()) != null) {
+                sb.append(inputLine).append("\n");
             }
+            br.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return sb.toString();
+    }
 
-            if(Logger.DEBUG) Logger.debug(TAG, "Starting telegram update thread.");
-            updaterThread = new Thread(new Updater(updatesUrl.toString(), updateCallback));
+    public static String getFileDownloadUrl(String botKey, String fileId) {
+        StringBuilder updatesUrl = getTelegramApiUrl(botKey, "getFile");
+        updatesUrl.append("?file_id=").append(fileId);
+
+        HttpResponse response = null;
+        try {
+            response = httpGet(updatesUrl.toString());
+            int status = response.getStatusLine().getStatusCode();
+            if (status == 200 || status == 201) {
+                String responseText = getResponseText(response);
+                JSONObject jresponse = new JSONObject(responseText);
+                JSONObject result = jresponse.optJSONObject("result");
+                if(result != null) {
+                    String filePath = result.optString("file_path");
+                    if(!TextUtils.isEmpty(filePath)) {
+                        return String.format("%s/file/bot%s/%s", TELEGRAM_API_URL, botKey, filePath);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static synchronized void getUpdates(String botKey, UpdateCallback updateCallback,
+                                               int count) {
+
+        if (updaterThread == null) {
+
+            updaterThread = new Thread(new Updater(botKey, updateCallback, count));
+
+            if (Logger.DEBUG)
+                Logger.debug(TAG, "Starting telegram update thread. - ThreadId:%d", updaterThread.getId());
+
             updaterThread.start();
         } else {
-            if(Logger.DEBUG) Logger.debug(TAG, "Updater still running.");
+            if (Logger.DEBUG)
+                Logger.debug(TAG, "Updater still running. - ThreadId:%d", updaterThread.getId());
         }
 
     }

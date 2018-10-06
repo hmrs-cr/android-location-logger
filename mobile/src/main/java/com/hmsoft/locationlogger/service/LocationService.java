@@ -3,6 +3,7 @@ package com.hmsoft.locationlogger.service;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlarmManager;
+import android.app.DownloadManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -19,6 +20,7 @@ import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -53,6 +55,7 @@ import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
+import java.io.File;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -138,33 +141,80 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     StringBuilder mPendingNotifyInfo;
 
+    private String[] mTelegramAllowedFrom = null;
+
     @Override
-    public void onUpdateReceived(String chatId, String text) {
-        if(DEBUG) Logger.debug(TAG, "Telegram:onUpdateReceived: ChatId: %s, Message: %s", chatId, text);
+    public void onUpdateReceived(String chatId, final String text) {
+        if (DEBUG) Logger.debug(TAG, "Telegram:onUpdateReceived: ChatId: %s, Message: %s", chatId, text);
 
-        String masterId = getString(R.string.pref_telegram_masterid);
         String channelId = getString(R.string.pref_telegram_chatid);
-        String botKey = getString(R.string.pref_telegram_botkey);
+        boolean allowed;
+        if(!(allowed = channelId.equals(chatId))) {
+            if(mTelegramAllowedFrom == null) {
+                mTelegramAllowedFrom = getString(R.string.pref_telegram_masterid).split("\\|");
+            }
+            for (int i = 0; i < mTelegramAllowedFrom.length; i++) {
+                if (mTelegramAllowedFrom[i].equals(chatId)) {
+                    allowed = true;
+                    break;
+                }
+            }
+        }
 
-        if(!masterId.equals(chatId) && !channelId.equals(chatId)) {
+        if(!allowed) {
             Logger.warning(TAG, "You are not my master! %s", chatId);
             return;
         }
 
-        if(text.contains("location")) {
+        TaskExecutor.executeOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                requestTelegramUpdates(2);
+            }
+        }, 1);
+
+        if(text.startsWith("document|")) {
+            String[] values = text.split("\\|");
+
+            String fileName = values[1];
+            String fileId = values[2];
+
+            String botKey = getString(R.string.pref_telegram_botkey);
+            String downloadUrl = TelegramHandler.getFileDownloadUrl(botKey, fileId);
+            if(DEBUG) Logger.debug(TAG, "DownloadUrl: %s", downloadUrl);
+
+            if(!TextUtils.isEmpty(downloadUrl)) {
+                downloadFile(fileName, downloadUrl);
+            }
+
+        } else {
             TaskExecutor.executeOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    if(mPendingNotifyInfo == null) {
-                        mPendingNotifyInfo = new StringBuilder();
+                    if (text.contains("location")) {
+                        if (mPendingNotifyInfo == null) {
+                            mPendingNotifyInfo = new StringBuilder();
+                        }
+                        mPendingNotifyInfo.insert(0, "Requested location\n");
+                        startLocationListener();
+                    } else if (text.contains("saldo")) {
+                        sendAvailBalanceSms();
+                        startLocationListener();
                     }
-                    mPendingNotifyInfo.insert(0, "Requested location\n");
-                    startLocationListener();
                 }
-            });
-        } else if(text.contains("saldo")) {
-            sendAvailBalanceSms();
+            }, 2);
         }
+    }
+
+    private void downloadFile(String fileName, String downloadUrl) {
+        if(DEBUG) Logger.debug(TAG, "Downloading file %s from %s", fileName, downloadUrl);
+        DownloadManager downloadManager = (DownloadManager)getSystemService(Context.DOWNLOAD_SERVICE);
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
+        request .setTitle(fileName)
+                .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
+                .setDestinationUri(Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)));
+
+        downloadManager.enqueue(request);
     }
 
     //endregion Core fields
@@ -969,11 +1019,16 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         requestTelegramUpdates();
     }
 
+    
     private void requestTelegramUpdates() {
-        if(DEBUG) Logger.debug(TAG, "requestTelegramUpdates");
+      requestTelegramUpdates(1);
+    }
+  
+    private void requestTelegramUpdates(int count) {
+        if(DEBUG) Logger.debug(TAG, "requestTelegramUpdates %d", count);
         String botKey = getString(R.string.pref_telegram_botkey);
         if(!TextUtils.isEmpty(botKey)) {
-            TelegramHandler.getUpdates(botKey, this);
+            TelegramHandler.getUpdates(botKey, this, count);
         }
     }
 
@@ -1419,6 +1474,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private static long sLastSimCheckTime;
     private static final String NO_SIM = "NO_SIM";
     public static void performSimCheck(final Context context) {
+
+        if(DEBUG) {
+            Logger.debug(TAG, "No sim check");
+            return;
+        }
         
         final String oldSimNumber = context.getString(R.string.pref_sim_number);
         if (TextUtils.isEmpty(oldSimNumber)) {
