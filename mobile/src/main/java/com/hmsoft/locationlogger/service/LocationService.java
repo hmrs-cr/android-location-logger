@@ -144,8 +144,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private String[] mTelegramAllowedFrom = null;
 
     @Override
-    public void onUpdateReceived(String chatId, final String text) {
-        if (DEBUG) Logger.debug(TAG, "Telegram:onUpdateReceived: ChatId: %s, Message: %s", chatId, text);
+    public void onTelegramUpdateReceived(String chatId, final String text) {
+        if (DEBUG) Logger.debug(TAG, "Telegram:onTelegramUpdateReceived: ChatId: %s, Message: %s", chatId, text);
 
         String channelId = getString(R.string.pref_telegram_chatid);
         boolean allowed;

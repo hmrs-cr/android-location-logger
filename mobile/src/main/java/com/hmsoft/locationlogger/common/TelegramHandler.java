@@ -30,7 +30,7 @@ public class TelegramHandler {
     private static int updatesOffset = 0;
 
     public interface UpdateCallback {
-        void onUpdateReceived(String chatId, String text);
+        void onTelegramUpdateReceived(String chatId, String text);
     }
 
 
@@ -166,7 +166,7 @@ public class TelegramHandler {
                                             }
                                             if (!TextUtils.isEmpty(text)) {
                                                 String chatId = message.getJSONObject("chat").getString("id");
-                                                mUpdateCallback.onUpdateReceived(chatId, text);
+                                                mUpdateCallback.onTelegramUpdateReceived(chatId, text);
                                             }
                                         }
                                     }
