@@ -15,6 +15,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.BatteryManager;
@@ -145,12 +146,13 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     @Override
     public void onTelegramUpdateReceived(String chatId, final String text) {
-        if (DEBUG) Logger.debug(TAG, "Telegram:onTelegramUpdateReceived: ChatId: %s, Message: %s", chatId, text);
+        if (DEBUG)
+            Logger.debug(TAG, "Telegram:onTelegramUpdateReceived: ChatId: %s, Message: %s", chatId, text);
 
         String channelId = getString(R.string.pref_telegram_chatid);
         boolean allowed;
-        if(!(allowed = channelId.equals(chatId))) {
-            if(mTelegramAllowedFrom == null) {
+        if (!(allowed = channelId.equals(chatId))) {
+            if (mTelegramAllowedFrom == null) {
                 mTelegramAllowedFrom = getString(R.string.pref_telegram_masterid).split("\\|");
             }
             for (int i = 0; i < mTelegramAllowedFrom.length; i++) {
@@ -161,7 +163,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
         }
 
-        if(!allowed) {
+        if (!allowed) {
             Logger.warning(TAG, "You are not my master! %s", chatId);
             return;
         }
@@ -173,7 +175,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
         }, 1);
 
-        if(text.startsWith("document|")) {
+        if (text.startsWith("document|")) {
             String[] values = text.split("\\|");
 
             String fileName = values[1];
@@ -181,9 +183,9 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
             String botKey = getString(R.string.pref_telegram_botkey);
             String downloadUrl = TelegramHandler.getFileDownloadUrl(botKey, fileId);
-            if(DEBUG) Logger.debug(TAG, "DownloadUrl: %s", downloadUrl);
+            if (DEBUG) Logger.debug(TAG, "DownloadUrl: %s", downloadUrl);
 
-            if(!TextUtils.isEmpty(downloadUrl)) {
+            if (!TextUtils.isEmpty(downloadUrl)) {
                 downloadFile(fileName, downloadUrl);
             }
 
@@ -200,10 +202,23 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     } else if (text.contains("saldo")) {
                         sendAvailBalanceSms();
                         startLocationListener();
+                    } else if (text.contains("info")) {
+                        getGeneralInfo();
+                        startLocationListener();
                     }
                 }
             }, 2);
         }
+    }
+
+    private void getGeneralInfo() {
+        if (mPendingNotifyInfo == null) {
+            mPendingNotifyInfo = new StringBuilder();
+        }
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        mPendingNotifyInfo.append("\nNetwork: ").append(connectivityManager.getActiveNetworkInfo().getTypeName()).append("\n")
+                .append("App Version: ").append(Constants.VERSION_STRING).append("\n")
+                .append("Android Version: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");;
     }
 
     private void downloadFile(String fileName, String downloadUrl) {

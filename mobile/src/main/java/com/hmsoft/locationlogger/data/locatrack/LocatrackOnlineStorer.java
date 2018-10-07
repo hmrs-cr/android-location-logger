@@ -1,6 +1,5 @@
 package com.hmsoft.locationlogger.data.locatrack;
 
-import android.app.Activity;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -55,7 +54,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
 
     public LocatrackOnlineStorer(Context context) {
         mContext = context;
-        mConnectivityManager = (ConnectivityManager) context.getSystemService(Activity.CONNECTIVITY_SERVICE);
+        mConnectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
     }
 
     private boolean internalUploadLocation(LocatrackLocation location) {
