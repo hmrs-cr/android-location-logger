@@ -16,6 +16,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.BatteryManager;
@@ -81,6 +82,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     /*private*/ boolean mRequestPassiveLocationUpdates = true;
     boolean mNotifyEvents;
     boolean mRestrictedSettings;
+    boolean mContinuosLocationUpdates;
     boolean mSetAirplaneMode = false;
     private float mMaxReasonableSpeed = 55; // meters/seconds
     private int mMinimumAccuracy = 750; // meters
@@ -100,6 +102,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private LocatrackLocation mCurrentBestLocation;
     private PowerManager mPowerManager;
     private ComponentName mMapIntentComponent = null;
+    private ConnectivityManager mConnectivityManager;
     private boolean mInstantUploadEnabled = false;
     private boolean mTelegramNotifyEnabled = false;
     private PreferenceProfile mPreferences;
@@ -215,8 +218,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         if (mPendingNotifyInfo == null) {
             mPendingNotifyInfo = new StringBuilder();
         }
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        mPendingNotifyInfo.append("\nNetwork: ").append(connectivityManager.getActiveNetworkInfo().getTypeName()).append("\n")
+        mPendingNotifyInfo.append("\nNetwork: ").append(mConnectivityManager.getActiveNetworkInfo().getTypeName()).append("\n")
                 .append("App Version: ").append(Constants.VERSION_STRING).append("\n")
                 .append("Android Version: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");;
     }
@@ -522,7 +524,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                         (isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
                     saveLocation(mCurrentBestLocation, true);
                     message = "*** Location saved";
-                    stopLocationListener();
+                    stopLocationListenerOptional();
                 } else {
                     message = "No good GPS location.";
                 }
@@ -534,6 +536,14 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         logLocation(location, message);
     }
 
+    private void stopLocationListenerOptional() {
+        if(mContinuosLocationUpdates && isCharging() && isWifiConnected()) {
+            if (DEBUG) Logger.debug(TAG, "Charging an wifi connected, no stoping location listener");
+        } else {
+            stopLocationListener();
+        }
+    }
+
     protected boolean isBetterLocation(Location location, Location currentBestLocation) {
         return isBetterLocation(location, currentBestLocation, HALF_MINUTE, mMinimumAccuracy,
                 mMaxReasonableSpeed);
@@ -543,6 +553,16 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         return LocationManager.GPS_PROVIDER.equals(location.getProvider()) ||
                 location.hasAltitude() || location.hasBearing() || location.hasSpeed();
     }
+
+    private boolean isWifiConnected() {
+        NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
+        return networkInfo.getType() == ConnectivityManager.TYPE_WIFI;
+    }
+
+    private boolean isCharging() {
+        return sLastBatteryLevel > 100;
+    }
+
 
      /**
      * Determines whether one Location reading is better than the current Location fix
@@ -1025,7 +1045,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     if (mLocationManager != null /*|| mLocationRequest != null*/) {
                         if (Logger.DEBUG) Logger.debug(TAG, "GPS Timeout");
                         saveLastLocation();
-                        stopLocationListener();
+                        stopLocationListenerOptional();
                     }
                 }
             }, mGpsTimeout);
@@ -1228,6 +1248,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         mNotifyEvents =  mPreferences.getBoolean(R.string.profile_notify_events_key, false);
         mTelegramNotifyEnabled = mNotifyEvents;
         mRestrictedSettings =  mPreferences.getBoolean(R.string.profile_settings_restricted_key, false);
+        mContinuosLocationUpdates =  mPreferences.getBoolean(R.string.pref_continuos_updates_key, false);
 
         mVehicleMode = mPreferences.activeProfile == PreferenceProfile.PROFILE_BICYCLE ||
                 mPreferences.activeProfile == PreferenceProfile.PROFILE_CAR;
@@ -1283,6 +1304,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         if(Logger.DEBUG) Logger.debug(TAG, "onCreate");
 
         Context context = getApplicationContext();
+        mConnectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
         mLocationStorer = createStorer();
         mLocationStorer.configure();
