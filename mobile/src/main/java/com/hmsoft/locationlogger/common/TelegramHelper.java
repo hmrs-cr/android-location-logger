@@ -17,9 +17,9 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
-public class TelegramHandler {
+public class TelegramHelper {
 
-    private static final String TAG = "TelegramHandler";
+    private static final String TAG = "TelegramHelper";
 
     private static final String TELEGRAM_API_PROTOCOL = "https://";
     private static final String TELEGRAM_API_HOST = "api.telegram.org";
@@ -30,18 +30,40 @@ public class TelegramHandler {
     private static int updatesOffset = 0;
 
     public interface UpdateCallback {
-        void onTelegramUpdateReceived(String chatId, String text);
+        void onTelegramUpdateReceived(String chatId, String messageId, String text);
     }
 
 
     public static boolean sendTelegramMessage(String botKey, String chatId, String message) {
+        return  sendTelegramMessage(botKey, chatId, null, message);
+    }
+
+    public static void sendTelegramMessageAsync(String botKey, String chatId, String message) {
+        sendTelegramMessageAsync(botKey, chatId, null, message);
+    }
+
+    public static void sendTelegramMessageAsync(final String botKey,
+                                                final String chatId,
+                                                final String replyId,
+                                                final String message) {
+        TaskExecutor.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                sendTelegramMessage(botKey, chatId, replyId, message);
+            }
+        });
+
+    }
+
+    public static boolean sendTelegramMessage(String botKey, String chatId, String replyId,
+                                              String message) {
         try {
 
             if (Logger.DEBUG) {
                 message = "* ***** DEBUG ***** *\n" + message;
             }
 
-            String messageUrl = getMessageUrl(botKey, chatId, message);
+            String messageUrl = getMessageUrl(botKey, chatId, replyId, message);
 
             if (Logger.DEBUG) {
                 Logger.debug(TAG, "Sending Telegram message: %s", message.replace("%", ""));
@@ -49,6 +71,11 @@ public class TelegramHandler {
             }
 
             HttpResponse response = httpGet(messageUrl);
+
+            if(Logger.DEBUG) {
+                Logger.debug(TAG, getResponseText(response));
+            }
+
             int status = response.getStatusLine().getStatusCode();
             return (status == 200 || status == 201);
 
@@ -75,7 +102,7 @@ public class TelegramHandler {
         return builderUrl;
     }
 
-    private static String getMessageUrl(String botKey, String chatId, String message) {
+    private static String getMessageUrl(String botKey, String chatId, String replyId,  String message) {
         StringBuilder messageUrl = getTelegramApiUrl(botKey, "sendMessage");
 
         try {
@@ -84,6 +111,10 @@ public class TelegramHandler {
                     .append("parse_mode=Markdown&")
                     .append("disable_web_page_preview=true&")
                     .append("text=").append(URLEncoder.encode(message, "UTF-8"));
+
+            if(!TextUtils.isEmpty(replyId)) {
+                messageUrl.append("&reply_to_message_id=").append(replyId);
+            }
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -166,7 +197,8 @@ public class TelegramHandler {
                                             }
                                             if (!TextUtils.isEmpty(text)) {
                                                 String chatId = message.getJSONObject("chat").getString("id");
-                                                mUpdateCallback.onTelegramUpdateReceived(chatId, text);
+                                                String messageId = message.optString("message_id");
+                                                mUpdateCallback.onTelegramUpdateReceived(chatId, messageId, text);
                                             }
                                         }
                                     }

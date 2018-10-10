@@ -1,5 +1,6 @@
 package com.hmsoft.locationlogger.service;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlarmManager;
@@ -45,7 +46,7 @@ import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.common.TaskExecutor;
-import com.hmsoft.locationlogger.common.TelegramHandler;
+import com.hmsoft.locationlogger.common.TelegramHelper;
 import com.hmsoft.locationlogger.data.ExifGeotager;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
@@ -59,12 +60,14 @@ import com.hmsoft.locationlogger.ui.MainActivity;
 
 import java.io.File;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class LocationService extends Service /*implements GooglePlayServicesClient.ConnectionCallbacks,
         GooglePlayServicesClient.OnConnectionFailedListener*/
-    implements TelegramHandler.UpdateCallback {
+    implements TelegramHelper.UpdateCallback {
 
     //region Static fields
     private static final String TAG = "LocationService";
@@ -148,7 +151,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private String[] mTelegramAllowedFrom = null;
 
     @Override
-    public void onTelegramUpdateReceived(String chatId, final String text) {
+    public void onTelegramUpdateReceived(String chatId, String messageId, final String text) {
         if (DEBUG)
             Logger.debug(TAG, "Telegram:onTelegramUpdateReceived: ChatId: %s, Message: %s", chatId, text);
 
@@ -185,11 +188,12 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             String fileId = values[2];
 
             String botKey = getString(R.string.pref_telegram_botkey);
-            String downloadUrl = TelegramHandler.getFileDownloadUrl(botKey, fileId);
+            String downloadUrl = TelegramHelper.getFileDownloadUrl(botKey, fileId);
             if (DEBUG) Logger.debug(TAG, "DownloadUrl: %s", downloadUrl);
 
             if (!TextUtils.isEmpty(downloadUrl)) {
-                downloadFile(fileName, downloadUrl);
+                long id = downloadFile(fileName, downloadUrl);
+                DownloadFinishedReceiver.addDownload(id, messageId);
             }
 
         } else {
@@ -223,7 +227,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 .append("Android Version: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");;
     }
 
-    private void downloadFile(String fileName, String downloadUrl) {
+    private long downloadFile(String fileName, String downloadUrl) {
         if(DEBUG) Logger.debug(TAG, "Downloading file %s from %s", fileName, downloadUrl);
         DownloadManager downloadManager = (DownloadManager)getSystemService(Context.DOWNLOAD_SERVICE);
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
@@ -231,12 +235,61 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
                 .setDestinationUri(Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)));
 
-        downloadManager.enqueue(request);
+
+
+        DownloadFinishedReceiver.register(this);
+
+        return downloadManager.enqueue(request);
     }
 
     //endregion Core fields
 
     //region Helper Inner Classes
+
+    private static class DownloadFinishedReceiver extends BroadcastReceiver {
+
+        private static DownloadFinishedReceiver sInstance;
+        private LocationService mService;
+        private Map<Long, String> mDownloads;
+
+        @SuppressLint("UseSparseArrays")
+        private DownloadFinishedReceiver(LocationService service) {
+            mService = service;
+            mDownloads = new HashMap<>();
+        }
+
+        public static void register(LocationService service) {
+            if(sInstance == null) {
+                sInstance = new DownloadFinishedReceiver(service);
+                IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+                sInstance.mService.registerReceiver(sInstance, filter);
+            }
+        }
+
+        public static void unregister() {
+            sInstance.mService.unregisterReceiver(sInstance);
+            sInstance.mService = null;
+            sInstance.mDownloads = null;
+            sInstance = null;
+        }
+
+        public static void addDownload(long id, String messageId) {
+            if(sInstance != null) {
+                sInstance.mDownloads.put(id, messageId);
+            }
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0);
+            if(mDownloads.containsKey(id)) {
+                String messageId = mDownloads.get(id);
+                String botKey = mService.getString(R.string.pref_telegram_botkey);
+                String channelId = mService.getString(R.string.pref_telegram_chatid);
+                TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, "Download done!");
+            }
+        }
+    }
 
     public static class StartServiceReceiver extends BroadcastReceiver {
 
@@ -1063,7 +1116,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         if(DEBUG) Logger.debug(TAG, "requestTelegramUpdates %d", count);
         String botKey = getString(R.string.pref_telegram_botkey);
         if(!TextUtils.isEmpty(botKey)) {
-            TelegramHandler.getUpdates(botKey, this, count);
+            TelegramHelper.getUpdates(botKey, this, count);
         }
     }
 
@@ -1334,6 +1387,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         cleanup();
         ActionReceiver.unregister(this);
+        DownloadFinishedReceiver.unregister();
         ExifGeotager.unregisterObserver(getApplicationContext());
         mAlarm.cancel(mAlarmLocationCallback);
         mAlarm.cancel(mAlarmSyncCallback);

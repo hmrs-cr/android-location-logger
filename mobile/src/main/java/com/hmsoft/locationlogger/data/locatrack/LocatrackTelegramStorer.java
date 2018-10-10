@@ -4,7 +4,7 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.R;
-import com.hmsoft.locationlogger.common.TelegramHandler;
+import com.hmsoft.locationlogger.common.TelegramHelper;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
@@ -33,7 +33,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
     @Override
     public boolean storeLocation(LocatrackLocation location) {
         String message = getEventMessage(location);
-        return TelegramHandler.sendTelegramMessage(mBotKey, mChatId, message);
+        return TelegramHelper.sendTelegramMessage(mBotKey, mChatId, message);
     }
 
     private String getEventMessage(LocatrackLocation location) {

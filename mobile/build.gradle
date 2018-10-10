@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 def versionMajor = 1
 def versionMinor = 1
-def verCode = 25;
+def verCode = 26
 def APP_NAME = "LocationLogger"
 
 def buildTime() {
@@ -67,6 +67,11 @@ android {
                 outputFileName = APP_NAME + "-${variant.versionName}.apk"
             }
         }
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
     }
 
     compileOptions {
