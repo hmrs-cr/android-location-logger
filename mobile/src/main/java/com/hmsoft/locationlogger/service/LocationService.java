@@ -805,6 +805,18 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         TaskExecutor.executeOnNewThread(new Runnable() {
             @Override
             public void run() {
+
+                int waitCount = 6;
+                while(waitCount-- > 0) {
+                    NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
+                    if((networkInfo != null && networkInfo.isConnected())) {
+                        if(DEBUG) Logger.debug(TAG, "Connected to network:" + networkInfo.getTypeName());
+                        break;
+                    }
+                    if(DEBUG) Logger.debug(TAG, "Not connected waiting for connection... " + waitCount);
+                    TaskExecutor.sleep(5);
+                }
+
                 final boolean notified = mTelegramStorer.storeLocation(location);
                 TaskExecutor.executeOnUIThread(new Runnable() {
                     @Override

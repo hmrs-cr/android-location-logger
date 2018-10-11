@@ -53,7 +53,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
         }
 
         message
-            .append("*Location:*\t[").append(getAddressLabel(location)).append("](http://maps.google.com/maps?q=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
+            .append("*Location:*\t[").append(getAddressLabel(location)).append("](https://www.google.com/maps/search/?api=1&query=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
             .append("*Accuracy:*\t").append(Math.round(location.getAccuracy() * 100.0) / 100.0).append("m\n")
             .append("*Time:*\t").append(mDateFormat.format(new Date(location.getTime()))).append("\n")
             .append("*Battery:*\t").append(batteryLevel).append("%");
