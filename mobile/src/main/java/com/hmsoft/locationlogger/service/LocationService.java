@@ -85,7 +85,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     /*private*/ boolean mRequestPassiveLocationUpdates = true;
     boolean mNotifyEvents;
     boolean mRestrictedSettings;
-    boolean mContinuosLocationUpdates;
     boolean mSetAirplaneMode = false;
     private float mMaxReasonableSpeed = 55; // meters/seconds
     private int mMinimumAccuracy = 750; // meters
@@ -577,7 +576,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                         (isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
                     saveLocation(mCurrentBestLocation, true);
                     message = "*** Location saved";
-                    stopLocationListenerOptional();
+                    stopLocationListener();
                 } else {
                     message = "No good GPS location.";
                 }
@@ -587,14 +586,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
 
         logLocation(location, message);
-    }
-
-    private void stopLocationListenerOptional() {
-        if(mContinuosLocationUpdates && isCharging() && isWifiConnected()) {
-            if (DEBUG) Logger.debug(TAG, "Charging an wifi connected, no stoping location listener");
-        } else {
-            stopLocationListener();
-        }
     }
 
     protected boolean isBetterLocation(Location location, Location currentBestLocation) {
@@ -1110,7 +1101,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     if (mLocationManager != null /*|| mLocationRequest != null*/) {
                         if (Logger.DEBUG) Logger.debug(TAG, "GPS Timeout");
                         saveLastLocation();
-                        stopLocationListenerOptional();
+                        stopLocationListener();
                     }
                 }
             }, mGpsTimeout);
@@ -1313,7 +1304,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         mNotifyEvents =  mPreferences.getBoolean(R.string.profile_notify_events_key, false);
         mTelegramNotifyEnabled = mNotifyEvents;
         mRestrictedSettings =  mPreferences.getBoolean(R.string.profile_settings_restricted_key, false);
-        mContinuosLocationUpdates =  mPreferences.getBoolean(R.string.pref_continuos_updates_key, false);
 
         mVehicleMode = mPreferences.activeProfile == PreferenceProfile.PROFILE_BICYCLE ||
                 mPreferences.activeProfile == PreferenceProfile.PROFILE_CAR;
