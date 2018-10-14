@@ -3,6 +3,7 @@ package com.hmsoft.locationlogger.data.preferences;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
@@ -76,7 +77,7 @@ public class PreferenceProfile {
                     for(int c = 0; c < mIntervalValues.length; c++) {
                         mIntervalValues[c] = Integer.parseInt(intervalStrings[c]);
                     }
-                    int wholeBlock = mIntervalValues.length - 2;
+                    int wholeBlock = mIntervalValues.length - 3;
                     if(wholeBlock > 1) {
                         mBlockSize = 100 / wholeBlock;
                     }
@@ -92,13 +93,18 @@ public class PreferenceProfile {
     }
 
     public int getInterval(int level) {
+        return getInterval(level, -1);
+    }
+
+    public int getInterval(int level, int networkType) {
         if(activeProfile == PROFILE_MANUAL) {
             return  mIntervalValues[0];
         }
 
         int index = level / mBlockSize;
         if(index >= mIntervalValues.length) {
-            index = mIntervalValues.length - 1;
+            int i = networkType == ConnectivityManager.TYPE_WIFI ? 1 : 2;
+            index = mIntervalValues.length - i;
         }
         return mIntervalValues[index];
     }

@@ -29,11 +29,11 @@ public class LocatrackTelegramStorer extends LocationStorer {
         mDateFormat = new SimpleDateFormat("yyyy-MM-dd KK:mm:ss a");
     }
 
-
     @Override
     public boolean storeLocation(LocatrackLocation location) {
         String message = getEventMessage(location);
-        return TelegramHelper.sendTelegramMessage(mBotKey, mChatId, message);
+        long messageId = TelegramHelper.sendTelegramMessage(mBotKey, mChatId, message);
+        return messageId > 0;
     }
 
     private String getEventMessage(LocatrackLocation location) {
@@ -52,9 +52,10 @@ public class LocatrackTelegramStorer extends LocationStorer {
             message.append("_").append(location.extraInfo.trim()).append("_").append("\n\n");
         }
 
+        String netWorkType = location.getExtras().getString("NetType", " ");
         message
             .append("*Location:*\t[").append(getAddressLabel(location)).append("](https://www.google.com/maps/search/?api=1&query=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
-            .append("*Accuracy:*\t").append(Math.round(location.getAccuracy() * 100.0) / 100.0).append("m\n")
+            .append("*Accuracy:*\t").append(Math.round(location.getAccuracy() * 100.0) / 100.0).append("m ").append(location.getProvider().charAt(0)).append(netWorkType.charAt(0)).append("\n")
             .append("*Time:*\t").append(mDateFormat.format(new Date(location.getTime()))).append("\n")
             .append("*Battery:*\t").append(batteryLevel).append("%");
 

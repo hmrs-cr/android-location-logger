@@ -34,7 +34,7 @@ public class TelegramHelper {
     }
 
 
-    public static boolean sendTelegramMessage(String botKey, String chatId, String message) {
+    public static long sendTelegramMessage(String botKey, String chatId, String message) {
         return  sendTelegramMessage(botKey, chatId, null, message);
     }
 
@@ -55,7 +55,8 @@ public class TelegramHelper {
 
     }
 
-    public static boolean sendTelegramMessage(String botKey, String chatId, String replyId,
+    private static long mid = 0;
+    public static long sendTelegramMessage(String botKey, String chatId, String replyId,
                                               String message) {
         try {
 
@@ -77,11 +78,12 @@ public class TelegramHelper {
             }
 
             int status = response.getStatusLine().getStatusCode();
-            return (status == 200 || status == 201);
+            return ++mid;
+            //return (status == 200 || status == 201);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+            Logger.error(TAG, e.getMessage());
+            return -1;
         }
     }
 

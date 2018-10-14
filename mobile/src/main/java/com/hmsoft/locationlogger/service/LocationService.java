@@ -801,6 +801,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 while(waitCount-- > 0) {
                     NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
                     if((networkInfo != null && networkInfo.isConnected())) {
+                        location.getExtras().putString("NetType", networkInfo.getTypeName());
                         if(DEBUG) Logger.debug(TAG, "Connected to network:" + networkInfo.getTypeName());
                         break;
                     }
@@ -1179,7 +1180,9 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     void setLocationAlarm(int interval) {
         if (interval == -1) {
-            interval = mPreferences.getInterval(sLastBatteryLevel);
+            NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
+            int networkYpe = networkInfo != null ? networkInfo.getType() : -1;
+            interval = mPreferences.getInterval(sLastBatteryLevel, networkYpe);
         }
 
         if(DEBUG) {
