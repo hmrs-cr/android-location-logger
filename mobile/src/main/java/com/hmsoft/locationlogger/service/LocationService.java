@@ -148,6 +148,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     StringBuilder mPendingNotifyInfo;
 
     private String[] mTelegramAllowedFrom = null;
+    private long mLastTelegamUpdate;
 
     @Override
     public void onTelegramUpdateReceived(String chatId, String messageId, final String text) {
@@ -1117,10 +1118,18 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
   
     private void requestTelegramUpdates(int count) {
-        if(DEBUG) Logger.debug(TAG, "requestTelegramUpdates %d", count);
-        String botKey = getString(R.string.pref_telegram_botkey);
-        if(!TextUtils.isEmpty(botKey)) {
-            TelegramHelper.getUpdates(botKey, this, count);
+        long lastUpdate = SystemClock.uptimeMillis() - mLastTelegamUpdate;
+
+        if (lastUpdate > 1000 * 60 * 5) {
+            if (DEBUG) Logger.debug(TAG, "requestTelegramUpdates %d", count);
+            String botKey = getString(R.string.pref_telegram_botkey);
+            if (!TextUtils.isEmpty(botKey)) {
+                TelegramHelper.getUpdates(botKey, this, count);
+            }
+            mLastTelegamUpdate = SystemClock.uptimeMillis();
+        } else {
+            if (DEBUG)
+                Logger.debug(TAG, "Requesting telegram updates too fast:" + lastUpdate / 1000);
         }
     }
 
