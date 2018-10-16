@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -151,11 +152,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private long mLastTelegamUpdate;
 
     @Override
-    public void onTelegramUpdateReceived(String chatId, String messageId, final String text) {
+    public void onTelegramUpdateReceived(String chatId, final String messageId, final String text) {
         if (DEBUG)
             Logger.debug(TAG, "Telegram:onTelegramUpdateReceived: ChatId: %s, Message: %s", chatId, text);
 
-        String channelId = getString(R.string.pref_telegram_chatid);
+        final String channelId = getString(R.string.pref_telegram_chatid);
         boolean allowed;
         if (!(allowed = channelId.equals(chatId))) {
             if (mTelegramAllowedFrom == null) {
@@ -181,13 +182,13 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
         }, 1);
 
+        final String botKey = getString(R.string.pref_telegram_botkey);
         if (text.startsWith("document|")) {
             String[] values = text.split("\\|");
 
             String fileName = values[1];
             String fileId = values[2];
 
-            String botKey = getString(R.string.pref_telegram_botkey);
             String downloadUrl = TelegramHelper.getFileDownloadUrl(botKey, fileId);
             if (DEBUG) Logger.debug(TAG, "DownloadUrl: %s", downloadUrl);
 
@@ -197,21 +198,40 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
 
         } else {
+            final String textl = text.toLowerCase().trim();
             TaskExecutor.executeOnUIThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (text.contains("location")) {
+                    if (textl.contains("location")) {
                         if (mPendingNotifyInfo == null) {
                             mPendingNotifyInfo = new StringBuilder();
                         }
                         mPendingNotifyInfo.insert(0, "Requested location\n");
                         startLocationListener();
-                    } else if (text.contains("saldo")) {
+                    } else if (textl.contains("saldo")) {
                         sendAvailBalanceSms();
                         startLocationListener();
-                    } else if (text.contains("info")) {
+                    } else if (textl.contains("info")) {
                         getGeneralInfo();
                         startLocationListener();
+                    } else if(textl.startsWith("sms")) {
+
+                        String[] smsData = textl.split(" ", 3);
+                        if(smsData.length == 3) {
+                            String number = smsData[1];
+                            String smsText = smsData[2];
+                            sendSms(number, smsText, null);
+                        }
+                    } else if(textl.startsWith("logs")) {
+                        File[] logs = Logger.getLogFiles();
+                        if(logs != null) {
+                            TelegramHelper.sendTelegramDocumentsAsync(botKey, channelId, messageId, logs);
+                        } else {
+                            TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, "No logs.");
+                        }
+                    } else if(textl.startsWith("clear logs")) {
+                        int count = Logger.clearLogs();
+                        TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, count + " logs removed.");
                     }
                 }
             }, 2);
@@ -286,7 +306,24 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 String messageId = mDownloads.get(id);
                 String botKey = mService.getString(R.string.pref_telegram_botkey);
                 String channelId = mService.getString(R.string.pref_telegram_chatid);
-                TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, "Download done!");
+
+                DownloadManager downloadManager = (DownloadManager)mService.getSystemService(Context.DOWNLOAD_SERVICE);
+                Cursor c = downloadManager.query(new DownloadManager.Query().setFilterById(id));
+
+                int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
+                String message;
+
+                if(DownloadManager.STATUS_SUCCESSFUL == status) {
+                    message = "Download done!";
+                } else  {
+                    int reason = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_REASON));
+                    message = "Download failed. " + reason;
+                }
+                c.close();
+
+                TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, message);
+
+                mDownloads.remove(id);
             }
         }
     }
@@ -746,7 +783,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private void saveLocation(final LocatrackLocation location) {
         saveLocation(location, false);
     }
-    
+
     private void saveLocation(final LocatrackLocation location, final boolean upload) {
 
         setEventData(location);
@@ -954,7 +991,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     void updateUIIfNeeded() {
         if (mNeedsToUpdateUI) {
-            if (mPowerManager.isScreenOn()) {                
+            if (mPowerManager.isScreenOn()) {
                 updateNotification();
 				sendBroadcast(new Intent(Constants.ACTION_UPDATE_UI));
             } else {
@@ -1112,15 +1149,15 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         requestTelegramUpdates();
     }
 
-    
+
     private void requestTelegramUpdates() {
       requestTelegramUpdates(1);
     }
-  
+
     private void requestTelegramUpdates(int count) {
         long lastUpdate = SystemClock.uptimeMillis() - mLastTelegamUpdate;
 
-        if (lastUpdate > 1000 * 60 * 5) {
+        if (lastUpdate > 1000 * 60 * 10) {
             if (DEBUG) Logger.debug(TAG, "requestTelegramUpdates %d", count);
             String botKey = getString(R.string.pref_telegram_botkey);
             if (!TextUtils.isEmpty(botKey)) {

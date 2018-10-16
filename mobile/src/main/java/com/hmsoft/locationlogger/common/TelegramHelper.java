@@ -12,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
@@ -35,11 +36,68 @@ public class TelegramHelper {
 
 
     public static long sendTelegramMessage(String botKey, String chatId, String message) {
-        return  sendTelegramMessage(botKey, chatId, null, message);
+        return sendTelegramMessage(botKey, chatId, null, message);
     }
 
     public static void sendTelegramMessageAsync(String botKey, String chatId, String message) {
         sendTelegramMessageAsync(botKey, chatId, null, message);
+    }
+
+    public static void sendTelegramDocumentsAsync(final String botKey,
+                                            final String chatId,
+                                            final String replyId,
+                                            final File[] documentFiles) {
+        TaskExecutor.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                for(File doc  :documentFiles) {
+                    sendTelegramDocument(botKey, chatId, replyId, doc);
+                }
+            }
+        });
+    }
+
+    public static void sendTelegramDocument(final String botKey,
+                                                 final String chatId,
+                                                 final String replyId,
+                                                 final File documentFile) {
+
+
+        /*StringBuilder messageUrl = getTelegramApiUrl(botKey, "sendDocument");
+
+        if (Logger.DEBUG) {
+            Logger.debug(TAG, "Sending Telegram document: %s", documentFile.getAbsolutePath());
+        }
+
+        HttpClient client = new DefaultHttpClient();
+        HttpPost post = new HttpPost(messageUrl.toString());
+        post.setHeader("Content-Type", "multipart/form-data");
+
+        try {
+
+            Part[] parts = {
+                    new StringPart("chat_id", chatId),
+                    new FilePart("document", documentFile)
+            };
+            MultipartEntity reqEntity = new MultipartEntity(parts);
+            reqEntity.setContentType("multipart/form-data");
+            post.setEntity(reqEntity);
+
+            HttpResponse response = client.execute(post);
+            if (Logger.DEBUG) {
+                Logger.debug(TAG, response.getStatusLine().getStatusCode() + "");
+                String responset = getResponseText(response);
+                Logger.debug(TAG, responset);
+            }
+
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (ClientProtocolException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
+
     }
 
     public static void sendTelegramMessageAsync(final String botKey,
@@ -56,8 +114,9 @@ public class TelegramHelper {
     }
 
     private static long mid = 0;
+
     public static long sendTelegramMessage(String botKey, String chatId, String replyId,
-                                              String message) {
+                                           String message) {
         try {
 
             if (Logger.DEBUG) {
@@ -73,7 +132,7 @@ public class TelegramHelper {
 
             HttpResponse response = httpGet(messageUrl);
 
-            if(Logger.DEBUG) {
+            if (Logger.DEBUG) {
                 Logger.debug(TAG, getResponseText(response));
             }
 
@@ -104,7 +163,7 @@ public class TelegramHelper {
         return builderUrl;
     }
 
-    private static String getMessageUrl(String botKey, String chatId, String replyId,  String message) {
+    private static String getMessageUrl(String botKey, String chatId, String replyId, String message) {
         StringBuilder messageUrl = getTelegramApiUrl(botKey, "sendMessage");
 
         try {
@@ -114,7 +173,7 @@ public class TelegramHelper {
                     .append("disable_web_page_preview=true&")
                     .append("text=").append(URLEncoder.encode(message, "UTF-8"));
 
-            if(!TextUtils.isEmpty(replyId)) {
+            if (!TextUtils.isEmpty(replyId)) {
                 messageUrl.append("&reply_to_message_id=").append(replyId);
             }
         } catch (UnsupportedEncodingException e) {
@@ -189,9 +248,9 @@ public class TelegramHelper {
                                         }
                                         if (message != null) {
                                             String text = message.optString("text");
-                                            if(TextUtils.isEmpty(text)) {
+                                            if (TextUtils.isEmpty(text)) {
                                                 JSONObject document = message.optJSONObject("document");
-                                                if(document != null) {
+                                                if (document != null) {
                                                     text = String.format("document|%s|%s",
                                                             document.getString("file_name"),
                                                             document.getString("file_id"));
@@ -254,9 +313,9 @@ public class TelegramHelper {
                 String responseText = getResponseText(response);
                 JSONObject jresponse = new JSONObject(responseText);
                 JSONObject result = jresponse.optJSONObject("result");
-                if(result != null) {
+                if (result != null) {
                     String filePath = result.optString("file_path");
-                    if(!TextUtils.isEmpty(filePath)) {
+                    if (!TextUtils.isEmpty(filePath)) {
                         return String.format("%s/file/bot%s/%s", TELEGRAM_API_URL, botKey, filePath);
                     }
                 }

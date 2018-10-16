@@ -35,7 +35,27 @@ public final class Logger {
 	private static final SimpleDateFormat LOG_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd", Locale.US);
 
     private static File sLogsFolder = null;
-	
+
+    public static File[] getLogFiles() {
+        File[] logs = null;
+        if(sLogsFolder != null) {
+            logs = sLogsFolder.listFiles();
+        }
+        return logs;
+    }
+
+    public static int clearLogs() {
+    	int count = 0;
+		if(sLogsFolder != null) {
+			for(File file: sLogsFolder.listFiles())
+				if (!file.isDirectory())
+					if(file.delete()) {
+						count++;
+					}
+		}
+		return count;
+	}
+
 	public static void log2file(String tag, String msg, String fileName, Throwable e) {
 		
 		try {
