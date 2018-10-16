@@ -38,6 +38,7 @@ public final class Logger {
 
     public static File[] getLogFiles() {
         File[] logs = null;
+        createLogsFile();
         if(sLogsFolder != null) {
             logs = sLogsFolder.listFiles();
         }
@@ -46,6 +47,7 @@ public final class Logger {
 
     public static int clearLogs() {
     	int count = 0;
+		createLogsFile();
 		if(sLogsFolder != null) {
 			for(File file: sLogsFolder.listFiles())
 				if (!file.isDirectory())
@@ -59,11 +61,7 @@ public final class Logger {
 	public static void log2file(String tag, String msg, String fileName, Throwable e) {
 		
 		try {
-			if(sLogsFolder == null) {
-				if((sLogsFolder = LocationLoggerApp.getContext().getExternalFilesDir(LOGS_FOLDER)) == null) {
-                    sLogsFolder = LocationLoggerApp.getContext().getFilesDir();
-                }
-			}
+			createLogsFile();
 
 			Date now = new Date();
 			
@@ -89,7 +87,15 @@ public final class Logger {
 			Log.w(TAG, "log2file failed:", ex);
 		}
 	}
-	
+
+	private static void createLogsFile() {
+		if (sLogsFolder == null) {
+			if ((sLogsFolder = LocationLoggerApp.getContext().getExternalFilesDir(LOGS_FOLDER)) == null) {
+				sLogsFolder = LocationLoggerApp.getContext().getFilesDir();
+			}
+		}
+	}
+
 	public static void debug(String tag, String msg) {
 		if(DEBUG) {
 			Log.d(APP_TAG + tag, msg);

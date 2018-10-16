@@ -23,16 +23,16 @@ public class CrashCatcher implements Thread.UncaughtExceptionHandler {
 	private Thread.UncaughtExceptionHandler oldHandler;
 
 	private CrashCatcher() {
-		if (BuildConfig.DEBUG) {
+		//if (BuildConfig.DEBUG) {
 			oldHandler = Thread.getDefaultUncaughtExceptionHandler();						
 			Thread.setDefaultUncaughtExceptionHandler(this);
-		}
+		//}
 	}
 
     public static void init() {
-        if (BuildConfig.DEBUG) {
+        //if (BuildConfig.DEBUG) {
             new CrashCatcher();
-        }
+        //}
     }
 	
 	@Override

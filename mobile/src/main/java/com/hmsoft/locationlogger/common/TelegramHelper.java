@@ -1,6 +1,10 @@
 package com.hmsoft.locationlogger.common;
 
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
+
+import com.hmsoft.locationlogger.LocationLoggerApp;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -28,7 +32,7 @@ public class TelegramHelper {
     private static final String TELEGRAM_API_BOT_URL = TELEGRAM_API_URL + "/bot";
 
 
-    private static int updatesOffset = 0;
+    private static long updatesOffset = 0;
 
     public interface UpdateCallback {
         void onTelegramUpdateReceived(String chatId, String messageId, String text);
@@ -199,9 +203,14 @@ public class TelegramHelper {
 
         @Override
         public void run() {
+            final String OFFSET_PREF_KEY = "telegram_update_offset";
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(LocationLoggerApp.getContext());
+            if(updatesOffset == 0) {
+                updatesOffset = preferences.getLong(OFFSET_PREF_KEY,0);
+            }
+
             try {
                 while (mCount-- > 0) {
-                    boolean increaseUpdateOffset = false;
                     try {
 
                         StringBuilder updatesUrl = getTelegramApiUrl(mBotKey, "getUpdates");
@@ -240,8 +249,7 @@ public class TelegramHelper {
 
                                         JSONObject result = results.getJSONObject(c);
 
-                                        increaseUpdateOffset = true;
-                                        updatesOffset = result.getInt("update_id");
+                                        updatesOffset = result.getInt("update_id") + 1;
                                         JSONObject message = result.optJSONObject("channel_post");
                                         if (message == null) {
                                             message = result.optJSONObject("message");
@@ -266,18 +274,13 @@ public class TelegramHelper {
                                 }
                             }
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    } finally {
-                        if (increaseUpdateOffset) {
-                            updatesOffset++;
-                        }
+                    } catch (Exception e) {
+                        Logger.error(TAG, e.getMessage());
                     }
                 }
             } finally {
                 updaterThread = null;
+                preferences.edit().putLong(OFFSET_PREF_KEY, updatesOffset).commit();
                 if (Logger.DEBUG)
                     Logger.debug(TAG, "Ending telegram update thread. Offset: %d - ThreadId:%d", updatesOffset, Thread.currentThread().getId());
             }

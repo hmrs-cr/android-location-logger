@@ -232,6 +232,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                     } else if(textl.startsWith("clear logs")) {
                         int count = Logger.clearLogs();
                         TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, count + " logs removed.");
+                    } else if(textl.startsWith("ping")) {
+                        TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, "pong");
                     }
                 }
             }, 2);
@@ -1156,6 +1158,10 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     private void requestTelegramUpdates(int count) {
         long lastUpdate = SystemClock.uptimeMillis() - mLastTelegamUpdate;
+
+        if(DEBUG) {
+            lastUpdate = Integer.MAX_VALUE;
+        }
 
         if (lastUpdate > 1000 * 60 * 10) {
             if (DEBUG) Logger.debug(TAG, "requestTelegramUpdates %d", count);
