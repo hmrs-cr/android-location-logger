@@ -556,13 +556,13 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         boolean fireEvents = false;
         if (sLastBatteryLevel <= 100 && newLevel > 100) {
             SyncService.setAutoSync(context, true);
-            Logger.info(TAG, "Charging start");
+            if(DEBUG) Logger.debug(TAG, "Charging start");
             mChargingStart = true;
             mChargingStop = false;
             fireEvents = true;
         } else if (sLastBatteryLevel > 100 && newLevel <= 100) {
             SyncService.setAutoSync(context, false);
-            Logger.info(TAG, "Charging stop");
+            if(DEBUG) Logger.debug(TAG, "Charging stop");
             mChargingStop = true;
             mChargingStart = false;
             fireEvents = true;
