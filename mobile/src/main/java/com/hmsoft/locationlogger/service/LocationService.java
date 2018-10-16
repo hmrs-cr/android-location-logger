@@ -312,13 +312,28 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 DownloadManager downloadManager = (DownloadManager)mService.getSystemService(Context.DOWNLOAD_SERVICE);
                 Cursor c = downloadManager.query(new DownloadManager.Query().setFilterById(id));
 
-                int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
-                String message;
+                int status = -1;
+                int reason = -1;
 
+                if(c.moveToNext()) {
+                    int i = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
+                    if(i > -1) {
+                        status = c.getInt(i);
+                    }
+
+                    i = c.getColumnIndex(DownloadManager.COLUMN_REASON);
+                    if(i > -1) {
+                        reason = c.getInt(i);
+                    }
+                }
+
+                String message;
+                if(status == -1) {
+                    message = "Download done, unknown status.";
+                } else
                 if(DownloadManager.STATUS_SUCCESSFUL == status) {
                     message = "Download done!";
                 } else  {
-                    int reason = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_REASON));
                     message = "Download failed. " + reason;
                 }
                 c.close();
