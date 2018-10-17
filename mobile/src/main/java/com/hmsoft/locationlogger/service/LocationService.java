@@ -1172,13 +1172,14 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
 
     private void requestTelegramUpdates(int count) {
-        long lastUpdate = SystemClock.uptimeMillis() - mLastTelegamUpdate;
 
-        if(DEBUG) {
-            lastUpdate = Integer.MAX_VALUE;
-        }
+        final long UPDATES_WINDOW = 1000 * 60 * 10;
 
-        if (lastUpdate > 1000 * 60 * 10) {
+        boolean fastestUpdates = /*DEBUG ||*/ (isCharging() && isWifiConnected());
+        boolean mustRequestUpdates = fastestUpdates ||
+                (SystemClock.elapsedRealtime() - mLastTelegamUpdate > UPDATES_WINDOW);
+
+        if (mustRequestUpdates) {
             if (DEBUG) Logger.debug(TAG, "requestTelegramUpdates %d", count);
             String botKey = getString(R.string.pref_telegram_botkey);
             if (!TextUtils.isEmpty(botKey)) {
@@ -1187,7 +1188,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             mLastTelegamUpdate = SystemClock.uptimeMillis();
         } else {
             if (DEBUG)
-                Logger.debug(TAG, "Requesting telegram updates too fast:" + lastUpdate / 1000);
+                Logger.debug(TAG, "Requesting telegram updates too fast:" + (SystemClock.elapsedRealtime() - mLastTelegamUpdate / 1000));
         }
     }
 
