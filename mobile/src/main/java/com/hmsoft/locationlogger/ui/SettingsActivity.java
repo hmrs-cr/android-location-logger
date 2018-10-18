@@ -20,10 +20,9 @@ import android.widget.TimePicker;
 
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
+import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.service.LocationService;
-import com.hmsoft.locationlogger.service.SyncAuthenticatorService;
-import com.hmsoft.locationlogger.service.SyncService;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -173,7 +172,7 @@ public class SettingsActivity extends PreferenceActivity
         String devId = preferences.getString(deviceIdKey, "");
         if(TextUtils.isEmpty(devId)) {
             editor = preferences.edit();
-            editor.putString(deviceIdKey, SyncAuthenticatorService.getGoogleAccount(context));
+            editor.putString(deviceIdKey, "");
         }
     }
 
@@ -264,7 +263,7 @@ public class SettingsActivity extends PreferenceActivity
             String[] time = stringValue.split(":");
             int syncHour = Integer.parseInt(time[0]);
             int syncMinute = Integer.parseInt(time[1]);
-            Date alarmeDate = new Date(SyncService.getMillisOfTomorrowTime(syncHour, syncMinute));
+            Date alarmeDate = new Date(Utils.getMillisOfTomorrowTime(syncHour, syncMinute));
             SimpleDateFormat alarmTimeFormatter = new SimpleDateFormat("MMM d h:ma ");
 
             Date deltaDate = new Date(alarmeDate.getTime() - System.currentTimeMillis());

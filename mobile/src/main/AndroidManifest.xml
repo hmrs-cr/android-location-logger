@@ -59,27 +59,6 @@
         <service android:name=".service.LocationService" >
         </service>
 
-        <service android:name=".service.SyncAuthenticatorService" >
-            <intent-filter>
-                <action android:name="android.accounts.AccountAuthenticator" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accounts.AccountAuthenticator"
-                android:resource="@xml/authenticator" />
-        </service>
-
-        <service
-            android:name=".service.SyncService"
-            android:exported="true"
-            android:process=":sync" >
-            <intent-filter>
-                <action android:name="android.content.SyncAdapter" />
-            </intent-filter>
-            <meta-data
-                android:name="android.content.SyncAdapter"
-                android:resource="@xml/syncadapter" />
-        </service>
-
         <receiver android:name=".service.LocationService$StartServiceReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -87,11 +66,6 @@
             </intent-filter>
         </receiver>
 
-        <provider
-            android:name=".data.providers.LocationProvider"
-            android:authorities="@string/location_provider_authority"
-            android:exported="false"
-            android:syncable="true" />
 
     </application>
 

@@ -21,7 +21,6 @@ public final class Constants {
     public static final String EXTRA_STOP_ALARM = EXTRA_NAMESPACE + ".STOP_ALARM";
     public static final String EXTRA_ALARM_CALLBACK = EXTRA_NAMESPACE + ".ALARM_CALLBACK";
     public static final String EXTRA_UPDATE_LOCATION = EXTRA_NAMESPACE + ".UPDATE_LOCATION";
-    public static final String EXTRA_GEOTAG_CONTENT = EXTRA_NAMESPACE + ".GEOTAG_CONTENT";
     public static final String EXTRA_CONFIGURE = EXTRA_NAMESPACE + ".CONFIGURE";
     public static final String EXTRA_CONFIGURE_STORER = EXTRA_NAMESPACE + ".CONFIGURE_STORER";
     public static final String EXTRA_SYNC = EXTRA_NAMESPACE + ".SYNC";

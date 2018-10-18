@@ -27,7 +27,6 @@ import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.service.LocationService;
-import com.hmsoft.locationlogger.service.SyncService;
 
 public class MainActivity extends ActionBarActivity {
     private static final String TAG = "MainActivity";
@@ -353,12 +352,6 @@ public class MainActivity extends ActionBarActivity {
                     settingsMenu.setVisible(true);
                 }
             }
-            MenuItem locatracMenu = menu.findItem(R.id.action_locatrac_sync);
-            if(locatracMenu != null) {
-                PreferenceProfile preferences = PreferenceProfile.get(getApplicationContext());
-                String locatrackUri = preferences.getString(R.string.pref_locatrack_uri_key, "");
-                locatracMenu.setEnabled(!TextUtils.isEmpty(locatrackUri));
-            }
         }
         return super.onMenuOpened(featureId, menu);
     }
@@ -371,8 +364,6 @@ public class MainActivity extends ActionBarActivity {
             SettingsActivity.start(this);
         } if(id == R.id.action_webserver) {
             WebServerActivity.start(this);
-        } else if (id == R.id.action_locatrac_sync) {
-            SyncService.syncNow(getApplicationContext());
         }
         return super.onOptionsItemSelected(item);
     }

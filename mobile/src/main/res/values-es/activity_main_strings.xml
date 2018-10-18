@@ -17,7 +17,6 @@
 
     <string name="action_settings">Opciones</string>
     <string name="action_webserver">Iniciar servidor de exportacón</string>
-    <string name="action_locatrac_sync">Exportar a la nube Locatrack</string>
 
     <string name="lable_last_entry">Ultima entrada:</string>
     <string name="generic_loading">Cargando…</string>

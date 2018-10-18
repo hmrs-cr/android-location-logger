@@ -12,7 +12,6 @@ import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
-import com.hmsoft.locationlogger.service.SyncAuthenticatorService;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -212,7 +211,7 @@ public class LocatrackOnlineStorer extends LocationStorer {
 
         mMyLatitudeUrl = preferences.getString(R.string.pref_locatrack_uri_key, mMyLatitudeUrl);
         mMyLatitudeKey = preferences.getString(R.string.pref_locatrack_key_key, mMyLatitudeKey);
-        mDeviceId = preferences.getString(R.string.pref_locatrack_deviceid_key, SyncAuthenticatorService.getGoogleAccount(mContext));
+        mDeviceId = preferences.getString(R.string.pref_locatrack_deviceid_key, "");
 
         mConfigured = !TextUtils.isEmpty(mMyLatitudeUrl) && !TextUtils.isEmpty(mMyLatitudeKey) &&
                 !TextUtils.isEmpty(mDeviceId);
