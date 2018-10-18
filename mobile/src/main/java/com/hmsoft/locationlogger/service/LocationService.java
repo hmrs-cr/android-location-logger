@@ -150,6 +150,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     private String[] mTelegramAllowedFrom = null;
     private long mLastTelegamUpdate;
+    private String[] mPhoneNumbers;
 
     @Override
     public void onTelegramUpdateReceived(String chatId, final String messageId, final String text) {
@@ -182,7 +183,16 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
         }, 1);
 
+        processTextMessage(messageId, text);
+    }
+
+    private void processTextMessage(String text) {
+        processTextMessage(null, text);
+    }
+
+    private void processTextMessage(final String messageId, String text) {
         final String botKey = getString(R.string.pref_telegram_botkey);
+        final String channelId = getString(R.string.pref_telegram_chatid);
         if (text.startsWith("document|")) {
             String[] values = text.split("\\|");
 
@@ -192,7 +202,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             String downloadUrl = TelegramHelper.getFileDownloadUrl(botKey, fileId);
             if (DEBUG) Logger.debug(TAG, "DownloadUrl: %s", downloadUrl);
 
-            if (!TextUtils.isEmpty(downloadUrl)) {
+            if (!TextUtils.isEmpty(downloadUrl) && !TextUtils.isEmpty(messageId)) {
                 long id = downloadFile(fileName, downloadUrl);
                 DownloadFinishedReceiver.addDownload(id, messageId);
             }
@@ -559,6 +569,16 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             }
             if(mPendingNotifyInfo.indexOf(smsBody) < 0) {
                 mPendingNotifyInfo.append("\n***\t").append(smsBody).append("**");
+            }
+        } else {
+            if(mPhoneNumbers == null) {
+                mPhoneNumbers = getApplicationContext().getString(R.string.pref_sim_notify_numbers).split(",");
+            }
+            for(String pn : mPhoneNumbers) {
+                if(pn.equals(address)) {
+                    processTextMessage(smsBody);
+                    break;
+                }
             }
         }
     }
@@ -1707,7 +1727,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                             if(currentSimNumber != NO_SIM) {
                                 String operator = telephonyManager.getNetworkOperatorName();
                                 String country = telephonyManager.getSimCountryIso();
-                                String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers, "").split(",");
+                                String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers).split(",");
                                 String message= context.getString(R.string.sim_notify_sms, deviceId, operator,
                                         (new Date()).toString(), location.getLatitude(), location.getLongitude());
 
