@@ -655,7 +655,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     private boolean isWifiConnected() {
         NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
-        return networkInfo.getType() == ConnectivityManager.TYPE_WIFI;
+        return networkInfo != null && networkInfo.getType() == ConnectivityManager.TYPE_WIFI;
     }
 
     private boolean isCharging() {
