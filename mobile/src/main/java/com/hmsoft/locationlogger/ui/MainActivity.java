@@ -23,6 +23,7 @@ import com.hmsoft.locationlogger.BuildConfig;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
+import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
@@ -150,7 +151,7 @@ public class MainActivity extends ActionBarActivity {
 
             mLastLocation = LocatrackDb.last();
             if(mLastLocation != null) {
-                Location currentLoc = LocationService.getBestLastLocation(mActivity);
+                Location currentLoc = Utils.getBestLastLocation(mActivity);
                 if(currentLoc != null) {
                     mDistanceValue = (int)currentLoc.distanceTo(mLastLocation);
                     if(mDistanceValue > 10000) {
@@ -296,8 +297,6 @@ public class MainActivity extends ActionBarActivity {
         if(!LocationService.isRunning(this)) {
             LocationService.enable(this);
         }
-
-        LocationService.performSimCheck(this);
     }
 
 

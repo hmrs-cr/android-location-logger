@@ -84,12 +84,6 @@
             android:dependency="@string/pref_service_enabled_key" />
 
         <CheckBoxPreference
-            android:key="@string/pref_passive_enabled_key"
-            android:defaultValue="@string/pref_passive_enabled_default"
-            android:title="@string/pref_passive_enabled_title"
-            android:dependency="@string/pref_service_enabled_key" />
-
-        <CheckBoxPreference
             android:key="@string/pref_wackelock_enabled_key"
             android:defaultValue="@string/pref_wackelock_enabled_default"
             android:title="@string/pref_wackelock_enabled_title"

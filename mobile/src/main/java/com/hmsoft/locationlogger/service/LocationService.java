@@ -35,9 +35,7 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
-import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
-import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.widget.Toast;
 
@@ -53,22 +51,18 @@ import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
-import com.hmsoft.locationlogger.data.locatrack.LocatrackOnlineStorer;
-import com.hmsoft.locationlogger.data.locatrack.LocatrackSimNotifierStorer;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class LocationService extends Service /*implements GooglePlayServicesClient.ConnectionCallbacks,
-        GooglePlayServicesClient.OnConnectionFailedListener*/
+public class LocationService extends Service
     implements TelegramHelper.UpdateCallback {
 
     //region Static fields
@@ -81,10 +75,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     //endregion Static fields
 
     //region Settings fields
-    boolean mVehicleMode = false;
     private int mMinimumDistance = 20; //meters
     private int mGpsTimeout = 60; //seconds
-    /*private*/ boolean mRequestPassiveLocationUpdates = true;
     boolean mNotifyEvents;
     boolean mRestrictedSettings;
     boolean mSetAirplaneMode = false;
@@ -102,13 +94,10 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private boolean mTimeoutRoutinePending;
     private LocationListener mNetLocationListener;
     private LocationListener mGpsLocationListener;
-    private LocationListener mPassiveLocationListener;
     private LocatrackLocation mCurrentBestLocation;
     private PowerManager mPowerManager;
     private ComponentName mMapIntentComponent = null;
     private ConnectivityManager mConnectivityManager;
-    private boolean mInstantUploadEnabled = false;
-    private boolean mTelegramNotifyEnabled = false;
     private PreferenceProfile mPreferences;
 
     //endregion Settings fields
@@ -127,18 +116,16 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private PendingIntent mLocationActivityIntent = null;
     private Intent mMapIntent = null;
     private PendingIntent mUpdateLocationIntent = null;
-    private boolean mUploadHandlerRunning;
+    private boolean mStoreHandlerRunning;
     private int mRetrySmsCount;
 
-    LocatrackOnlineStorer mOnlineStorer = null;
-    LocatrackTelegramStorer mTelegramStorer = null;
-    LocationStorer mLocationStorer;
+    LocationStorer[] mLocationStorers;
 
     boolean mNeedsToUpdateUI;
     private WakeLock mWakeLock;
 
-    private HandlerThread mUploadThread = null;
-    private Handler mUploadHandler;
+    private HandlerThread mStoreThread = null;
+    private Handler mStoreHandler;
 
     static int sLastBatteryLevel = 99;
     boolean mChargingStart;
@@ -152,6 +139,9 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     private long mLastTelegamUpdate;
     private String[] mPhoneNumbers;
 
+    //endregion Core fields
+
+    //region Telegram Methods
     @Override
     public void onTelegramUpdateReceived(String chatId, final String messageId, final String text) {
         if (DEBUG)
@@ -230,7 +220,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                         if(smsData.length == 3) {
                             String number = smsData[1];
                             String smsText = smsData[2];
-                            sendSms(number, smsText, null);
+                            Utils.sendSms(number, smsText, null);
                         }
                     } else if(textl.startsWith("logs")) {
                         File[] logs = Logger.getLogFiles();
@@ -274,7 +264,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         return downloadManager.enqueue(request);
     }
 
-    //endregion Core fields
+    //endregion Telegram Methods
 
     //region Helper Inner Classes
 
@@ -291,7 +281,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
 
         public static void register(LocationService service) {
-            if(sInstance == null) {
+            if (sInstance == null) {
                 sInstance = new DownloadFinishedReceiver(service);
                 IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
                 sInstance.mService.registerReceiver(sInstance, filter);
@@ -299,14 +289,16 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
 
         public static void unregister() {
-            sInstance.mService.unregisterReceiver(sInstance);
-            sInstance.mService = null;
-            sInstance.mDownloads = null;
-            sInstance = null;
+            if (sInstance != null) {
+                sInstance.mService.unregisterReceiver(sInstance);
+                sInstance.mService = null;
+                sInstance.mDownloads = null;
+                sInstance = null;
+            }
         }
 
         public static void addDownload(long id, String messageId) {
-            if(sInstance != null) {
+            if (sInstance != null) {
                 sInstance.mDownloads.put(id, messageId);
             }
         }
@@ -314,36 +306,35 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         @Override
         public void onReceive(Context context, Intent intent) {
             long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0);
-            if(mDownloads.containsKey(id)) {
+            if (mDownloads.containsKey(id)) {
                 String messageId = mDownloads.get(id);
                 String botKey = mService.getString(R.string.pref_telegram_botkey);
                 String channelId = mService.getString(R.string.pref_telegram_chatid);
 
-                DownloadManager downloadManager = (DownloadManager)mService.getSystemService(Context.DOWNLOAD_SERVICE);
+                DownloadManager downloadManager = (DownloadManager) mService.getSystemService(Context.DOWNLOAD_SERVICE);
                 Cursor c = downloadManager.query(new DownloadManager.Query().setFilterById(id));
 
                 int status = -1;
                 int reason = -1;
 
-                if(c.moveToNext()) {
+                if (c.moveToNext()) {
                     int i = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
-                    if(i > -1) {
+                    if (i > -1) {
                         status = c.getInt(i);
                     }
 
                     i = c.getColumnIndex(DownloadManager.COLUMN_REASON);
-                    if(i > -1) {
+                    if (i > -1) {
                         reason = c.getInt(i);
                     }
                 }
 
                 String message;
-                if(status == -1) {
+                if (status == -1) {
                     message = "Download done, unknown status.";
-                } else
-                if(DownloadManager.STATUS_SUCCESSFUL == status) {
+                } else if (DownloadManager.STATUS_SUCCESSFUL == status) {
                     message = "Download done!";
-                } else  {
+                } else {
                     message = "Download failed. " + reason;
                 }
                 c.close();
@@ -604,9 +595,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
         sLastBatteryLevel = newLevel;
         if (fireEvents) {
-            setAirplaneMode(context, false);
             mAirplaneModeOn = false;
-            destroyUploadThread(); // Start with a new created thread
+            destroyStoreThread(); // Start with a new created thread
             acquireWakeLock();
             startLocationListener();
             int intv = -1;
@@ -614,7 +604,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 intv = 900;
             }
             setLocationAlarm(intv);
-            if(mChargingStart) performSimCheck(context);
         }
     }
 
@@ -630,30 +619,22 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         long timeDelta = HALF_MINUTE;
 
-        if(Logger.DEBUG) Logger.debug(TAG, "handleLocation %s", location);
+        if (Logger.DEBUG) Logger.debug(TAG, "handleLocation %s", location);
 
-        if (isBetterLocation(location, mCurrentBestLocation, timeDelta, mMinimumAccuracy,
+        if (Utils.isBetterLocation(location, mCurrentBestLocation, timeDelta, mMinimumAccuracy,
                 mMaxReasonableSpeed)) {
 
-            if(!mVehicleMode && LocationManager.PASSIVE_PROVIDER.equals(provider)) {
-                if(/*mLocationRequest == null ||*/ mLocationManager == null) {
-                    mCurrentBestLocation = new LocatrackLocation(location);
-                    saveLocation(mCurrentBestLocation);
-                    message = "*** Location saved (passive)";
-                } else {
-                    message = "Ignored passive location while in location request.";
-                }
+
+            mCurrentBestLocation = new LocatrackLocation(location);
+            if ((!mGpsProviderEnabled) ||
+                    (Utils.isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
+                saveLocation(mCurrentBestLocation);
+                message = "*** Location saved";
+                stopLocationListener();
             } else {
-                mCurrentBestLocation = new LocatrackLocation(location);
-                if ((!mGpsProviderEnabled) ||
-                        (isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
-                    saveLocation(mCurrentBestLocation, true);
-                    message = "*** Location saved";
-                    stopLocationListener();
-                } else {
-                    message = "No good GPS location.";
-                }
+                message = "No good GPS location.";
             }
+
         } else {
             message = "Location is not better than last location.";
         }
@@ -662,13 +643,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
 
     protected boolean isBetterLocation(Location location, Location currentBestLocation) {
-        return isBetterLocation(location, currentBestLocation, HALF_MINUTE, mMinimumAccuracy,
+        return Utils.isBetterLocation(location, currentBestLocation, HALF_MINUTE, mMinimumAccuracy,
                 mMaxReasonableSpeed);
-    }
-
-    private static boolean isFromGps(Location location) {
-        return LocationManager.GPS_PROVIDER.equals(location.getProvider()) ||
-                location.hasAltitude() || location.hasBearing() || location.hasSpeed();
     }
 
     private boolean isWifiConnected() {
@@ -678,90 +654,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     private boolean isCharging() {
         return sLastBatteryLevel > 100;
-    }
-
-
-     /**
-     * Determines whether one Location reading is better than the current Location fix
-     *
-     * @param location            The new Location that you want to evaluate
-     * @param currentBestLocation The current Location fix, to which you want to compare the new one
-     */
-    private static boolean isBetterLocation(Location location, Location currentBestLocation,
-                        long minTimeDelta, int minimumAccuracy, float maxReasonableSpeed) {
-
-        if (location == null) {
-            // A new location is always better than no location
-            return false;
-        }
-
-        if (location.getAccuracy() > minimumAccuracy) {
-            if(Logger.DEBUG) Logger.debug(TAG, "Location below min accuracy of %d meters", minimumAccuracy);
-            return false;
-        }
-
-        if (currentBestLocation == null) {
-            // A new location is always better than no location
-            return true;
-        }
-
-
-        // Check if the old and new location are from the same provider
-        boolean isFromSameProvider = isSameProvider(location.getProvider(),
-                currentBestLocation.getProvider());
-
-        long timeDelta = location.getTime() - currentBestLocation.getTime();
-
-        if(isFromSameProvider || !isFromGps(location)) {
-            float meters = location.distanceTo(currentBestLocation);
-            long seconds = timeDelta / 1000L;
-            float speed = meters / seconds;
-            if (speed > maxReasonableSpeed) {
-                if (Logger.DEBUG)
-                    Logger.debug(TAG, "Super speed detected. %f meters from last location", meters);
-                return false;
-            }
-        }
-
-        // Check whether the new location fix is newer or older
-        boolean isSignificantlyNewer = timeDelta > minTimeDelta;
-        boolean isSignificantlyOlder = timeDelta < -minTimeDelta;
-        boolean isNewer = timeDelta > 0;
-
-        // If it's been more than two minutes since the current location, use the new location
-        // because the user has likely moved
-        if (isSignificantlyNewer) {
-            return true;
-            // If the new location is more than two minutes older, it must be worse
-        } else if (isSignificantlyOlder) {
-            return false;
-        }
-
-        // Check whether the new location fix is more or less accurate
-        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
-        boolean isLessAccurate = accuracyDelta > 0;
-        boolean isMoreAccurate = accuracyDelta < 0;
-        boolean isSignificantlyLessAccurate = accuracyDelta > 200;
-
-        // Determine location quality using a combination of timeliness and accuracy
-        if (isMoreAccurate) {
-            return true;
-        } else if (isNewer && !isLessAccurate) {
-            return true;
-        } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Checks whether two providers are the same
-     */
-    private static boolean isSameProvider(String provider1, String provider2) {
-        if (provider1 == null) {
-            return provider2 == null;
-        }
-        return provider1.equals(provider2);
     }
 
     private void saveLastLocation() {
@@ -775,9 +667,9 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             return;
         }
 
-        if (mCurrentBestLocation != null && isFromGps(mCurrentBestLocation)) {
+        if (mCurrentBestLocation != null && Utils.isFromGps(mCurrentBestLocation)) {
             if(Logger.DEBUG) Logger.debug(TAG, "currentBestLocation is from GPS");
-            saveLocation(mCurrentBestLocation, true);
+            saveLocation(mCurrentBestLocation);
             logLocation(mCurrentBestLocation, "*** Location saved (current best)");
             return;
         }
@@ -804,7 +696,7 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
 
         if (bestLastLocation != null) {
-            saveLocation(bestLastLocation, true);
+            saveLocation(bestLastLocation);
             logLocation(bestLastLocation, "*** Location saved (best last)");
             if(mCurrentBestLocation == null) {
                 mCurrentBestLocation = bestLastLocation;
@@ -815,80 +707,19 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
     }
 
-    private void saveLocation(final LocatrackLocation location) {
-        saveLocation(location, false);
-    }
 
-    private void saveLocation(final LocatrackLocation location, final boolean upload) {
+    private void saveLocation(final LocatrackLocation location) {
 
         setEventData(location);
 
-        mLocationStorer.storeLocation(location);
+
+        storeLocation(location);
 
         mLastSaveAddress = null;
         mLastSavedLocation = location;
         mLocationCount++;
         updateUIIfNeeded();
 
-        if(mTelegramNotifyEnabled) {
-            notifyTelegram(location);
-        }
-
-        if (upload && mInstantUploadEnabled) {
-            uploadLocation(location);
-        } else {
-            cleanup();
-        }
-    }
-
-    private void notifyTelegram(final LocatrackLocation location) {
-        if(TextUtils.isEmpty(location.event) && TextUtils.isEmpty(location.extraInfo)) {
-            if (Logger.DEBUG)
-                Logger.debug(TAG, "No event to notify.");
-
-            return;
-        }
-
-
-        if(mTelegramStorer == null) {
-            final Context context = getApplicationContext();
-            mTelegramStorer = new LocatrackTelegramStorer(context);
-            mTelegramStorer.configure();
-        }
-
-        if(!mTelegramStorer.isConfigured()) {
-            if (Logger.DEBUG)
-                Logger.debug(TAG, "Telegram Storer not configured.");
-            return;
-        }
-
-        TaskExecutor.executeOnNewThread(new Runnable() {
-            @Override
-            public void run() {
-
-                int waitCount = 6;
-                while(waitCount-- > 0) {
-                    NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
-                    if((networkInfo != null && networkInfo.isConnected())) {
-                        location.getExtras().putString("NetType", networkInfo.getTypeName());
-                        if(DEBUG) Logger.debug(TAG, "Connected to network:" + networkInfo.getTypeName());
-                        break;
-                    }
-                    if(DEBUG) Logger.debug(TAG, "Not connected waiting for connection... " + waitCount);
-                    TaskExecutor.sleep(5);
-                }
-
-                final boolean notified = mTelegramStorer.storeLocation(location);
-                TaskExecutor.executeOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (notified) {
-                            mPendingNotifyInfo = null;
-                        }
-                    }
-                });
-            }
-        });
     }
 
     private void setEventData(LocatrackLocation location) {
@@ -911,62 +742,54 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
     }
 
-    private void uploadLocation(final LocatrackLocation location) {
-        if(mUploadHandlerRunning) {
-            if(DEBUG) Logger.debug(TAG, "Upload handler still running, Stuck?");
-            destroyUploadThread();
+    private void storeLocation(final LocatrackLocation location) {
+        if (mStoreHandlerRunning) {
+            if (DEBUG) Logger.debug(TAG, "Store handler still running, Stuck?");
+            destroyStoreThread();
         }
-        final Context context = getApplicationContext();
-        if (mUploadThread == null) {
-            mUploadThread = new HandlerThread(TAG);
-            mUploadThread.start();
-            Looper looper = mUploadThread.getLooper();
-            mUploadHandler = new Handler(looper);
-            Logger.info(TAG, "UploadThread created");
-            if (DEBUG) Toast.makeText(this, "UploadThread created", Toast.LENGTH_SHORT).show();
+
+        if (mStoreThread == null) {
+            mStoreThread = new HandlerThread(TAG);
+            mStoreThread.start();
+            Looper looper = mStoreThread.getLooper();
+            mStoreHandler = new Handler(looper);
+            Logger.info(TAG, "StoreThread created");
+            if (DEBUG) Toast.makeText(this, "StoreThread created", Toast.LENGTH_SHORT).show();
         }
-        mUploadHandlerRunning = true;
-        mUploadHandler.post(new Runnable() {
+
+        mStoreHandlerRunning = true;
+        mStoreHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (mOnlineStorer == null) {
-                    mOnlineStorer = new LocatrackOnlineStorer(context);
-                    mOnlineStorer.configure();
-                }
-                boolean locationUploaded = false;
+                boolean locationStored = true;
 
                 try {
                     if (DIAGNOSTICS && mLocationLogEnabled) {
-                        Logger.info(TAG, "Upload: %s", location);
+                        Logger.info(TAG, "Store: %s", location);
                     }
 
                     PerfWatch pw = null;
 
                     if (DIAGNOSTICS && mLocationLogEnabled) {
-                        pw = PerfWatch.start(TAG, "Start: Upload location");
+                        pw = PerfWatch.start(TAG, "Start: Store location");
                     }
 
-                    if (mAirplaneModeOn) {
-                        mOnlineStorer.retryDelaySeconds = 15;
-                        mOnlineStorer.retryCount = 4;
-                    } else {
-                        mOnlineStorer.retryDelaySeconds = 3;
-                        mOnlineStorer.retryCount = 1;
+                    for (LocationStorer storer : mLocationStorers) {
+                        locationStored = locationStored & storer.storeLocation(location);
                     }
-                    locationUploaded = mOnlineStorer.storeLocation(location);
+
                     if (DIAGNOSTICS && mLocationLogEnabled) {
                         if (pw != null) {
-                            pw.stop(TAG, "End: Upload location Success: " + locationUploaded);
+                            pw.stop(TAG, "End: Upload location Success: " + locationStored);
                         }
                     }
                 } finally {
-                    final boolean uploaded = locationUploaded;
+                    final boolean uploaded = locationStored;
                     TaskExecutor.executeOnUIThread(new Runnable() {
                         @Override
                         public void run() {
                             cleanup();
                             if (uploaded) {
-                                mLocationStorer.setUploadDateToday(location);
                                 mPendingNotifyInfo = null;
                             }
                         }
@@ -976,12 +799,12 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         });
     }
 
-    void destroyUploadThread() {
-        if(mUploadThread != null) {
-            mUploadThread.quit();
-            mUploadThread = null;
-            Logger.info(TAG, "UploadThread destroyed");
-            if(DEBUG) Toast.makeText(this, "UploadThread destroyed", Toast.LENGTH_SHORT).show();
+    void destroyStoreThread() {
+        if(mStoreThread != null) {
+            mStoreThread.quit();
+            mStoreThread = null;
+            Logger.info(TAG, "StoreThread destroyed");
+            if(DEBUG) Toast.makeText(this, "StoreThread destroyed", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1008,11 +831,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
     }
 
     void cleanup() {
-        mUploadHandlerRunning = false;
+        mStoreHandlerRunning = false;
         mChargingStart = false;
         mChargingStop = false;
         if (mAirplaneModeOn) {
-            setAirplaneMode(getApplicationContext(), true);
+            Utils.setAirplaneMode(getApplicationContext(), true);
         }
         if (mWakeLock != null) {
             if(DIAGNOSTICS && mLocationLogEnabled) Logger.info(TAG, "releaseLocationLock");
@@ -1123,13 +946,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     void startLocationListener() {
         if(mAirplaneModeOn) {
-            setAirplaneMode(this, false);
+            Utils.setAirplaneMode(this, false);
         }
 
-        mAirplaneModeOn = mInstantUploadEnabled &&
-                ((mSetAirplaneMode && sLastBatteryLevel <= 100) ||
+        mAirplaneModeOn = ((mSetAirplaneMode && sLastBatteryLevel <= 100) ||
                         sLastBatteryLevel < CRITICAL_BATTERY_LEV);
-
 
         if (mLocationManager == null) {
 
@@ -1157,8 +978,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
                 mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, time, minDistance, mGpsLocationListener);
                 if(Logger.DEBUG) Logger.debug(TAG, "requestLocationUpdates for %s", mGpsLocationListener.mProvider);
             }
-
-            startPassiveLocationListener();
         }
 
         if (!mTimeoutRoutinePending) {
@@ -1179,7 +998,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
         requestTelegramUpdates();
     }
-
 
     private void requestTelegramUpdates() {
       requestTelegramUpdates(1);
@@ -1203,36 +1021,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         } else {
             if (DEBUG)
                 Logger.debug(TAG, "Requesting telegram updates too fast:" + (SystemClock.elapsedRealtime() - mLastTelegamUpdate / 1000));
-        }
-    }
-
-    private void startPassiveLocationListener() {
-        if (mRequestPassiveLocationUpdates && mPassiveLocationListener == null) {
-            if(Logger.DEBUG) Logger.debug(TAG, "startPassiveLocationListener");
-            mPassiveLocationListener = new LocationListener(this, LocationManager.PASSIVE_PROVIDER);
-
-
-            LocationManager locationManager = this.mLocationManager;
-            if (locationManager == null) {
-                locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            }
-            locationManager.requestLocationUpdates (LocationManager.PASSIVE_PROVIDER, 2000, mMinimumDistance / 2,
-                    mPassiveLocationListener);
-        }
-    }
-
-    private void stopPassiveLocationListener() {
-        if (mPassiveLocationListener != null) {
-            LocationManager locationManager = this.mLocationManager;
-            if (locationManager == null) {
-                locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            }
-
-            locationManager.removeUpdates(mPassiveLocationListener);
-            if(Logger.DEBUG) Logger.debug(TAG, "stopPassiveLocationListener:Android Location");
-
-            mPassiveLocationListener.mService = null;
-            mPassiveLocationListener = null;
         }
     }
 
@@ -1298,7 +1086,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         if (intent.hasExtra(Constants.EXTRA_STOP_ALARM)) {
             mAlarm.cancel(mAlarmLocationCallback);
             stopLocationListener();
-            stopPassiveLocationListener();
             cleanup();
         }
 
@@ -1321,30 +1108,12 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             configure(true);
         }
 
-        if (intent.hasExtra(Constants.EXTRA_CONFIGURE_STORER)) {
-            mLocationStorer.configure();
-        }
-
         if(intent.hasExtra(Constants.EXTRA_SYNC)) {
-            if(sLastBatteryLevel > 49) {
-                final Context context = getApplicationContext();
-                setAirplaneMode(context, false);
-                mRetrySmsCount = 10;
-                performSimCheck(context);
-            }
-
-            if(sLastBatteryLevel > 15) {
+            if(sLastBatteryLevel > 10) {
                 sendAvailBalanceSms();
             }
             
             setSyncAlarm();
-        }
-
-        if(intent.hasExtra(Constants.EXTRA_RESTORE_AIRPLANE_MODE)) {
-            if(sLastBatteryLevel <= 100 && mLocationManager == null &&
-                    mPreferences.getBoolean(R.string.pref_set_airplanemode_key, false)) {
-                setAirplaneMode(getApplicationContext(), true);
-            }
         }
     }
 
@@ -1362,7 +1131,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         //boolean oldUseGmsIgAvailable = mUseGmsIgAvailable;
         mMinimumDistance = mPreferences.getInt(R.string.pref_minimun_distance_key, String.valueOf(mMinimumDistance)); //meters
         mGpsTimeout = mPreferences.getInt(R.string.pref_gps_timeout_key, String.valueOf(mGpsTimeout)); //seconds
-        mRequestPassiveLocationUpdates = mPreferences.getBoolean(R.string.pref_passive_enabled_key, Boolean.parseBoolean(getString(R.string.pref_passive_enabled_default)));
         mMaxReasonableSpeed = mPreferences.getFloat(R.string.pref_max_speed_key, String.valueOf(mMaxReasonableSpeed)); // meters/seconds
         mMinimumAccuracy = mPreferences.getInt(R.string.pref_minimun_accuracy_key, String.valueOf(mMinimumAccuracy)); // meters
         mBestAccuracy = mPreferences.getInt(R.string.pref_best_accuracy_key, String.valueOf(mBestAccuracy)); // meters
@@ -1373,28 +1141,14 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         mSyncHour = Integer.parseInt(syncTime[0]);
         mSyncMinute = Integer.parseInt(syncTime[1]);
         //mUseGmsIgAvailable = preferences.getBoolean(getString(R.string.pref_use_gms_if_available_key), true);
-        mInstantUploadEnabled = mPreferences.getBoolean(R.string.pref_instant_upload_enabled_key, true);
         mSetAirplaneMode =  mPreferences.getBoolean(R.string.pref_set_airplanemode_key, mSetAirplaneMode);
         mNotifyEvents =  mPreferences.getBoolean(R.string.profile_notify_events_key, false);
-        mTelegramNotifyEnabled = mNotifyEvents;
         mRestrictedSettings =  mPreferences.getBoolean(R.string.profile_settings_restricted_key, false);
 
-        mVehicleMode = mPreferences.activeProfile == PreferenceProfile.PROFILE_BICYCLE ||
-                mPreferences.activeProfile == PreferenceProfile.PROFILE_CAR;
-
-        mAirplaneModeOn = mInstantUploadEnabled && Settings.System.getInt(context.getContentResolver(),
+        mAirplaneModeOn = Settings.System.getInt(context.getContentResolver(),
                 Settings.System.AIRPLANE_MODE_ON, 0) == 1;
 
         if (setup) {
-            if (mRequestPassiveLocationUpdates) {
-                startLocationListener();
-            } else {
-                stopPassiveLocationListener();
-                /*if(mLocationRequest == null) {
-                    stopLocationListener();
-                }*/
-            }
-
             if(oldSyncHour != mSyncHour || oldSynMinute != mSyncMinute) {
                 setSyncAlarm();
             }
@@ -1407,10 +1161,20 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         }
     }
 
-    protected LocationStorer createStorer() {
-        LocatrackDb storer = new LocatrackDb(getApplicationContext());
-        storer.prepareDmlStatements();
-        return storer;
+    protected LocationStorer[] createAndConfigureStorers() {
+        LocationStorer[] storers = new LocationStorer[2];
+
+        LocatrackDb dbStorer = new LocatrackDb(getApplicationContext());
+        dbStorer.prepareDmlStatements();
+        dbStorer.configure();
+
+        LocatrackTelegramStorer telegramStorer = new LocatrackTelegramStorer(getApplicationContext());
+        telegramStorer.configure();;
+
+        storers[0] = dbStorer;
+        storers[1] = telegramStorer;
+
+        return storers;
     }
 
     //endregion Core functions
@@ -1430,8 +1194,8 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         Context context = getApplicationContext();
         mConnectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        mLocationStorer = createStorer();
-        mLocationStorer.configure();
+        mLocationStorers = createAndConfigureStorers();
+
         mPreferences = PreferenceProfile.get(context);
         configure(false);
 
@@ -1448,8 +1212,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         mAlarmSyncCallback = PendingIntent.getService(context, 0, i, 0);
 
         ActionReceiver.register(this);
-
-        performSimCheck(context);
     }
 
     @Override
@@ -1462,11 +1224,10 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         mAlarm.cancel(mAlarmLocationCallback);
         mAlarm.cancel(mAlarmSyncCallback);
 
-        stopPassiveLocationListener();
         stopLocationListener();
         stopForeground(true);
 
-        destroyUploadThread();
+        destroyStoreThread();
         PreferenceProfile.reset();
 
         super.onDestroy();
@@ -1503,11 +1264,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
 
     public static void configure(Context context) {
         start(context, Constants.EXTRA_CONFIGURE);
-    }
-
-
-    public static void restoreAirplaneMode(Context context) {
-        start(context, Constants.EXTRA_RESTORE_AIRPLANE_MODE);
     }
 
     public static void updateLocation(Context context) {
@@ -1559,48 +1315,6 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
         return false;
     }
 
-    public static LocatrackLocation getBestLastLocation(Context context)
-    {
-        LocationManager locationManager =
-                (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
-
-        Location bestResult = null;
-        List<String> matchingProviders = locationManager.getAllProviders();
-        for (String provider: matchingProviders)
-        {
-            Location location = locationManager.getLastKnownLocation(provider);
-            if(isBetterLocation(location, bestResult, 2000, 5500, 100)) {
-                bestResult = location;
-            }
-        }
-        if(bestResult != null) {
-            return new LocatrackLocation(bestResult);
-        }
-        return null;
-    }
-
-    static void setAirplaneMode(Context context, boolean  isEnabled) {
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) return;
-        try {
-            boolean enabled = Settings.System.getInt(context.getContentResolver(),
-                    Settings.System.AIRPLANE_MODE_ON, 0) == 1;
-
-            if(enabled == isEnabled) return;
-
-            if(DEBUG) Logger.debug(TAG, "setAirplaneMode:" + isEnabled);
-
-            // Toggle airplane mode.
-            Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON,
-                    isEnabled ? 1 : 0);
-
-            Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-            intent.putExtra("state", isEnabled);
-            context.sendBroadcast(intent);
-        } catch (Exception ignored) {
-            Logger.error(TAG, ignored.getMessage());
-        }
-    }
-
     void sendAvailBalanceSms() {
         String phoneNumber = getString(R.string.pref_balance_sms_number);
         if(TextUtils.isEmpty(phoneNumber)) return;
@@ -1613,125 +1327,11 @@ public class LocationService extends Service /*implements GooglePlayServicesClie
             mAvailBalanceSmsCallback = PendingIntent.getBroadcast(context, 0, i, 0);
         }
         // sending
-        sendSms(phoneNumber, message, mAvailBalanceSmsCallback);
+        Utils.sendSms(phoneNumber, message, mAvailBalanceSmsCallback);
     }
 
-    public static void sendSms(String toNumber, String smsMessage, PendingIntent sentIntent)  {
-        SmsManager smsManager = SmsManager.getDefault();
-        if(smsManager == null) {
-            Logger.warning(TAG, "No SmsManager found");
-            return;
-        }
-        smsManager.sendTextMessage(toNumber, null, smsMessage, sentIntent, null);
-        if(DEBUG) Logger.debug(TAG, "Send SMS to %s: %s", toNumber, smsMessage);
-    }
 
-    private static long sLastSimCheckTime;
-    private static final String NO_SIM = "NO_SIM";
-    public static void performSimCheck(final Context context) {
 
-        if(DEBUG) {
-            Logger.debug(TAG, "No sim check");
-            return;
-        }
-        
-        final String oldSimNumber = context.getString(R.string.pref_sim_number);
-        if (TextUtils.isEmpty(oldSimNumber)) {
-            Logger.debug(TAG, "SIM check is disabled.");
-            return /*false*/;
-        }
-        
-        if(System.currentTimeMillis() - sLastSimCheckTime <= 60000 ) {
-            if(DEBUG) Logger.debug(TAG, "SIM notifications too fast");
-            return /*true*/;
-        }
-        
-        if(Settings.System.getInt(context.getContentResolver(),
-                Settings.System.AIRPLANE_MODE_ON, 0) == 1) {
-            if(DEBUG) Logger.debug(TAG, "Airplane mode enabled, not performing SIM check.");
-            return /*false*/;
-        }
-        
-
-        final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);        
-        if (telephonyManager == null) {
-            Logger.warning(TAG, "No TelephonyManager found");
-            return /*false*/;
-        }
-        
-        sLastSimCheckTime = System.currentTimeMillis();
-        TaskExecutor.executeOnNewThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        String currentSimNumber;
-                        int simState;
-                        int retryCount = 30;
-                        while((simState = telephonyManager.getSimState()) != TelephonyManager.SIM_STATE_READY ||
-                             TextUtils.isEmpty((currentSimNumber = telephonyManager.getSimSerialNumber()))) {
-                            if(simState == TelephonyManager.SIM_STATE_ABSENT) {
-                                if(DEBUG) Logger.debug(TAG, "SIM not present");
-                                currentSimNumber = NO_SIM;
-                                break;
-                            }
-                            if(--retryCount < 0) {
-                                Logger.warning(TAG, "SIM is not ready (too many retries), not performing SIM check.");
-                                return /*false*/;
-                            }
-                            if(DEBUG) Logger.debug(TAG, "SIM not ready, retrying...");
-                            TaskExecutor.sleep(1);
-                        }
-                        boolean isDifferent = !oldSimNumber.equals(currentSimNumber);
-                        if (isDifferent) {
-                            Logger.warning(TAG, "Different SIM detected! '%s' != '%s'", 
-                                           currentSimNumber, oldSimNumber);
-                                    
-                            String deviceId = context.getString(R.string.pref_locatrack_deviceid_default, "NoDevId");
-                            LocatrackLocation location = LocationService.getBestLastLocation(context);
-                            if (location == null) {
-                                location = LocatrackDb.last();
-                            }
-                            if (location == null) {
-                                location = new LocatrackLocation("");
-                            }
-
-                            if(currentSimNumber != NO_SIM) {
-                                String operator = telephonyManager.getNetworkOperatorName();
-                                String country = telephonyManager.getSimCountryIso();
-                                String[] phoneNumbers = context.getString(R.string.pref_sim_notify_numbers).split(",");
-                                String message= context.getString(R.string.sim_notify_sms, deviceId, operator,
-                                        (new Date()).toString(), location.getLatitude(), location.getLongitude());
-
-                                for (String phoneNumber : phoneNumbers) {
-                                    if (!TextUtils.isEmpty(phoneNumber)) {
-                                        TaskExecutor.sleep(1);
-                                        sendSms(phoneNumber, message, null);
-                                    }
-                                }
-                                String phoneNumber = telephonyManager.getLine1Number();
-                                location.extraInfo = "";
-                                if (!TextUtils.isEmpty(phoneNumber)) {
-                                    location.extraInfo = "\nPhone number: " + phoneNumber;
-                                }
-                                location.extraInfo += "\nOperator: " + operator + " (" + country + ")";
-                            } else {
-                                location.extraInfo = "No SIM";
-                            }
-
-                            location.event = LocatrackLocation.EVENT_NEW_SIM;
-                            location.batteryLevel = sLastBatteryLevel;
-                            LocatrackSimNotifierStorer onlineStorer = new LocatrackSimNotifierStorer(context);
-                            onlineStorer.configure();
-                            onlineStorer.storeLocation(location);                        
-                        } else {
-                            Logger.debug(TAG, "Same SIM. Everything OK");
-                        }                 
-                    } catch (Exception e) {
-                        Logger.warning(TAG, e.getMessage());
-                    }                        
-                }
-        });
-    }
 
     //endregionregion Helper functions
 }
