@@ -6,11 +6,6 @@ import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.LocationLoggerApp;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -237,15 +232,8 @@ public class TelegramHelper {
                 Logger.debug(TAG, "Url length: %d", messageUrl.length());
             }
 
-            HttpResponse response = httpGet(messageUrl);
-
-            if (Logger.DEBUG) {
-                Logger.debug(TAG, getResponseText(response));
-            }
-
-            int status = response.getStatusLine().getStatusCode();
+            int status = httpGet(messageUrl);
             return ++mid;
-            //return (status == 200 || status == 201);
 
         } catch (Exception e) {
             Logger.error(TAG, e.getMessage());
@@ -253,10 +241,46 @@ public class TelegramHelper {
         }
     }
 
-    private static HttpResponse httpGet(String url) throws IOException {
-        HttpClient client = new DefaultHttpClient();
-        HttpGet get = new HttpGet(url);
-        return client.execute(get);
+    private static String httpGetResponseText(String url) throws IOException {
+        StringBuilder response = new StringBuilder();
+        httpGet(url, response);
+        return response.toString();
+    }
+
+    private static int httpGet(String url) throws IOException {
+        return httpGet(url, null);
+    }
+
+    private static int httpGet(String url, StringBuilder response) throws IOException {
+
+        HttpURLConnection con = (HttpURLConnection) (new URL(url)).openConnection();
+
+        con.setRequestMethod("GET");
+
+        if(Logger.DEBUG) {
+            if(response == null) {
+                response = new StringBuilder();
+            }
+        }
+
+        int responseCode = con.getResponseCode();
+        if (response != null) {
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(con.getInputStream()));
+            String inputLine;
+
+
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+
+            if(Logger.DEBUG) {
+                Logger.debug(TAG, response.toString());
+            }
+        }
+
+        return responseCode;
     }
 
     private static StringBuilder getTelegramApiUrl(String botKey, String method) {
@@ -331,52 +355,50 @@ public class TelegramHelper {
 
                         if (Logger.DEBUG)
                             Logger.debug(TAG, url + " - ThreadId:" + Thread.currentThread().getId());
-                        HttpResponse response = httpGet(url);
-                        int status = response.getStatusLine().getStatusCode();
 
-                        if (status == 200 || status == 201) {
-                            if (mUpdateCallback != null) {
 
-                                String responseText = getResponseText(response);
+                        if (mUpdateCallback != null) {
 
-                                if (Logger.DEBUG) {
-                                    Logger.debug(TAG, responseText + " - Count:" + mCount);
-                                }
+                            String responseText = httpGetResponseText(url);
 
-                                JSONObject jsonObject = new JSONObject(responseText);
+                            if (Logger.DEBUG) {
+                                Logger.debug(TAG, "Count:" + mCount);
+                            }
 
-                                if (jsonObject.getBoolean("ok")) {
+                            JSONObject jsonObject = new JSONObject(responseText);
 
-                                    JSONArray results = jsonObject.getJSONArray("result");
-                                    for (int c = 0; c < results.length(); c++) {
+                            if (jsonObject.getBoolean("ok")) {
 
-                                        JSONObject result = results.getJSONObject(c);
+                                JSONArray results = jsonObject.getJSONArray("result");
+                                for (int c = 0; c < results.length(); c++) {
 
-                                        updatesOffset = result.getInt("update_id") + 1;
-                                        JSONObject message = result.optJSONObject("channel_post");
-                                        if (message == null) {
-                                            message = result.optJSONObject("message");
+                                    JSONObject result = results.getJSONObject(c);
+
+                                    updatesOffset = result.getInt("update_id") + 1;
+                                    JSONObject message = result.optJSONObject("channel_post");
+                                    if (message == null) {
+                                        message = result.optJSONObject("message");
+                                    }
+                                    if (message != null) {
+                                        String text = message.optString("text");
+                                        if (TextUtils.isEmpty(text)) {
+                                            JSONObject document = message.optJSONObject("document");
+                                            if (document != null) {
+                                                text = String.format("document|%s|%s",
+                                                        document.getString("file_name"),
+                                                        document.getString("file_id"));
+                                            }
                                         }
-                                        if (message != null) {
-                                            String text = message.optString("text");
-                                            if (TextUtils.isEmpty(text)) {
-                                                JSONObject document = message.optJSONObject("document");
-                                                if (document != null) {
-                                                    text = String.format("document|%s|%s",
-                                                            document.getString("file_name"),
-                                                            document.getString("file_id"));
-                                                }
-                                            }
-                                            if (!TextUtils.isEmpty(text)) {
-                                                String chatId = message.getJSONObject("chat").getString("id");
-                                                String messageId = message.optString("message_id");
-                                                mUpdateCallback.onTelegramUpdateReceived(chatId, messageId, text);
-                                            }
+                                        if (!TextUtils.isEmpty(text)) {
+                                            String chatId = message.getJSONObject("chat").getString("id");
+                                            String messageId = message.optString("message_id");
+                                            mUpdateCallback.onTelegramUpdateReceived(chatId, messageId, text);
                                         }
                                     }
                                 }
                             }
                         }
+
                     } catch (Exception e) {
                         Logger.error(TAG, e.getMessage());
                     }
@@ -390,42 +412,21 @@ public class TelegramHelper {
         }
     }
 
-    private static String getResponseText(HttpResponse response) {
-        String inputLine;
-        HttpEntity entity = response.getEntity();
-        StringBuilder sb = new StringBuilder((int) entity.getContentLength());
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(entity.getContent()));
-            while ((inputLine = br.readLine()) != null) {
-                sb.append(inputLine).append("\n");
-            }
-            br.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return sb.toString();
-    }
-
     public static String getFileDownloadUrl(String botKey, String fileId) {
         StringBuilder updatesUrl = getTelegramApiUrl(botKey, "getFile");
         updatesUrl.append("?file_id=").append(fileId);
 
-        HttpResponse response = null;
         try {
-            response = httpGet(updatesUrl.toString());
-            int status = response.getStatusLine().getStatusCode();
-            if (status == 200 || status == 201) {
-                String responseText = getResponseText(response);
-                JSONObject jresponse = new JSONObject(responseText);
-                JSONObject result = jresponse.optJSONObject("result");
-                if (result != null) {
-                    String filePath = result.optString("file_path");
-                    if (!TextUtils.isEmpty(filePath)) {
-                        return String.format("%s/file/bot%s/%s", TELEGRAM_API_URL, botKey, filePath);
-                    }
+            String responseText = httpGetResponseText(updatesUrl.toString());
+            JSONObject jresponse = new JSONObject(responseText);
+            JSONObject result = jresponse.optJSONObject("result");
+            if (result != null) {
+                String filePath = result.optString("file_path");
+                if (!TextUtils.isEmpty(filePath)) {
+                    return String.format("%s/file/bot%s/%s", TELEGRAM_API_URL, botKey, filePath);
                 }
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         } catch (JSONException e) {

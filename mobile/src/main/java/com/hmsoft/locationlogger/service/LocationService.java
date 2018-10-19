@@ -580,7 +580,6 @@ public class LocationService extends Service
     }
 
     void handleBatteryLevelChange(int newLevel) {
-        final Context context = getApplicationContext();
         boolean fireEvents = false;
         if (sLastBatteryLevel <= 100 && newLevel > 100) {
             if(DEBUG) Logger.debug(TAG, "Charging start");
