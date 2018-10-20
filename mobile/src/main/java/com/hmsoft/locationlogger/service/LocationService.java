@@ -88,6 +88,7 @@ public class LocationService extends Service
     private boolean mLocationLogEnabled = false;
     private int mSyncHour = 0;
     private int mSyncMinute = 30;
+    private boolean mUnlimitedData;
     LocationManager mLocationManager;
     private boolean mNetProviderEnabled;
     private boolean mGpsProviderEnabled;
@@ -254,10 +255,11 @@ public class LocationService extends Service
         DownloadManager downloadManager = (DownloadManager)getSystemService(Context.DOWNLOAD_SERVICE);
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
         request .setTitle(fileName)
-                .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
                 .setDestinationUri(Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)));
 
-
+        if(!mUnlimitedData) {
+            request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI);
+        }
 
         DownloadFinishedReceiver.register(this);
 
@@ -1006,7 +1008,7 @@ public class LocationService extends Service
 
         final long UPDATES_WINDOW = 1000 * 60 * 10;
 
-        boolean fastestUpdates = /*DEBUG ||*/ (isCharging() && isWifiConnected());
+        boolean fastestUpdates = /*DEBUG ||*/ (isCharging() && (mUnlimitedData || isWifiConnected()));
         boolean mustRequestUpdates = fastestUpdates ||
                 (SystemClock.elapsedRealtime() - mLastTelegamUpdate > UPDATES_WINDOW);
 
@@ -1049,8 +1051,13 @@ public class LocationService extends Service
 
     void setLocationAlarm(int interval) {
         if (interval == -1) {
-            NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
-            int networkYpe = networkInfo != null ? networkInfo.getType() : -1;
+            int networkYpe;
+            if(mUnlimitedData) {
+                networkYpe = ConnectivityManager.TYPE_WIFI;
+            } else {
+                NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
+                networkYpe = networkInfo != null ? networkInfo.getType() : -1;
+            }
             interval = mPreferences.getInterval(sLastBatteryLevel, networkYpe);
         }
 
