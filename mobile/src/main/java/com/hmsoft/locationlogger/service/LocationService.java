@@ -167,21 +167,26 @@ public class LocationService extends Service
             return;
         }
 
+        processTextMessage(null, messageId, text);
+
         TaskExecutor.executeOnUIThread(new Runnable() {
             @Override
             public void run() {
                 requestTelegramUpdates(2);
             }
         }, 1);
-
-        processTextMessage(messageId, text);
     }
 
-    private void processTextMessage(String text) {
-        processTextMessage(null, text);
+    private void processSmsMessage(final String fromNumber, final String text) {
+        TaskExecutor.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                processTextMessage(fromNumber, null, text + " sms");
+            }
+        });
     }
 
-    private void processTextMessage(final String messageId, String text) {
+    private void processTextMessage(final String fromNumber, final String messageId, String text) {
         final String botKey = getString(R.string.pref_telegram_botkey);
         final String channelId = getString(R.string.pref_telegram_chatid);
         if (text.startsWith("document|")) {
@@ -200,44 +205,47 @@ public class LocationService extends Service
 
         } else {
             final String textl = text.toLowerCase().trim();
-            TaskExecutor.executeOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (textl.contains("location")) {
-                        if (mPendingNotifyInfo == null) {
-                            mPendingNotifyInfo = new StringBuilder();
-                        }
-                        mPendingNotifyInfo.insert(0, "Requested location\n");
-                        startLocationListener();
-                    } else if (textl.contains("saldo")) {
-                        sendAvailBalanceSms();
-                        startLocationListener();
-                    } else if (textl.contains("info")) {
-                        getGeneralInfo();
-                        startLocationListener();
-                    } else if(textl.startsWith("sms")) {
-
-                        String[] smsData = textl.split(" ", 3);
-                        if(smsData.length == 3) {
-                            String number = smsData[1];
-                            String smsText = smsData[2];
-                            Utils.sendSms(number, smsText, null);
-                        }
-                    } else if(textl.startsWith("logs")) {
-                        File[] logs = Logger.getLogFiles();
-                        if(logs != null) {
-                            TelegramHelper.sendTelegramDocumentsAsync(botKey, channelId, messageId, logs);
-                        } else {
-                            TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, "No logs.");
-                        }
-                    } else if(textl.startsWith("clear logs")) {
-                        int count = Logger.clearLogs();
-                        TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, count + " logs removed.");
-                    } else if(textl.startsWith("ping")) {
-                        TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, "pong");
+            synchronized (this) {
+                if (textl.contains("location")) {
+                    if (mPendingNotifyInfo == null) {
+                        mPendingNotifyInfo = new StringBuilder();
                     }
+                    mPendingNotifyInfo.insert(0, "Requested location\n");
+                    startLocationListener();
+                } else if (textl.startsWith("saldo")) {
+                    sendAvailBalanceSms();
+                    startLocationListener();
+                } else if (textl.startsWith("info")) {
+                    getGeneralInfo();
+                    if (textl.endsWith("sms")) {
+                        Utils.sendSms(fromNumber, mPendingNotifyInfo.toString(), null);
+                        mPendingNotifyInfo = null;
+                    } else {
+                        startLocationListener();
+                    }
+                } else if (textl.startsWith("sms")) {
+
+                    String[] smsData = textl.split(" ", 3);
+                    if (smsData.length == 3) {
+                        String number = smsData[1];
+                        String smsText = smsData[2];
+                        Utils.sendSms(number, smsText, null);
+                    }
+                } else if (textl.startsWith("logs")) {
+                    File[] logs = Logger.getLogFiles();
+                    if (logs != null) {
+                        TelegramHelper.sendTelegramDocuments(botKey, channelId, messageId, logs);
+                    } else {
+                        TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "No logs.");
+                    }
+                } else if (textl.startsWith("clear logs")) {
+                    int count = Logger.clearLogs();
+                    TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, count + " logs removed.");
+                } else if (textl.startsWith("ping")) {
+                    TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "pong");
                 }
-            }, 2);
+            }
+
         }
     }
 
@@ -245,7 +253,13 @@ public class LocationService extends Service
         if (mPendingNotifyInfo == null) {
             mPendingNotifyInfo = new StringBuilder();
         }
-        mPendingNotifyInfo.append("\nNetwork: ").append(mConnectivityManager.getActiveNetworkInfo().getTypeName()).append("\n")
+
+        NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
+        String netName = networkInfo != null ? networkInfo.getTypeName() : "None";
+        boolean connected = networkInfo != null && networkInfo.isConnected();
+
+        mPendingNotifyInfo.append("\nNetwork: ").append(netName).append(" - Connected:").append(connected).append("\n")
+                .append("Internet: ").append(connected && Utils.isInternetAvailable()).append("\n")
                 .append("App Version: ").append(Constants.VERSION_STRING).append("\n")
                 .append("Android Version: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");;
     }
@@ -569,7 +583,7 @@ public class LocationService extends Service
             }
             for(String pn : mPhoneNumbers) {
                 if(pn.equals(address)) {
-                    processTextMessage(smsBody);
+                    processSmsMessage(address, smsBody);
                     break;
                 }
             }

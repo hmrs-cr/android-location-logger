@@ -11,6 +11,8 @@ import android.telephony.SmsManager;
 
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.List;
 
@@ -163,6 +165,16 @@ public class Utils {
             return true;
         } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
             return true;
+        }
+        return false;
+    }
+
+    public static boolean isInternetAvailable() {
+        try {
+            final InetAddress address = InetAddress.getByName("www.google.com");
+            return !address.equals("");
+        } catch (UnknownHostException e) {
+            Logger.error(TAG, e.getMessage());
         }
         return false;
     }

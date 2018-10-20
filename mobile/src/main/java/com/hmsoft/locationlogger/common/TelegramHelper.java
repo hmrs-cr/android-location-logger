@@ -165,10 +165,22 @@ public class TelegramHelper {
         sendTelegramMessageAsync(botKey, chatId, null, message);
     }
 
+    public static void sendTelegramDocuments(final String botKey,
+                                             final String chatId,
+                                             final String replyId,
+                                             final File[] documentFiles) {
+
+        for (File doc : documentFiles) {
+            sendTelegramDocument(botKey, chatId, replyId, doc);
+        }
+    }
+
+
+
     public static void sendTelegramDocumentsAsync(final String botKey,
-                                            final String chatId,
-                                            final String replyId,
-                                            final File[] documentFiles) {
+                                                  final String chatId,
+                                                  final String replyId,
+                                                  final File[] documentFiles) {
         TaskExecutor.executeOnNewThread(new Runnable() {
             @Override
             public void run() {
