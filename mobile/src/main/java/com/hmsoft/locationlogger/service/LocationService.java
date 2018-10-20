@@ -186,7 +186,7 @@ public class LocationService extends Service
         });
     }
 
-    private void processTextMessage(final String fromNumber, final String messageId, String text) {
+    private synchronized void processTextMessage(final String fromNumber, final String messageId, String text) {
         final String botKey = getString(R.string.pref_telegram_botkey);
         final String channelId = getString(R.string.pref_telegram_chatid);
         if (text.startsWith("document|")) {
@@ -205,47 +205,45 @@ public class LocationService extends Service
 
         } else {
             final String textl = text.toLowerCase().trim();
-            synchronized (this) {
-                if (textl.contains("location")) {
-                    if (mPendingNotifyInfo == null) {
-                        mPendingNotifyInfo = new StringBuilder();
-                    }
-                    mPendingNotifyInfo.insert(0, "Requested location\n");
-                    startLocationListener();
-                } else if (textl.startsWith("saldo")) {
-                    sendAvailBalanceSms();
-                    startLocationListener();
-                } else if (textl.startsWith("info")) {
-                    getGeneralInfo();
-                    if (textl.endsWith("sms")) {
-                        Utils.sendSms(fromNumber, mPendingNotifyInfo.toString(), null);
-                        mPendingNotifyInfo = null;
-                    } else {
-                        startLocationListener();
-                    }
-                } else if (textl.startsWith("sms")) {
 
-                    String[] smsData = textl.split(" ", 3);
-                    if (smsData.length == 3) {
-                        String number = smsData[1];
-                        String smsText = smsData[2];
-                        Utils.sendSms(number, smsText, null);
-                    }
-                } else if (textl.startsWith("logs")) {
-                    File[] logs = Logger.getLogFiles();
-                    if (logs != null) {
-                        TelegramHelper.sendTelegramDocuments(botKey, channelId, messageId, logs);
-                    } else {
-                        TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "No logs.");
-                    }
-                } else if (textl.startsWith("clear logs")) {
-                    int count = Logger.clearLogs();
-                    TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, count + " logs removed.");
-                } else if (textl.startsWith("ping")) {
-                    TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "pong");
+            if (textl.contains("location")) {
+                if (mPendingNotifyInfo == null) {
+                    mPendingNotifyInfo = new StringBuilder();
                 }
-            }
+                mPendingNotifyInfo.insert(0, "Requested location\n");
+                startLocationListener();
+            } else if (textl.startsWith("saldo")) {
+                sendAvailBalanceSms();
+                startLocationListener();
+            } else if (textl.startsWith("info")) {
+                getGeneralInfo();
+                if (textl.endsWith("sms")) {
+                    Utils.sendSms(fromNumber, mPendingNotifyInfo.toString(), null);
+                    mPendingNotifyInfo = null;
+                } else {
+                    startLocationListener();
+                }
+            } else if (textl.startsWith("sms")) {
 
+                String[] smsData = textl.split(" ", 3);
+                if (smsData.length == 3) {
+                    String number = smsData[1];
+                    String smsText = smsData[2];
+                    Utils.sendSms(number, smsText, null);
+                }
+            } else if (textl.startsWith("logs")) {
+                File[] logs = Logger.getLogFiles();
+                if (logs != null) {
+                    TelegramHelper.sendTelegramDocuments(botKey, channelId, messageId, logs);
+                } else {
+                    TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "No logs.");
+                }
+            } else if (textl.startsWith("clear logs")) {
+                int count = Logger.clearLogs();
+                TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, count + " logs removed.");
+            } else if (textl.startsWith("ping")) {
+                TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "pong");
+            }
         }
     }
 
