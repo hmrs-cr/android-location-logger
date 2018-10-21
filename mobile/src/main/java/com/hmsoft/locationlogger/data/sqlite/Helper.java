@@ -18,7 +18,7 @@ public class Helper extends SQLiteOpenHelper {
     public static final String TYPE_PRIMARY_KEY = " PRIMARY KEY";
     public static final String COMMA_SEP = ",";
 
-    public static final int DATABASE_VERSION = 3;
+    public static final int DATABASE_VERSION = 4;
     public static final String DATABASE_NAME = "locatrack.db";
 
     private static Helper instance;
@@ -45,6 +45,7 @@ public class Helper extends SQLiteOpenHelper {
 
         db.execSQL(LocationTable.SQL_CREATE_TABLE);
         db.execSQL(GeocoderTable.SQL_CREATE_TABLE);
+        db.execSQL(FuelLogTable.SQL_CREATE_TABLE);
 
         for (String index : LocationTable.SQL_CREATE_INDICES) {
             db.execSQL(index);
@@ -58,8 +59,12 @@ public class Helper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if(Logger.DEBUG) Logger.debug(TAG, "onUpgrade");
-        db.execSQL(LocationTable.SQL_DROP_TABLE);
-        db.execSQL(GeocoderTable.SQL_DROP_TABLE);
-        onCreate(db);
+        if(newVersion == 4) {
+            db.execSQL(FuelLogTable.SQL_CREATE_TABLE);
+        } else {
+            db.execSQL(LocationTable.SQL_DROP_TABLE);
+            db.execSQL(GeocoderTable.SQL_DROP_TABLE);
+            onCreate(db);
+        }
     }
 }

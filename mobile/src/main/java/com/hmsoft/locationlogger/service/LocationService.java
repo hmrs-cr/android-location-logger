@@ -53,6 +53,8 @@ import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
+import com.hmsoft.locationlogger.data.sqlite.FuelLogTable;
+import com.hmsoft.locationlogger.data.sqlite.Helper;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
 import java.io.File;
@@ -243,6 +245,25 @@ public class LocationService extends Service
                 TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, count + " logs removed.");
             } else if (textl.startsWith("ping")) {
                 TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "pong");
+            } else if(textl.startsWith("fuel")) {
+                try {
+                    String[] fuelData = textl.split(" ", 3);
+                    if (fuelData.length == 3) {
+                        int odo = Integer.parseInt(fuelData[1].toLowerCase().replace("km", "").trim());
+                        double amount = Double.parseDouble(fuelData[2].trim());
+                        int count = FuelLogTable.logFuel(Helper.getInstance(), mLastSavedLocation, odo, amount);
+                        TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Success: " + count);
+                    }
+                } catch (Exception e) {
+                    TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Error: " + e.getMessage());
+                }
+            } else if(textl.startsWith("getfuellogs")) {
+                 FuelLogTable.FuelLog[] logs = FuelLogTable.getLogs(Helper.getInstance());
+                 String m = "";
+                 for(FuelLogTable.FuelLog log : logs) {
+                     m = m + log + "\n";
+                 }
+                TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, m);
             }
         }
     }
