@@ -114,7 +114,7 @@ public class LocationTable {
         writable.update(TABLE_NAME, sUpdateValues, TIMESTAMP_WHERE_CONDITION, sUpdateValuesValues);
     }
 
-    public static int getCount(Helper helper, boolean includeNotUploadedOnly) {
+    public static long getCount(Helper helper, boolean includeNotUploadedOnly) {
         final String NOT_UPLOADED_COUNT_QUERY = "SELECT Count(*) FROM " + TABLE_NAME +
                 " WHERE " + COLUMN_NAME_UPLOAD_DATE + " = 0";
         final String ALL_COUNT_QUERY = "SELECT Count(*) FROM " + TABLE_NAME;
@@ -125,18 +125,8 @@ public class LocationTable {
         } else {
             query = ALL_COUNT_QUERY;
         }
-        Cursor cursor = helper.getReadableDatabase().rawQuery(query, null);
-        if(cursor != null) {
-            try	{
-                if(cursor.moveToFirst()) {
-                    return cursor.getInt(0);
-                }
-            }
-            finally	{
-                cursor.close();
-            }
-        }
-        return 0;
+
+        return Math.round(helper.getDoubleScalar(query));
     }
 
     public static LocatrackLocation getLast(Helper helper) {

@@ -251,8 +251,9 @@ public class LocationService extends Service
                     if (fuelData.length == 3) {
                         int odo = Integer.parseInt(fuelData[1].toLowerCase().replace("km", "").trim());
                         double amount = Double.parseDouble(fuelData[2].trim());
-                        int count = FuelLogTable.logFuel(Helper.getInstance(), mLastSavedLocation, odo, amount);
-                        TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Success: " + count);
+                        long count = FuelLogTable.logFuel(Helper.getInstance(), mLastSavedLocation, odo, amount);
+                        double consuption = FuelLogTable.getAvgConsuption(Helper.getInstance());
+                        TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Average: " + consuption + " CRC/KM");
                     }
                 } catch (Exception e) {
                     TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Error: " + e.getMessage());
@@ -273,6 +274,9 @@ public class LocationService extends Service
                     m = m + log + "\n";
                 }
                 TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, m);
+            } else if (textl.startsWith("avgfuel")) {
+                double consuption = FuelLogTable.getAvgConsuption(Helper.getInstance());
+                TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Average: " + consuption + " CRC/KM");
             }
         }
     }

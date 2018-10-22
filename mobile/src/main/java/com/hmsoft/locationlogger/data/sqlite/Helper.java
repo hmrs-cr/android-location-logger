@@ -1,6 +1,7 @@
 package com.hmsoft.locationlogger.data.sqlite;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -37,6 +38,22 @@ public class Helper extends SQLiteOpenHelper {
             instance = new Helper();
         }
         return instance;
+    }
+
+    public double getDoubleScalar(String query) {
+
+        Cursor cursor = this.getReadableDatabase().rawQuery(query, null);
+        if(cursor != null) {
+            try	{
+                if(cursor.moveToFirst()) {
+                    return cursor.getDouble(0);
+                }
+            }
+            finally	{
+                cursor.close();
+            }
+        }
+        return 0;
     }
 
     @Override

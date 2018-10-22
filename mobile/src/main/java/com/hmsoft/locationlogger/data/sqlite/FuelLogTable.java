@@ -51,7 +51,7 @@ public class FuelLogTable {
             ", l." + LocationTable.COLUMN_NAME_LATITUDE + ", l." + LocationTable.COLUMN_NAME_LONGITUD + " FROM " + TABLE_NAME + " AS fl" +
             " LEFT JOIN " + LocationTable.TABLE_NAME + " AS l ON l." + LocationTable.COLUMN_NAME_TIMESTAMP + " = fl." + COLUMN_NAME_LOCATION_ID;
 
-    public static  int logFuel(Helper helper, Location location, int odoValue, double spendAmount) {
+    public static  long logFuel(Helper helper, Location location, int odoValue, double spendAmount) {
 
         insertValues.put(COLUMN_NAME_TIMESTAMP, System.currentTimeMillis());
         insertValues.put(COLUMN_NAME_LOCATION_ID, location != null ? location.getTime() : System.currentTimeMillis());
@@ -123,21 +123,18 @@ public class FuelLogTable {
         return new FuelLog[0];
     }
 
-    public static int getCount(Helper helper) {
-        final String ALL_COUNT_QUERY = "SELECT Count(*) FROM " + TABLE_NAME;
+    public static double getAvgConsuption(Helper helper) {
+        final String query = "SELECT SUM(" + COLUMN_NAME_SPEND_AMOUNT +") / (MAX(" +
+                COLUMN_NAME_ODO_VALUE + ") - MIN(" + COLUMN_NAME_ODO_VALUE + ")) From " + TABLE_NAME;
 
-        Cursor cursor = helper.getReadableDatabase().rawQuery(ALL_COUNT_QUERY, null);
-        if(cursor != null) {
-            try	{
-                if(cursor.moveToFirst()) {
-                    return cursor.getInt(0);
-                }
-            }
-            finally	{
-                cursor.close();
-            }
-        }
-        return 0;
+        double average = helper.getDoubleScalar(query);
+        double rounded = Math.round(average * 100);
+        return rounded / 100;
+    }
+
+    public static long getCount(Helper helper) {
+        final String ALL_COUNT_QUERY = "SELECT Count(*) FROM " + TABLE_NAME;
+        return Math.round(helper.getDoubleScalar(ALL_COUNT_QUERY));
     }
 
 }
