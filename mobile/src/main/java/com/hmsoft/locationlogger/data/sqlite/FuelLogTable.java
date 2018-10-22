@@ -11,6 +11,7 @@ import java.util.Locale;
 
 public class FuelLogTable {
     public static final String TABLE_NAME = "fuelLog";
+    public static final String VIEW_NAME = TABLE_NAME + "View";
 
     public static final String SQL_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
 
@@ -28,7 +29,10 @@ public class FuelLogTable {
     private static final String[] QUERY_COLUMNS = new String[] {
             COLUMN_NAME_TIMESTAMP,
             COLUMN_NAME_ODO_VALUE,
-            COLUMN_NAME_SPEND_AMOUNT
+            COLUMN_NAME_SPEND_AMOUNT,
+            LocationTable.COLUMN_NAME_LATITUDE,
+            LocationTable.COLUMN_NAME_LONGITUD
+
     };
 
     private static final String[] queryValues = new String[2];
@@ -42,6 +46,10 @@ public class FuelLogTable {
                     COLUMN_NAME_SPEND_AMOUNT + Helper.TYPE_TEXT +
                     ")";
 
+    public static final String SQL_CREATE_VIEW = "CREATE VIEW " + VIEW_NAME + " AS " +
+            "SELECT fl." + COLUMN_NAME_TIMESTAMP + ", fl." + COLUMN_NAME_ODO_VALUE + ", fl." + COLUMN_NAME_SPEND_AMOUNT +
+            ", l." + LocationTable.COLUMN_NAME_LATITUDE + ", l." + LocationTable.COLUMN_NAME_LONGITUD + " FROM " + TABLE_NAME + " AS fl" +
+            " LEFT JOIN " + LocationTable.TABLE_NAME + " AS l ON l." + LocationTable.COLUMN_NAME_TIMESTAMP + " = fl." + COLUMN_NAME_LOCATION_ID;
 
     public static  int logFuel(Helper helper, Location location, int odoValue, double spendAmount) {
 
@@ -60,11 +68,17 @@ public class FuelLogTable {
         public final int odoValue;
         public final int amountSpend;
 
+        public final double lat;
+        public final double lon;
+
         public FuelLog(Cursor cursor) {
             long time = cursor.getLong(cursor.getColumnIndex(COLUMN_NAME_TIMESTAMP));
             date = new Date(time);
             odoValue = cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_ODO_VALUE));
             amountSpend = cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_SPEND_AMOUNT));
+
+            lat = cursor.getDouble(cursor.getColumnIndex(LocationTable.COLUMN_NAME_LATITUDE));
+            lon = cursor.getDouble(cursor.getColumnIndex(LocationTable.COLUMN_NAME_LONGITUD));
         }
 
         @Override
@@ -72,7 +86,13 @@ public class FuelLogTable {
             StringBuilder stringBuilder = new StringBuilder();
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd KK:mm:ss a", Locale.US);
 
-            stringBuilder.append(dateFormat.format(date)).append("  ")
+            String datestr = dateFormat.format(date);
+
+            if(lat != 0 && lon != 0) {
+                datestr = "[" + datestr + "](https://www.google.com/maps/search/?api=1&query=" + lat + "," + lon + ")";
+            }
+
+            stringBuilder.append(datestr).append("  ")
                     .append(odoValue).append("km  ")
                     .append(amountSpend).append(" CRC");
 
@@ -81,9 +101,11 @@ public class FuelLogTable {
         }
     }
 
-    public static FuelLog[] getLogs(Helper helper) {
-        Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, QUERY_COLUMNS,
-                null, null, null, null, null);
+    public static FuelLog[] getLogs(Helper helper, int limit) {
+        String slimit = limit > 0 ? String.valueOf(limit) : null;
+        Cursor cursor = helper.getReadableDatabase().query(VIEW_NAME, QUERY_COLUMNS,
+                null, null, null, null,
+                COLUMN_NAME_TIMESTAMP + " DESC ", slimit);
 
         if(cursor != null) {
             try {
@@ -116,27 +138,6 @@ public class FuelLogTable {
             }
         }
         return 0;
-    }
-
-    public static String getAddress(Helper helper, double latitude, double longitude) {
-        queryValues[0] = String.valueOf(latitude);
-        queryValues[1] = String.valueOf(longitude);
-
-       /* Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, QUERY_COLUMNS,
-                COLUMN_NAME_LATITUDE + " = ? AND " + COLUMN_NAME_LONGITUDE + " = ?",
-                queryValues, null, null, null);
-
-        if(cursor != null) {
-            try {
-                if (cursor.moveToFirst()) {
-                    return cursor.getString(0);
-                }
-            } finally {
-                cursor.close();
-            }
-        }*/
-
-        return null;
     }
 
 }

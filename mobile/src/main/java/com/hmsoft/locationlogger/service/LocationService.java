@@ -245,7 +245,7 @@ public class LocationService extends Service
                 TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, count + " logs removed.");
             } else if (textl.startsWith("ping")) {
                 TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "pong");
-            } else if(textl.startsWith("fuel")) {
+            } else if (textl.startsWith("fuel")) {
                 try {
                     String[] fuelData = textl.split(" ", 3);
                     if (fuelData.length == 3) {
@@ -257,12 +257,21 @@ public class LocationService extends Service
                 } catch (Exception e) {
                     TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Error: " + e.getMessage());
                 }
-            } else if(textl.startsWith("getfuellogs")) {
-                 FuelLogTable.FuelLog[] logs = FuelLogTable.getLogs(Helper.getInstance());
-                 String m = "";
-                 for(FuelLogTable.FuelLog log : logs) {
-                     m = m + log + "\n";
-                 }
+            } else if (textl.startsWith("getfuellogs")) {
+                String[] data = textl.split(" ", 2);
+                int limit = 0;
+                if(data.length == 2) {
+                    try {
+                        limit = Integer.valueOf(data[1]);
+                    } catch (NumberFormatException e) {
+
+                    }
+                }
+                FuelLogTable.FuelLog[] logs = FuelLogTable.getLogs(Helper.getInstance(), limit);
+                String m = "";
+                for (FuelLogTable.FuelLog log : logs) {
+                    m = m + log + "\n";
+                }
                 TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, m);
             }
         }
