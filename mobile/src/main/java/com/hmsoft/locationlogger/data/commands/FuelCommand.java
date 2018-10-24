@@ -10,6 +10,11 @@ class FuelCommand extends Command {
     static final String COMMAND_NAME = "Fuel";
 
     @Override
+    public String getSummary() {
+        return "Log fuel consuptions: _fuel ODO AMOUNT_.";
+    }
+
+    @Override
     public String getName() {
         return COMMAND_NAME;
     }

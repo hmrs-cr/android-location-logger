@@ -7,7 +7,12 @@ import com.hmsoft.locationlogger.data.sqlite.Helper;
 
     static final String COMMAND_NAME = "AvgFuel";
 
-    @Override
+     @Override
+     public String getSummary() {
+         return "Overall average fuel consumption.";
+     }
+
+     @Override
     public String getName() {
         return COMMAND_NAME;
     }

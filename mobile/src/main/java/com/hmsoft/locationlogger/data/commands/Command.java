@@ -5,12 +5,15 @@ import android.content.Context;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TelegramHelper;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class Command {
 
     private static final String TAG = "Command";
+
     private static Map<String, Class> commandClasses;
     private static Map<String, Command> commandInstances;
 
@@ -24,6 +27,13 @@ public abstract class Command {
             }
             commandInstances.clear();
         }
+    }
+
+    protected Set<String> getAllCommandNames() {
+        if(commandClasses != null) {
+            return  commandClasses.keySet();
+        }
+        return Collections.emptySet();
     }
 
     public void cleanup() {
@@ -122,5 +132,7 @@ public abstract class Command {
         registerCommandClass(LocationCommand.COMMAND_NAME, LocationCommand.class);
         registerCommandClass(InfoCommand.COMMAND_NAME, InfoCommand.class);
         registerCommandClass(BalanceCommand.COMMAND_NAME, BalanceCommand.class);
+        registerCommandClass(GetDBCommand.COMMAND_NAME, GetDBCommand.class);
+        registerCommandClass(HelpCommand.COMMAND_NAME, HelpCommand.class);
     }
 }

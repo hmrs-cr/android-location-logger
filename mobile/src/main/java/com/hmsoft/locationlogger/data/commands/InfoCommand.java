@@ -8,6 +8,11 @@ class InfoCommand extends Command {
     static final String COMMAND_NAME = "Info";
 
     @Override
+    public String getSummary() {
+        return "General application info.";
+    }
+
+    @Override
     public String getName() {
         return COMMAND_NAME;
     }

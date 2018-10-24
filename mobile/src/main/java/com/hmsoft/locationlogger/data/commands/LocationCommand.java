@@ -7,6 +7,11 @@ class LocationCommand extends Command {
     static final String COMMAND_NAME = "Location";
 
     @Override
+    public String getSummary() {
+        return "Request location update.";
+    }
+
+    @Override
     public String getName() {
         return COMMAND_NAME;
     }

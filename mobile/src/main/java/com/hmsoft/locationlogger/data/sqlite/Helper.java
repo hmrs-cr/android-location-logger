@@ -8,6 +8,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.common.Logger;
 
+import java.io.File;
+
 
 public class Helper extends SQLiteOpenHelper {
 
@@ -41,7 +43,6 @@ public class Helper extends SQLiteOpenHelper {
     }
 
     public double getDoubleScalar(String query) {
-
         Cursor cursor = this.getReadableDatabase().rawQuery(query, null);
         if(cursor != null) {
             try	{
@@ -54,6 +55,10 @@ public class Helper extends SQLiteOpenHelper {
             }
         }
         return 0;
+    }
+
+    public File getPathFile() {
+        return  new File(this.getReadableDatabase().getPath());
     }
 
     @Override

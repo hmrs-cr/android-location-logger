@@ -7,6 +7,11 @@ class BalanceCommand extends Command {
     static final String COMMAND_NAME = "Saldo";
 
     @Override
+    public String getSummary() {
+        return "Mobile balance.";
+    }
+
+    @Override
     public String getName() {
         return COMMAND_NAME;
     }

@@ -10,6 +10,11 @@ class LogsCommand extends Command {
     static final String COMMAND_NAME = "Logs";
 
     @Override
+    public String getSummary() {
+        return "Get internal logs.";
+    }
+
+    @Override
     public String getName() {
         return COMMAND_NAME;
     }

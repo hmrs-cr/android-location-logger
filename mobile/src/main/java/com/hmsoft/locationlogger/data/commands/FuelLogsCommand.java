@@ -8,6 +8,11 @@ class FuelLogsCommand extends Command {
     static final String COMMAND_NAME = "FuelLogs";
 
     @Override
+    public String getSummary() {
+        return "Fuel consumption logs. _fuelLogs [MAX]_";
+    }
+
+    @Override
     public String getName() {
         return COMMAND_NAME;
     }

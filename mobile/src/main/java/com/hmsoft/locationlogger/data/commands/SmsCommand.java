@@ -7,6 +7,11 @@ class SmsCommand extends Command {
     static final String COMMAND_NAME = "Sms";
 
     @Override
+    public String getSummary() {
+        return "Sent SMS message. _sms TO_NUMBER MESSAGE_TEXT_";
+    }
+
+    @Override
     public String getName() {
         return COMMAND_NAME;
     }

@@ -7,6 +7,11 @@ class ClearLogsCommand extends Command {
     static final String COMMAND_NAME = "ClearLogs";
 
     @Override
+    public String getSummary() {
+        return "Remove all internal logs.";
+    }
+
+    @Override
     public String getName() {
         return COMMAND_NAME;
     }
