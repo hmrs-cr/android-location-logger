@@ -1,10 +1,8 @@
 package com.hmsoft.locationlogger.service;
 
-import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.AlarmManager;
-import android.app.DownloadManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -14,7 +12,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -24,7 +21,6 @@ import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -50,19 +46,15 @@ import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
+import com.hmsoft.locationlogger.data.commands.Command;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
-import com.hmsoft.locationlogger.data.sqlite.FuelLogTable;
-import com.hmsoft.locationlogger.data.sqlite.Helper;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
-import java.io.File;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class LocationService extends Service
     implements TelegramHelper.UpdateCallback {
@@ -179,220 +171,42 @@ public class LocationService extends Service
         }, 1);
     }
 
-    private void processSmsMessage(final String fromNumber, final String text) {
+    private void processSmsMessage(final String fromSmsNumber, final String text) {
         TaskExecutor.executeOnNewThread(new Runnable() {
             @Override
             public void run() {
-                processTextMessage(fromNumber, null, text + " sms");
+                processTextMessage(fromSmsNumber, null, text);
             }
         });
     }
 
-    private synchronized void processTextMessage(final String fromNumber, final String messageId, String text) {
+    private synchronized void processTextMessage(final String fromSmsNumber, final String messageId, String text) {
+
         final String botKey = getString(R.string.pref_telegram_botkey);
         final String channelId = getString(R.string.pref_telegram_chatid);
-        if (text.startsWith("document|")) {
-            String[] values = text.split("\\|");
 
-            String fileName = values[1];
-            String fileId = values[2];
-
-            String downloadUrl = TelegramHelper.getFileDownloadUrl(botKey, fileId);
-            if (DEBUG) Logger.debug(TAG, "DownloadUrl: %s", downloadUrl);
-
-            if (!TextUtils.isEmpty(downloadUrl) && !TextUtils.isEmpty(messageId)) {
-                long id = downloadFile(fileName, downloadUrl);
-                DownloadFinishedReceiver.addDownload(id, messageId);
+        String[] commnadParams = text.split(" ", 2);
+        Command command = Command.getCommand(commnadParams[0]);
+        if (command != null) {
+            int source;
+            String fromId;
+            if (TextUtils.isEmpty(fromSmsNumber)) {
+                source = Command.SOURCE_TELEGRAM;
+                fromId = channelId;
+            } else {
+                source = Command.SOURCE_SMS;
+                fromId = fromSmsNumber;
             }
 
-        } else {
-            final String textl = text.toLowerCase().trim();
-
-            if (textl.contains("location")) {
-                if (mPendingNotifyInfo == null) {
-                    mPendingNotifyInfo = new StringBuilder();
-                }
-                mPendingNotifyInfo.insert(0, "Requested location\n");
-                startLocationListener();
-            } else if (textl.startsWith("saldo")) {
-                sendAvailBalanceSms();
-                startLocationListener();
-            } else if (textl.startsWith("info")) {
-                getGeneralInfo();
-                if (textl.endsWith("sms")) {
-                    Utils.sendSms(fromNumber, mPendingNotifyInfo.toString(), null);
-                    mPendingNotifyInfo = null;
-                } else {
-                    startLocationListener();
-                }
-            } else if (textl.startsWith("sms")) {
-
-                String[] smsData = textl.split(" ", 3);
-                if (smsData.length == 3) {
-                    String number = smsData[1];
-                    String smsText = smsData[2];
-                    Utils.sendSms(number, smsText, null);
-                }
-            } else if (textl.startsWith("logs")) {
-                File[] logs = Logger.getLogFiles();
-                if (logs != null) {
-                    TelegramHelper.sendTelegramDocuments(botKey, channelId, messageId, logs);
-                } else {
-                    TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "No logs.");
-                }
-            } else if (textl.startsWith("clear logs")) {
-                int count = Logger.clearLogs();
-                TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, count + " logs removed.");
-            } else if (textl.startsWith("ping")) {
-                TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "pong");
-            } else if (textl.startsWith("fuel")) {
-                try {
-                    String[] fuelData = textl.split(" ", 3);
-                    if (fuelData.length == 3) {
-                        int odo = Integer.parseInt(fuelData[1].toLowerCase().replace("km", "").trim());
-                        double amount = Double.parseDouble(fuelData[2].trim());
-                        long count = FuelLogTable.logFuel(Helper.getInstance(), mLastSavedLocation, odo, amount);
-                        double consuption = FuelLogTable.getAvgConsuption(Helper.getInstance());
-                        TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Average: " + consuption + " CRC/KM");
-                    }
-                } catch (Exception e) {
-                    TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Error: " + e.getMessage());
-                }
-            } else if (textl.startsWith("getfuellogs")) {
-                String[] data = textl.split(" ", 2);
-                int limit = 0;
-                if(data.length == 2) {
-                    try {
-                        limit = Integer.valueOf(data[1]);
-                    } catch (NumberFormatException e) {
-
-                    }
-                }
-                FuelLogTable.FuelLog[] logs = FuelLogTable.getLogs(Helper.getInstance(), limit);
-                String m = "";
-                for (FuelLogTable.FuelLog log : logs) {
-                    m = m + log + "\n";
-                }
-                TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, m);
-            } else if (textl.startsWith("avgfuel")) {
-                double consuption = FuelLogTable.getAvgConsuption(Helper.getInstance());
-                TelegramHelper.sendTelegramMessage(botKey, channelId, messageId, "Average: " + consuption + " CRC/KM");
-            }
+            command.setContext(this, source, botKey, fromId, messageId);
+            command.execute(commnadParams);
+            return;
         }
-    }
-
-    private void getGeneralInfo() {
-        if (mPendingNotifyInfo == null) {
-            mPendingNotifyInfo = new StringBuilder();
-        }
-
-        NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
-        String netName = networkInfo != null ? networkInfo.getTypeName() : "None";
-        boolean connected = networkInfo != null && networkInfo.isConnected();
-
-        mPendingNotifyInfo.append("\nNetwork: ").append(netName).append(" - Connected:").append(connected).append("\n")
-                .append("Internet: ").append(connected && Utils.isInternetAvailable()).append("\n")
-                .append("App Version: ").append(Constants.VERSION_STRING).append("\n")
-                .append("Android Version: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");;
-    }
-
-    private long downloadFile(String fileName, String downloadUrl) {
-        if(DEBUG) Logger.debug(TAG, "Downloading file %s from %s", fileName, downloadUrl);
-        DownloadManager downloadManager = (DownloadManager)getSystemService(Context.DOWNLOAD_SERVICE);
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
-        request .setTitle(fileName)
-                .setDestinationUri(Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)));
-
-        if(!mUnlimitedData) {
-            request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI);
-        }
-
-        DownloadFinishedReceiver.register(this);
-
-        return downloadManager.enqueue(request);
     }
 
     //endregion Telegram Methods
 
     //region Helper Inner Classes
-
-    private static class DownloadFinishedReceiver extends BroadcastReceiver {
-
-        private static DownloadFinishedReceiver sInstance;
-        private LocationService mService;
-        private Map<Long, String> mDownloads;
-
-        @SuppressLint("UseSparseArrays")
-        private DownloadFinishedReceiver(LocationService service) {
-            mService = service;
-            mDownloads = new HashMap<>();
-        }
-
-        public static void register(LocationService service) {
-            if (sInstance == null) {
-                sInstance = new DownloadFinishedReceiver(service);
-                IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
-                sInstance.mService.registerReceiver(sInstance, filter);
-            }
-        }
-
-        public static void unregister() {
-            if (sInstance != null) {
-                sInstance.mService.unregisterReceiver(sInstance);
-                sInstance.mService = null;
-                sInstance.mDownloads = null;
-                sInstance = null;
-            }
-        }
-
-        public static void addDownload(long id, String messageId) {
-            if (sInstance != null) {
-                sInstance.mDownloads.put(id, messageId);
-            }
-        }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0);
-            if (mDownloads.containsKey(id)) {
-                String messageId = mDownloads.get(id);
-                String botKey = mService.getString(R.string.pref_telegram_botkey);
-                String channelId = mService.getString(R.string.pref_telegram_chatid);
-
-                DownloadManager downloadManager = (DownloadManager) mService.getSystemService(Context.DOWNLOAD_SERVICE);
-                Cursor c = downloadManager.query(new DownloadManager.Query().setFilterById(id));
-
-                int status = -1;
-                int reason = -1;
-
-                if (c.moveToNext()) {
-                    int i = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
-                    if (i > -1) {
-                        status = c.getInt(i);
-                    }
-
-                    i = c.getColumnIndex(DownloadManager.COLUMN_REASON);
-                    if (i > -1) {
-                        reason = c.getInt(i);
-                    }
-                }
-
-                String message;
-                if (status == -1) {
-                    message = "Download done, unknown status.";
-                } else if (DownloadManager.STATUS_SUCCESSFUL == status) {
-                    message = "Download done!";
-                } else {
-                    message = "Download failed. " + reason;
-                }
-                c.close();
-
-                TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, message);
-
-                mDownloads.remove(id);
-            }
-        }
-    }
 
     public static class StartServiceReceiver extends BroadcastReceiver {
 
@@ -687,6 +501,13 @@ public class LocationService extends Service
         }
 
         logLocation(location, message);
+    }
+
+    private void insertNotifyInfo(String notifyInfo) {
+        if (mPendingNotifyInfo == null) {
+            mPendingNotifyInfo = new StringBuilder();
+        }
+        mPendingNotifyInfo.insert(0, notifyInfo);
     }
 
     protected boolean isBetterLocation(Location location, Location currentBestLocation) {
@@ -1152,6 +973,16 @@ public class LocationService extends Service
 
         if (intent.hasExtra(Constants.EXTRA_UPDATE_LOCATION)) {
             acquireWakeLock();
+
+            String notifyInfo = intent.getStringExtra(Constants.EXTRA_NOTIFY_INFO);
+            if(!TextUtils.isEmpty(notifyInfo)) {
+                insertNotifyInfo(notifyInfo);
+            }
+
+            if(intent.hasExtra(Constants.EXTRA_BALANCE_SMS)) {
+                sendAvailBalanceSms();
+            }
+
             startLocationListener();
         }
 
@@ -1272,7 +1103,7 @@ public class LocationService extends Service
 
         cleanup();
         ActionReceiver.unregister(this);
-        DownloadFinishedReceiver.unregister();
+        Command.cleanupAll();
         mAlarm.cancel(mAlarmLocationCallback);
         mAlarm.cancel(mAlarmSyncCallback);
 
@@ -1320,6 +1151,20 @@ public class LocationService extends Service
 
     public static void updateLocation(Context context) {
         start(context, Constants.EXTRA_UPDATE_LOCATION);
+    }
+
+    public static void updateLocation(Context context, String info) {
+        Intent i = new Intent();
+        i.putExtra(Constants.EXTRA_UPDATE_LOCATION, 1);
+        i.putExtra(Constants.EXTRA_NOTIFY_INFO, info);
+        start(context, i);
+    }
+
+    public static void sendBalamceSms(Context context) {
+        Intent i = new Intent();
+        i.putExtra(Constants.EXTRA_UPDATE_LOCATION, 1);
+        i.putExtra(Constants.EXTRA_BALANCE_SMS, 1);
+        start(context, i);
     }
 
     public static void enable(Context context) {
@@ -1381,9 +1226,6 @@ public class LocationService extends Service
         // sending
         Utils.sendSms(phoneNumber, message, mAvailBalanceSmsCallback);
     }
-
-
-
 
     //endregionregion Helper functions
 }

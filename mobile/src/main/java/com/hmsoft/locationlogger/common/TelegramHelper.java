@@ -396,7 +396,7 @@ public class TelegramHelper {
                                         if (TextUtils.isEmpty(text)) {
                                             JSONObject document = message.optJSONObject("document");
                                             if (document != null) {
-                                                text = String.format("document|%s|%s",
+                                                text = String.format("document %s|%s",
                                                         document.getString("file_name"),
                                                         document.getString("file_id"));
                                             }

@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.provider.Settings;
 import android.telephony.SmsManager;
@@ -177,5 +179,23 @@ public class Utils {
             Logger.error(TAG, e.getMessage());
         }
         return false;
+    }
+
+    public static String getGeneralInfo(Context context) {
+
+        StringBuilder generalInfo = new StringBuilder();
+
+        ConnectivityManager connectivityManager = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        String netName = networkInfo != null ? networkInfo.getTypeName() : "None";
+        boolean connected = networkInfo != null && networkInfo.isConnected();
+
+        generalInfo.append("\nNetwork: ").append(netName).append(" - Connected:").append(connected).append("\n")
+                .append("Internet: ").append(connected && Utils.isInternetAvailable()).append("\n")
+                .append("App Version: ").append(Constants.VERSION_STRING).append("\n")
+                .append("Android Version: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");
+
+        return generalInfo.toString();
     }
 }
