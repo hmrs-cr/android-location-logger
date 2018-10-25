@@ -11,7 +11,7 @@ class FuelCommand extends Command {
 
     @Override
     public String getSummary() {
-        return "Log fuel consuptions: _fuel ODO AMOUNT_.";
+        return "Log fuel consuptions: _fuel ODO AMOUNT PRICEPERLITRE_.";
     }
 
     @Override
@@ -24,12 +24,17 @@ class FuelCommand extends Command {
         if (params.length == 2) {
             try {
                 String[] fuelData = params[1].split(" ");
-                if (fuelData.length == 2) {
+                if (fuelData.length == 3) {
                     int odo = Integer.parseInt(fuelData[0].toLowerCase().replace("km", "").trim());
                     double amount = Double.parseDouble(fuelData[1].trim());
-                    FuelLogTable.logFuel(Helper.getInstance(), Utils.getBestLastLocation(LocationLoggerApp.getContext()), odo, amount);
+                    double price =  Double.parseDouble(fuelData[2].trim());
+                    FuelLogTable.logFuel(Helper.getInstance(), Utils.getBestLastLocation(LocationLoggerApp.getContext()), odo, amount, price);
+
+                    FuelLogTable.Statics statics = FuelLogTable.getMostRecentStatics(Helper.getInstance());
                     double consuption = FuelLogTable.getAvgConsuption(Helper.getInstance());
-                    sendTelegramReply("Average: " + consuption + " CRC/KM");
+
+
+                    sendTelegramReply(statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L\nOverall avg: " + consuption + " CRC/km");
                 }
             } catch (Exception e) {
                 sendTelegramReply("Error: " + e.getMessage());

@@ -21,7 +21,7 @@ public class Helper extends SQLiteOpenHelper {
     public static final String TYPE_PRIMARY_KEY = " PRIMARY KEY";
     public static final String COMMA_SEP = ",";
 
-    public static final int DATABASE_VERSION = 5;
+    public static final int DATABASE_VERSION = 6;
     public static final String DATABASE_NAME = "locatrack.db";
 
     private static Helper instance;
@@ -81,8 +81,10 @@ public class Helper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if(Logger.DEBUG) Logger.debug(TAG, "onUpgrade");
-        if(newVersion == 5) {
+        if(newVersion > 4) {
             db.execSQL(FuelLogTable.SQL_CREATE_VIEW);
+            db.execSQL(FuelLogTable.ADD_PRICE_PER_LITRE_COLUMUN);
+            db.execSQL(FuelLogTable.UPDATE_PRICE_PER_LITRE_COLUMUN);
         } else if(newVersion == 4) {
             db.execSQL(FuelLogTable.SQL_CREATE_TABLE);
         } else if(newVersion < 4) {

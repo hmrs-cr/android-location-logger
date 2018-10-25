@@ -621,7 +621,7 @@ public class LocationService extends Service
             mStoreThread.start();
             Looper looper = mStoreThread.getLooper();
             mStoreHandler = new Handler(looper);
-            Logger.info(TAG, "StoreThread created");
+            if(DEBUG) Logger.info(TAG, "StoreThread created");
             if (DEBUG) Toast.makeText(this, "StoreThread created", Toast.LENGTH_SHORT).show();
         }
 
@@ -671,7 +671,7 @@ public class LocationService extends Service
         if(mStoreThread != null) {
             mStoreThread.quit();
             mStoreThread = null;
-            Logger.info(TAG, "StoreThread destroyed");
+            if(DEBUG) Logger.info(TAG, "StoreThread destroyed");
             if(DEBUG) Toast.makeText(this, "StoreThread destroyed", Toast.LENGTH_SHORT).show();
         }
     }
