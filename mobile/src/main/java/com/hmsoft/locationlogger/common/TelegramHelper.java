@@ -355,8 +355,7 @@ public class TelegramHelper {
 
                         updatesUrl
                                 .append("?timeout=60")
-                                .append("&limit=10")
-                                .append("&allowed_updates=channel_post");
+                                .append("&limit=10");
 
                         if (updatesOffset > 0) {
                             updatesUrl.append("&offset=").append(updatesOffset);
