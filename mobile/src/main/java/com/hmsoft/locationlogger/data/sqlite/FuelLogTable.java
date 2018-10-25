@@ -49,10 +49,13 @@ public class FuelLogTable {
                     COLUMN_NAME_PRICE_PER_LITRE + Helper.TYPE_REAL + Helper.COMMA_SEP +
                     ")";
 
+    public static final String SQL_DROP_VIEW = "DROP VIEW " + VIEW_NAME;
     public static final String SQL_CREATE_VIEW = "CREATE VIEW IF NOT EXISTS " + VIEW_NAME + " AS " +
             "SELECT fl." + COLUMN_NAME_TIMESTAMP + ", fl." + COLUMN_NAME_ODO_VALUE + ", fl." + COLUMN_NAME_SPEND_AMOUNT +
             ", l." + LocationTable.COLUMN_NAME_LATITUDE + ", l." + LocationTable.COLUMN_NAME_LONGITUD + " FROM " + TABLE_NAME + " AS fl" +
-            " LEFT JOIN " + LocationTable.TABLE_NAME + " AS l ON l." + LocationTable.COLUMN_NAME_TIMESTAMP + " = fl." + COLUMN_NAME_LOCATION_ID;
+            " LEFT JOIN " + LocationTable.TABLE_NAME + " AS l ON l." + LocationTable.COLUMN_NAME_TIMESTAMP + " = fl." + COLUMN_NAME_LOCATION_ID +
+            " OR (l." + LocationTable.COLUMN_NAME_TIMESTAMP + " BETWEEN fl." + COLUMN_NAME_LOCATION_ID + "-10000 AND fl." + COLUMN_NAME_LOCATION_ID + "+60000 and l." + LocationTable.COLUMN_NAME_EVENT + "='start')" +
+            " GROUP BY fl." + COLUMN_NAME_TIMESTAMP;
 
     public static final String ADD_PRICE_PER_LITRE_COLUMUN = "ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COLUMN_NAME_PRICE_PER_LITRE + Helper.TYPE_REAL;
     public static final String UPDATE_PRICE_PER_LITRE_COLUMUN = "UPDATE " + TABLE_NAME + " SET " + COLUMN_NAME_PRICE_PER_LITRE + "=586 WHERE " + COLUMN_NAME_TIMESTAMP + " < 1540353004898 AND " + COLUMN_NAME_PRICE_PER_LITRE + " IS NULL";
