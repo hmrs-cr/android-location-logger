@@ -57,19 +57,6 @@ public class FuelLogTable {
     public static final String ADD_PRICE_PER_LITRE_COLUMUN = "ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COLUMN_NAME_PRICE_PER_LITRE + Helper.TYPE_REAL;
     public static final String UPDATE_PRICE_PER_LITRE_COLUMUN = "UPDATE " + TABLE_NAME + " SET " + COLUMN_NAME_PRICE_PER_LITRE + "=586 WHERE " + COLUMN_NAME_TIMESTAMP + " < 1540353004898 AND " + COLUMN_NAME_PRICE_PER_LITRE + " IS NULL";
 
-    public static  long logFuel(Helper helper, Location location, int odoValue, double spendAmount, double pricePerLitre) {
-
-        insertValues.put(COLUMN_NAME_TIMESTAMP, System.currentTimeMillis());
-        insertValues.put(COLUMN_NAME_LOCATION_ID, location != null ? location.getTime() : System.currentTimeMillis());
-        insertValues.put(COLUMN_NAME_ODO_VALUE, odoValue);
-        insertValues.put(COLUMN_NAME_SPEND_AMOUNT, spendAmount);
-        insertValues.put(COLUMN_NAME_PRICE_PER_LITRE, pricePerLitre);
-        helper.getWritableDatabase().insertWithOnConflict(TABLE_NAME, null, insertValues,
-                SQLiteDatabase.CONFLICT_REPLACE);
-
-        return getCount(helper);
-    }
-
     public static class Statics {
         public final int km;
         public final double litres;
@@ -106,10 +93,11 @@ public class FuelLogTable {
             lon = cursor.getDouble(cursor.getColumnIndex(LocationTable.COLUMN_NAME_LONGITUD));
         }
 
+        private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd HH:mm:ss", Locale.US);
         @Override
         public String toString() {
             StringBuilder stringBuilder = new StringBuilder();
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd KK:mm:ss a", Locale.US);
+
 
             String datestr = dateFormat.format(date);
 
@@ -124,6 +112,40 @@ public class FuelLogTable {
 
             return stringBuilder.toString();
         }
+    }
+
+    public static  long logFuel(Helper helper, Location location, int odoValue, double spendAmount, double pricePerLitre) {
+
+        insertValues.put(COLUMN_NAME_TIMESTAMP, System.currentTimeMillis());
+        insertValues.put(COLUMN_NAME_LOCATION_ID, location != null ? location.getTime() : System.currentTimeMillis());
+        insertValues.put(COLUMN_NAME_ODO_VALUE, odoValue);
+        insertValues.put(COLUMN_NAME_SPEND_AMOUNT, spendAmount);
+        insertValues.put(COLUMN_NAME_PRICE_PER_LITRE, pricePerLitre);
+        helper.getWritableDatabase().insertWithOnConflict(TABLE_NAME, null, insertValues,
+                SQLiteDatabase.CONFLICT_REPLACE);
+
+        return getCount(helper);
+    }
+
+    public static void delete(Helper helper, long id) {
+        helper.getWritableDatabase().execSQL("DELETE FROM " + TABLE_NAME + " WHERE " + COLUMN_NAME_TIMESTAMP + " = " + id);
+    }
+
+    public static FuelLog getById(Helper helper, long id) {
+
+        Cursor cursor = helper.getReadableDatabase().query(VIEW_NAME, QUERY_COLUMNS,
+                COLUMN_NAME_TIMESTAMP + " = " + id, null, null, null, null, null);
+
+        if(cursor != null) {
+            try {
+                if (cursor.moveToFirst()) {
+                    return new FuelLog(cursor);
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        return null;
     }
 
     public static FuelLog[] getLogs(Helper helper, int limit) {

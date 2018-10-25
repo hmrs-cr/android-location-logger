@@ -232,11 +232,6 @@ public class TelegramHelper {
     public static long sendTelegramMessage(String botKey, String chatId, String replyId,
                                            String message) {
         try {
-
-            if (Logger.DEBUG) {
-                message = "* ***** DEBUG ***** *\n" + message;
-            }
-
             String messageUrl = getMessageUrl(botKey, chatId, replyId, message);
 
             if (Logger.DEBUG) {
@@ -308,6 +303,10 @@ public class TelegramHelper {
 
     private static String getMessageUrl(String botKey, String chatId, String replyId, String message) {
         StringBuilder messageUrl = getTelegramApiUrl(botKey, "sendMessage");
+
+        if (Logger.DEBUG) {
+            message = message + "\n\n*----- DEBUG -----*";
+        }
 
         try {
             messageUrl

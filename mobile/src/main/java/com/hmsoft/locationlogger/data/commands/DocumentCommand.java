@@ -72,10 +72,11 @@ class DocumentCommand extends Command {
 
         /*
         PreferenceProfile preferences = PreferenceProfile.get(context);
-        if(!preferences.getBoolean(0, false)) {
+
+        if(!preferences.getBoolean(0, false)) {*/
             request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI);
-        }
-        */
+        //}
+
 
         DownloadFinishedReceiver.register(context);
 

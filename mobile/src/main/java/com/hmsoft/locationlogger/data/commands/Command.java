@@ -29,6 +29,39 @@ public abstract class Command {
         }
     }
 
+    static String[] getSubParams(String[] params) {
+        if(params != null && params.length == 2) {
+            return params[1].split(" ");
+        }
+        return new String[0];
+    }
+    static boolean contains(String[] params, String value) {
+        for(String val : params) {
+            if(val.equals(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static long getLong(String[] params, int index, long defVal) {
+        if(params != null && params.length > index) {
+            try {
+                return Long.valueOf(params[index]);
+            } catch (NumberFormatException e) {
+
+            }
+        }
+        return defVal;
+    }
+
+    static String getString(String[] params, int index, String defVal) {
+        if (params != null && params.length > index) {
+            return params[index];
+        }
+        return defVal;
+    }
+
     protected Set<String> getAllCommandNames() {
         if(commandClasses != null) {
             return  commandClasses.keySet();

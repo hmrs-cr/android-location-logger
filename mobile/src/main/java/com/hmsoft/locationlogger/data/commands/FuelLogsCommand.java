@@ -19,18 +19,32 @@ class FuelLogsCommand extends Command {
 
     @Override
     public void execute(String[] params) {
-        int limit = 0;
-        if (params.length == 2) {
-            try {
-                limit = Integer.valueOf(params[1]);
-            } catch (NumberFormatException e) {
 
-            }
+        String[] subParams = getSubParams(params);
+
+        switch (getString(subParams, 0, "")) {
+            case "delete":
+                FuelLogTable.delete(Helper.getInstance(), getLong(subParams, 1, -1));
+                return;
+
+            case "update":
+                return;
         }
-        FuelLogTable.FuelLog[] logs = FuelLogTable.getLogs(Helper.getInstance(), limit);
+
+
+        boolean printIds = contains(subParams, "ids");
+        long limit = getLong(subParams, 0, 0);
+
+        FuelLogTable.FuelLog[] logs;
+        if(limit < 436687200000L) {
+            logs = FuelLogTable.getLogs(Helper.getInstance(), (int)limit);
+        } else {
+            logs = new FuelLogTable.FuelLog[] { FuelLogTable.getById(Helper.getInstance(), limit) };
+        }
         String message = "";
         for (FuelLogTable.FuelLog log : logs) {
-            message = message + log + "\n";
+            String id = printIds ?  log.date.getTime() + " " : "";
+            message = message + id + log + "\n";
         }
         sendTelegramReply(message);
     }
