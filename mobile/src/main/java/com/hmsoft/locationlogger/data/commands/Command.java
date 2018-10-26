@@ -62,6 +62,10 @@ public abstract class Command {
         return defVal;
     }
 
+    public boolean isInternal() {
+        return false;
+    }
+
     protected Set<String> getAllCommandNames() {
         if(commandClasses != null) {
             return  commandClasses.keySet();

@@ -18,7 +18,7 @@ class HelpCommand extends Command {
         String helpText = "";
         if(params.length == 2) {
             Command command = getCommand(params[1]);
-            if(command != null) {
+            if(command != null && !command.isInternal()) {
                 helpText = "*" + command.getName() + "*  " + command.getSummary();
             } else {
                 helpText = "Command _" + params[1] + "_ not found.";
@@ -26,7 +26,9 @@ class HelpCommand extends Command {
         } else {
             for (String commandName : getAllCommandNames()) {
                 Command command = getCommand(commandName);
-                helpText += "*" + command.getName() + "*  " + command.getSummary() + "\n";
+                if(!command.isInternal()) {
+                    helpText += "*" + command.getName() + "*  " + command.getSummary() + "\n";
+                }
             }
         }
         sendTelegramReply(helpText);

@@ -20,7 +20,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-class DocumentCommand extends Command {
+class DocumentCommand extends InternalCommand {
 
     static final String COMMAND_NAME = "document";
     private static final boolean DEBUG = Logger.DEBUG;
