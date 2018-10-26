@@ -171,5 +171,7 @@ public abstract class Command {
         registerCommandClass(BalanceCommand.COMMAND_NAME, BalanceCommand.class);
         registerCommandClass(GetDBCommand.COMMAND_NAME, GetDBCommand.class);
         registerCommandClass(HelpCommand.COMMAND_NAME, HelpCommand.class);
+        registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
+        registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
     }
 }
