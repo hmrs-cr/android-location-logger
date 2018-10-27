@@ -13,8 +13,7 @@ import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
-import com.hmsoft.locationlogger.common.TelegramHelper;
-import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
+import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 
 import java.io.File;
 import java.util.HashMap;

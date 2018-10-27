@@ -25,7 +25,7 @@ public class LocationLoggerApp extends Application {
 		TaskExecutor.init();
         CrashCatcher.init();
 
-		Command.registerCommands();
+		Command.registerCommands(this);
 
 		if(Logger.DEBUG)  Logger.debug(TAG, "onCreate");
 	}

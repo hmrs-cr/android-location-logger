@@ -3,7 +3,7 @@ package com.hmsoft.locationlogger.data.commands;
 import android.content.Context;
 
 import com.hmsoft.locationlogger.common.Logger;
-import com.hmsoft.locationlogger.common.TelegramHelper;
+import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.common.Utils;
 
 import java.util.Collections;
@@ -167,7 +167,7 @@ public abstract class Command {
     public abstract String getName();
     public abstract void execute(String[] params);
 
-    public static void registerCommands() {
+    public static void registerCommands(Context context) {
         registerCommandClass(ClearLogsCommand.COMMAND_NAME, ClearLogsCommand.class);
         registerCommandClass(LogsCommand.COMMAND_NAME, LogsCommand.class);
         registerCommandClass(SmsCommand.COMMAND_NAME, SmsCommand.class);
@@ -182,5 +182,7 @@ public abstract class Command {
         registerCommandClass(HelpCommand.COMMAND_NAME, HelpCommand.class);
         registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
         registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
+
+        PicturesCommand.PictureContentObserver.register(context);
     }
 }

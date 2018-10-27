@@ -40,7 +40,7 @@ import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.common.TaskExecutor;
-import com.hmsoft.locationlogger.common.TelegramHelper;
+import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;

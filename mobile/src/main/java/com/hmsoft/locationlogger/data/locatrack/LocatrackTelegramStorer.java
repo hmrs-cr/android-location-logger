@@ -8,7 +8,7 @@ import android.text.TextUtils;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
-import com.hmsoft.locationlogger.common.TelegramHelper;
+import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;

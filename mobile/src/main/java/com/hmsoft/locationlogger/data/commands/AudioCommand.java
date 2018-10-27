@@ -3,7 +3,7 @@ package com.hmsoft.locationlogger.data.commands;
 import android.media.MediaRecorder;
 
 import com.hmsoft.locationlogger.common.TaskExecutor;
-import com.hmsoft.locationlogger.common.TelegramHelper;
+import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 
 import java.io.File;
 

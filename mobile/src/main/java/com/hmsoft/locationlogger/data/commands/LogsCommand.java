@@ -1,7 +1,7 @@
 package com.hmsoft.locationlogger.data.commands;
 
 import com.hmsoft.locationlogger.common.Logger;
-import com.hmsoft.locationlogger.common.TelegramHelper;
+import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 
 import java.io.File;
 
