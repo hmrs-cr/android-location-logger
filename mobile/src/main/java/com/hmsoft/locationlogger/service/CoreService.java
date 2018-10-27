@@ -157,7 +157,10 @@ public class CoreService extends Service
         }
 
         if (!allowed) {
-            Logger.warning(TAG, "You are not my master! %s", chatId);
+            String msg = String.format("You are not my master!\n\nmsg:\"%s\"\nid:%s", text, chatId);
+            Logger.warning(TAG, msg);
+            final String botKey = getString(R.string.pref_telegram_botkey);
+            TelegramHelper.sendTelegramMessage(botKey, channelId, null, msg);
             return;
         }
 
