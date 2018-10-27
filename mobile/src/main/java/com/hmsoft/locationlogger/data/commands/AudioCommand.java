@@ -29,7 +29,7 @@ class AudioCommand extends Command {
 
         try {
             File cacheDir = context.androidContext.getCacheDir();
-            File audioFile = File.createTempFile("audio", "", cacheDir);
+            File audioFile = File.createTempFile("audio-", ".3gp", cacheDir);
             mRecorder = new MediaRecorder();
             mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);

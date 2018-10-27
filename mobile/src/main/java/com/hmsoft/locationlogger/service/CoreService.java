@@ -11,7 +11,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -50,17 +49,18 @@ import com.hmsoft.locationlogger.data.commands.Command;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
+import com.hmsoft.locationlogger.receivers.StartServiceReceiver;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class LocationService extends Service
+public class CoreService extends Service
     implements TelegramHelper.UpdateCallback {
 
     //region Static fields
-    private static final String TAG = "LocationService";
+    private static final String TAG = "CoreService";
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final boolean DIAGNOSTICS = DEBUG;
     private static final int HALF_MINUTE = 1000 * 30;
@@ -185,22 +185,25 @@ public class LocationService extends Service
         final String botKey = getString(R.string.pref_telegram_botkey);
         final String channelId = getString(R.string.pref_telegram_chatid);
 
+        int source;
+        String fromId;
+        if (TextUtils.isEmpty(fromSmsNumber)) {
+            source = Command.SOURCE_TELEGRAM;
+            fromId = channelId;
+        } else {
+            source = Command.SOURCE_SMS;
+            fromId = fromSmsNumber;
+        }
+
+        Command.CommandContext context = new Command.CommandContext(this, source, botKey, fromId, messageId);
+
         String[] commnadParams = text.split(" ", 2);
         Command command = Command.getCommand(commnadParams[0]);
         if (command != null) {
-            int source;
-            String fromId;
-            if (TextUtils.isEmpty(fromSmsNumber)) {
-                source = Command.SOURCE_TELEGRAM;
-                fromId = channelId;
-            } else {
-                source = Command.SOURCE_SMS;
-                fromId = fromSmsNumber;
-            }
-
-            command.setContext(this, source, botKey, fromId, messageId);
+            command.setContext(context);
             command.execute(commnadParams);
-            return;
+        } else {
+            Command.sendReply(context, "Command not found.");
         }
     }
 
@@ -208,29 +211,15 @@ public class LocationService extends Service
 
     //region Helper Inner Classes
 
-    public static class StartServiceReceiver extends BroadcastReceiver {
-
-        private static final String TAG = "StartServiceReceiver";
-
-        @Override
-        public void onReceive(final Context context, Intent intent) {
-            if(Logger.DEBUG) {
-                Logger.debug(TAG, "onReceive:%s", intent);
-                Toast.makeText(context, "" + intent, Toast.LENGTH_LONG).show();
-            }
-            LocationService.start(context);
-        }
-    }
-
     private static class ActionReceiver extends BroadcastReceiver {
         private static final String TAG = "UserPresentReceiver";
         private static final String SMS_RECEIVED_ACTION = "android.provider.Telephony.SMS_RECEIVED";
 
         private static ActionReceiver sInstance;
 
-        private LocationService mService;
+        private CoreService mService;
 
-        private ActionReceiver(LocationService service) {
+        private ActionReceiver(CoreService service) {
             mService = service;
         }
 
@@ -280,7 +269,7 @@ public class LocationService extends Service
             }
         }
 
-        public static void register(LocationService service){
+        public static void register(CoreService service){
             if(sInstance == null) {
                 sInstance = new ActionReceiver(service);
                 IntentFilter filter = new IntentFilter();
@@ -306,10 +295,10 @@ public class LocationService extends Service
 
         private static final String TAG = "LocationListener";
 
-        LocationService mService;
+        CoreService mService;
         String mProvider;
 
-        public LocationListener(LocationService service, String provider) {
+        public LocationListener(CoreService service, String provider) {
             mService = service;
             mProvider = provider;
         }
@@ -338,9 +327,9 @@ public class LocationService extends Service
 
         private static GetAddressTask sInstance = null;
 
-        private LocationService mService;
+        private CoreService mService;
 
-        private GetAddressTask(LocationService service) {
+        private GetAddressTask(CoreService service) {
             super();
             mService = service;
             sInstance = this;
@@ -378,7 +367,7 @@ public class LocationService extends Service
             sInstance = null;
         }
 
-        public static void run(LocationService service, Location location) {
+        public static void run(CoreService service, Location location) {
             if (sInstance == null) {
                 (new GetAddressTask(service)).run(location);
             }
@@ -439,6 +428,8 @@ public class LocationService extends Service
     void handleUserPresent() {
         mNeedsToUpdateUI = true;
         updateNotification();
+
+        requestTelegramUpdates(2, true);
     }
 
     void handleBatteryLevelChange(int newLevel) {
@@ -797,7 +788,7 @@ public class LocationService extends Service
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && !mRestrictedSettings) {
 
                 if (mUpdateLocationIntent == null) {
-                    Intent updateIntent = new Intent(context, LocationService.class);
+                    Intent updateIntent = new Intent(context, CoreService.class);
                     updateIntent.putExtra(Constants.EXTRA_UPDATE_LOCATION, 1);
                     updateIntent.setAction(Constants.ACTION_NOTIFICATION_UPDATE_LOCATION);
                     mUpdateLocationIntent = PendingIntent.getService(context, 0, updateIntent, 0);
@@ -868,14 +859,18 @@ public class LocationService extends Service
     }
 
     private void requestTelegramUpdates() {
-      requestTelegramUpdates(1);
+      requestTelegramUpdates(1, false);
     }
 
     private void requestTelegramUpdates(int count) {
+        requestTelegramUpdates(count, false);
+    }
+
+    private void requestTelegramUpdates(int count, boolean now) {
 
         final long UPDATES_WINDOW = 1000 * 60 * 10;
 
-        boolean fastestUpdates = /*DEBUG ||*/ (isCharging() && (mUnlimitedData || isWifiConnected()));
+        boolean fastestUpdates = /*DEBUG ||*/ now || (isCharging() && (mUnlimitedData || isWifiConnected()));
         boolean mustRequestUpdates = fastestUpdates ||
                 (SystemClock.elapsedRealtime() - mLastTelegamUpdate > UPDATES_WINDOW);
 
@@ -1005,7 +1000,7 @@ public class LocationService extends Service
 
         Context context = getApplicationContext();
         if (!mPreferences.getBoolean(R.string.pref_service_enabled_key, true)) {
-            disable(context);
+            StartServiceReceiver.disable(context);
             return;
         }
 
@@ -1084,12 +1079,12 @@ public class LocationService extends Service
 
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         mAlarm = (AlarmManager) getSystemService(ALARM_SERVICE);
-        Intent i = new Intent(context, LocationService.class);
+        Intent i = new Intent(context, CoreService.class);
         i.setAction(Constants.ACTION_ALARM);
         i.putExtra(Constants.EXTRA_ALARM_CALLBACK, 1);
         mAlarmLocationCallback = PendingIntent.getService(context, 0, i, 0);
 
-        i = new Intent(context, LocationService.class);
+        i = new Intent(context, CoreService.class);
         i.setAction(Constants.ACTION_SYNC);
         i.putExtra(Constants.EXTRA_SYNC, 1);
         mAlarmSyncCallback = PendingIntent.getService(context, 0, i, 0);
@@ -1129,7 +1124,7 @@ public class LocationService extends Service
 
     public static void start(Context context, Intent intent) {
         context = context.getApplicationContext();
-        intent.setClass(context, LocationService.class);
+        intent.setClass(context, CoreService.class);
         context.startService(intent);
     }
 
@@ -1167,41 +1162,13 @@ public class LocationService extends Service
         start(context, i);
     }
 
-    public static void enable(Context context) {
-        PackageManager pm = context.getPackageManager();
-
-        // Service
-        ComponentName cn = new ComponentName(context, LocationService.class);
-        pm.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
-
-        // Boot receiver
-        cn = new ComponentName(context, LocationService.StartServiceReceiver.class);
-        pm.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
-
-        start(context);
-    }
-
-    public static void disable(Context context) {
-        stop(context);
-
-        PackageManager pm = context.getPackageManager();
-
-        // Service
-        ComponentName cn = new ComponentName(context, LocationService.class);
-        pm.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
-
-        // Boot receiver
-        cn = new ComponentName(context, LocationService.StartServiceReceiver.class);
-        pm.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
-    }
-
     public static void stop(Context context) {
-        context.stopService(new Intent(context, LocationService.class));
+        context.stopService(new Intent(context, CoreService.class));
     }
 
     public static boolean isRunning(Context context) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        String className = LocationService.class.getName();
+        String className = CoreService.class.getName();
         List<RunningServiceInfo> runningServices = manager.getRunningServices(Integer.MAX_VALUE);
 
         for (RunningServiceInfo service : runningServices) {

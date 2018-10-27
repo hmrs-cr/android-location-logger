@@ -59,10 +59,16 @@ class PicturesCommand extends Command {
                 MediaStore.Images.ImageColumns.DATE_ADDED/*sort order*/);
 
         long lastPictureDate = 0;
+        int c = 0;
         while(result.moveToNext()) {
             String fileName = result.getString(0);
             TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, new File(fileName));
             lastPictureDate = result.getLong(1);
+            c++;
+        }
+
+        if(c == 0) {
+            sendTelegramReply("No pictures found.");
         }
 
         if (lastPictureDate > 1) {

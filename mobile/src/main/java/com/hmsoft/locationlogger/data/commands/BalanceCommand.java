@@ -1,6 +1,6 @@
 package com.hmsoft.locationlogger.data.commands;
 
-import com.hmsoft.locationlogger.service.LocationService;
+import com.hmsoft.locationlogger.service.CoreService;
 
 class BalanceCommand extends Command {
 
@@ -18,6 +18,6 @@ class BalanceCommand extends Command {
 
     @Override
     public void execute(String[] params) {
-        LocationService.sendBalamceSms(context.androidContext);
+        CoreService.sendBalamceSms(context.androidContext);
     }
 }

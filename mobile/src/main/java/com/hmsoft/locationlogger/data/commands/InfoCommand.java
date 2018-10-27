@@ -1,7 +1,7 @@
 package com.hmsoft.locationlogger.data.commands;
 
 import com.hmsoft.locationlogger.common.Utils;
-import com.hmsoft.locationlogger.service.LocationService;
+import com.hmsoft.locationlogger.service.CoreService;
 
 class InfoCommand extends Command {
 
@@ -24,7 +24,7 @@ class InfoCommand extends Command {
         if(context.source == Command.SOURCE_SMS) {
             Utils.sendSms(context.fromId, info, null);
         } else {
-            LocationService.updateLocation(context.androidContext, info);
+            CoreService.updateLocation(context.androidContext, info);
         }
     }
 }

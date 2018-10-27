@@ -22,7 +22,8 @@ import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
-import com.hmsoft.locationlogger.service.LocationService;
+import com.hmsoft.locationlogger.receivers.StartServiceReceiver;
+import com.hmsoft.locationlogger.service.CoreService;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -195,17 +196,17 @@ public class SettingsActivity extends PreferenceActivity
 			if(key.equals(getString(string.pref_service_enabled_key))) {
                 boolean serviceChangedToEnabled = preferences.getBoolean(key, true);
 				if(serviceChangedToEnabled) {
-					LocationService.enable(this);
+					StartServiceReceiver.enable(this);
 				} else {
-					LocationService.configure(this);
+					CoreService.configure(this);
 					mServicePrefChanged = false;
 				}
 			} else if(key.equals(getString(string.pref_active_profile_key))) {
                 PreferenceProfile.reset();
                 Context ctx = getApplicationContext();
                 if(PreferenceProfile.get(ctx).getBoolean(string.pref_service_enabled_key, true)) {
-                    if(!LocationService.isRunning(ctx)) {
-                        LocationService.enable(ctx);
+                    if(!CoreService.isRunning(ctx)) {
+                        StartServiceReceiver.enable(ctx);
                         mServicePrefChanged = false;
                     }
                 }
@@ -239,7 +240,7 @@ public class SettingsActivity extends PreferenceActivity
 		getPreferenceScreen().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
 		
 		if(mServicePrefChanged || mSyncPrefChanged) {
-			LocationService.configure(this);
+			CoreService.configure(this);
 		}
 
 		super.onPause();

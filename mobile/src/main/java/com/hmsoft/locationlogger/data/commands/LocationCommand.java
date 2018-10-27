@@ -1,6 +1,6 @@
 package com.hmsoft.locationlogger.data.commands;
 
-import com.hmsoft.locationlogger.service.LocationService;
+import com.hmsoft.locationlogger.service.CoreService;
 
 class LocationCommand extends Command {
 
@@ -19,6 +19,6 @@ class LocationCommand extends Command {
     @Override
     public void execute(String[] params) {
         String info = params.length > 1 ? params[1] : "Location";
-        LocationService.updateLocation(context.androidContext, info);
+        CoreService.updateLocation(context.androidContext, info);
     }
 }

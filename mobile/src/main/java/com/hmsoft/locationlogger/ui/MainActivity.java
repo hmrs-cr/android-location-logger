@@ -27,7 +27,8 @@ import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
-import com.hmsoft.locationlogger.service.LocationService;
+import com.hmsoft.locationlogger.receivers.StartServiceReceiver;
+import com.hmsoft.locationlogger.service.CoreService;
 
 public class MainActivity extends ActionBarActivity {
     private static final String TAG = "MainActivity";
@@ -274,7 +275,7 @@ public class MainActivity extends ActionBarActivity {
             mConfigured = preferences.getBoolean(getString(R.string.pref_locatrack_activated_key), false);            
             if(!mConfigured) {
                 LoginActivity.start(getApplicationContext());
-                LocationService.disable(getApplicationContext());
+                StartServiceReceiver.disable(getApplicationContext());
                 finish();
                 return;
             }
@@ -294,8 +295,8 @@ public class MainActivity extends ActionBarActivity {
                 getString(R.string.app_name), Constants.VERSION_STRING));
 
        // Start service if not running.
-        if(!LocationService.isRunning(this)) {
-            LocationService.enable(this);
+        if(!CoreService.isRunning(this)) {
+            StartServiceReceiver.enable(this);
         }
     }
 
@@ -308,7 +309,7 @@ public class MainActivity extends ActionBarActivity {
     }
 	
 	public void updateLocation(View view) {
-		LocationService.updateLocation(this);
+		CoreService.updateLocation(this);
 	}
 
     public void setServiceEnabled(View view) {
@@ -318,9 +319,9 @@ public class MainActivity extends ActionBarActivity {
         serviceEnabled = !serviceEnabled;
         preferences.edit().putBoolean(key, serviceEnabled).apply();
         if(serviceEnabled) {
-            LocationService.enable(this);
+            StartServiceReceiver.enable(this);
         } else {
-            LocationService.configure(this);            
+            CoreService.configure(this);
         }        
     }
 

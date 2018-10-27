@@ -27,11 +27,6 @@ class DocumentCommand extends InternalCommand {
     private static final String TAG = COMMAND_NAME;
 
     @Override
-    public String getSummary() {
-        return "Internal usage only.";
-    }
-
-    @Override
     public String getName() {
         return COMMAND_NAME;
     }

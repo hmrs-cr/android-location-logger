@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TelegramHelper;
+import com.hmsoft.locationlogger.common.Utils;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -101,6 +102,14 @@ public abstract class Command {
 
     public void setContext(Context context, int source, String botKey, String fromId, String messageId) {
         setContext(new CommandContext(context, source, botKey, fromId, messageId));
+    }
+
+    public static void sendReply(CommandContext context, String message) {
+        if(context.source == SOURCE_SMS) {
+            Utils.sendSms(context.fromId, message, null);
+        } else {
+            TelegramHelper.sendTelegramMessage(context.botKey, context.fromId, context.messageId, message);
+        }
     }
 
     protected void sendTelegramReply(String message) {

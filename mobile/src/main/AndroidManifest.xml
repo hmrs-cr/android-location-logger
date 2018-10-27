@@ -57,10 +57,10 @@
             android:label="@string/title_activity_web_server" >
         </activity>
         
-        <service android:name=".service.LocationService" >
+        <service android:name=".service.CoreService" >
         </service>
 
-        <receiver android:name=".service.LocationService$StartServiceReceiver" >
+        <receiver android:name=".receivers.StartServiceReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <category android:name="android.intent.category.HOME" />
