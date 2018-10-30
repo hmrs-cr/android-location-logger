@@ -3,7 +3,7 @@ package com.hmsoft.locationlogger.common.telegram.data;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class MessageResponse extends TelegramResponse<Message> {
+public class MessageResponse extends TelegramResponse<TelegramMessage> {
 
     public MessageResponse(String responseText) throws JSONException {
         super(responseText);
@@ -15,6 +15,6 @@ public class MessageResponse extends TelegramResponse<Message> {
 
     @Override
     protected void processResult(int index, JSONObject jsonResult) {
-        result = new Message(jsonResult);
+        result = new TelegramMessage(jsonResult);
     }
 }

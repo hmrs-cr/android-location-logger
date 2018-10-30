@@ -140,7 +140,7 @@ public class CoreService extends Service
     @Override
     public void onTelegramUpdateReceived(String chatId, final String messageId, final String text) {
         if (DEBUG)
-            Logger.debug(TAG, "Telegram:onTelegramUpdateReceived: ChatId: %s, Message: %s", chatId, text);
+            Logger.debug(TAG, "Telegram:onTelegramUpdateReceived: ChatId: %s, TelegramMessage: %s", chatId, text);
 
         final String channelId = getString(R.string.pref_telegram_chatid);
         boolean allowed;
@@ -442,6 +442,7 @@ public class CoreService extends Service
             mChargingStart = true;
             mChargingStop = false;
             fireEvents = true;
+            requestTelegramUpdates();
         } else if (sLastBatteryLevel > 100 && newLevel <= 100) {
             if(DEBUG) Logger.debug(TAG, "Charging stop");
             mChargingStop = true;
@@ -873,7 +874,7 @@ public class CoreService extends Service
 
         final long UPDATES_WINDOW = 1000 * 60 * 10;
 
-        boolean fastestUpdates = /*DEBUG ||*/ now || (isCharging() && (mUnlimitedData || isWifiConnected()));
+        boolean fastestUpdates = DEBUG || now || (isCharging() && (mUnlimitedData || isWifiConnected()));
         boolean mustRequestUpdates = fastestUpdates ||
                 (SystemClock.elapsedRealtime() - mLastTelegamUpdate > UPDATES_WINDOW);
 

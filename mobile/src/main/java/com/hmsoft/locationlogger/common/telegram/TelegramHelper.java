@@ -5,6 +5,7 @@ import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.LocationLoggerApp;
+import com.hmsoft.locationlogger.common.HttpUtils;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 
@@ -40,123 +41,6 @@ public class TelegramHelper {
 
     public interface UpdateCallback {
         void onTelegramUpdateReceived(String chatId, String messageId, String text);
-    }
-
-    public static class MultipartUtility {
-        private final String boundary;
-        private static final String LINE_FEED = "\r\n";
-        private HttpURLConnection httpConn;
-        private String charset;
-        private OutputStream outputStream;
-        private PrintWriter writer;
-
-        /**
-         * This constructor initializes a new HTTP POST request with content type
-         * is set to multipart/form-data
-         *
-         * @param requestURL
-         * @throws IOException
-         */
-        public MultipartUtility(String requestURL)
-                throws IOException {
-            this.charset = "UTF-8";
-
-            // creates a unique boundary based on time stamp
-            boundary = "===" + System.currentTimeMillis() + "===";
-            URL url = new URL(requestURL);
-            httpConn = (HttpURLConnection) url.openConnection();
-            httpConn.setUseCaches(false);
-            httpConn.setDoOutput(true);    // indicates POST method
-            httpConn.setDoInput(true);
-            httpConn.setRequestProperty("Content-Type",
-                    "multipart/form-data; boundary=" + boundary);
-            outputStream = httpConn.getOutputStream();
-            writer = new PrintWriter(new OutputStreamWriter(outputStream, charset),
-                    true);
-        }
-
-        /**
-         * Adds a form field to the request
-         *
-         * @param name  field name
-         * @param value field value
-         */
-        public void addFormField(String name, String value) {
-            writer.append("--" + boundary).append(LINE_FEED);
-            writer.append("Content-Disposition: form-data; name=\"" + name + "\"")
-                    .append(LINE_FEED);
-            writer.append("Content-Type: text/plain; charset=" + charset).append(
-                    LINE_FEED);
-            writer.append(LINE_FEED);
-            writer.append(value).append(LINE_FEED);
-            writer.flush();
-        }
-
-        /**
-         * Adds a upload file section to the request
-         *
-         * @param fieldName  name attribute in <input type="file" name="..." />
-         * @param uploadFile a File to be uploaded
-         * @throws IOException
-         */
-        public void addFilePart(String fieldName, File uploadFile)
-                throws IOException {
-            String fileName = uploadFile.getName();
-            writer.append("--" + boundary).append(LINE_FEED);
-            writer.append(
-                    "Content-Disposition: form-data; name=\"" + fieldName
-                            + "\"; filename=\"" + fileName + "\"")
-                    .append(LINE_FEED);
-            writer.append(
-                    "Content-Type: "
-                            + URLConnection.guessContentTypeFromName(fileName))
-                    .append(LINE_FEED);
-            writer.append("Content-Transfer-Encoding: binary").append(LINE_FEED);
-            writer.append(LINE_FEED);
-            writer.flush();
-
-            FileInputStream inputStream = new FileInputStream(uploadFile);
-            byte[] buffer = new byte[4096];
-            int bytesRead = -1;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
-            outputStream.flush();
-            inputStream.close();
-            writer.append(LINE_FEED);
-            writer.flush();
-        }
-
-        /**
-         * Completes the request and receives response from the server.
-         *
-         * @return a list of Strings as response in case the server returned
-         * status OK, otherwise an exception is thrown.
-         * @throws IOException
-         */
-        public String finish() throws IOException {
-
-            writer.append(LINE_FEED).flush();
-            writer.append("--" + boundary + "--").append(LINE_FEED);
-            writer.close();
-
-            StringBuilder response = new StringBuilder();
-            // checks server's status code first
-            int status = httpConn.getResponseCode();
-            if (status == HttpURLConnection.HTTP_OK) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        httpConn.getInputStream()));
-                String line = null;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line).append("\n");
-                }
-                reader.close();
-                httpConn.disconnect();
-            } else {
-                Logger.debug(TAG, "Response:" + status);
-            }
-            return response.toString();
-        }
     }
 
     public static long sendTelegramMessage(String botKey, String chatId, String message) {
@@ -208,10 +92,12 @@ public class TelegramHelper {
         int retryCount = 3;
         while (retryCount-- > 0) {
             try {
-                MultipartUtility multipartUtility = new MultipartUtility(messageUrl.toString());
-                multipartUtility.addFormField("chat_id", chatId);
-                multipartUtility.addFilePart("document", documentFile);
-                String response = multipartUtility.finish();
+                HttpUtils.MultipartUtility multipartUtility = new HttpUtils.MultipartUtility(messageUrl.toString());
+
+                String response =  multipartUtility.addFormField("chat_id", chatId)
+                        .addFilePart("document", documentFile)
+                        .finish();
+
                 Logger.debug(TAG, response);
                 return;
             } catch (IOException e) {
@@ -249,7 +135,7 @@ public class TelegramHelper {
                     //Logger.debug(TAG, "Url length: %d", messageUrl.length());
                 }
 
-                int status = httpGet(messageUrl);
+                int status = HttpUtils.httpGet(messageUrl);
                 return ++mid;
 
             } catch (Exception e) {
@@ -258,48 +144,6 @@ public class TelegramHelper {
             }
         }
         return 0;
-    }
-
-    private static String httpGetResponseText(String url) throws IOException {
-        StringBuilder response = new StringBuilder();
-        httpGet(url, response);
-        return response.toString();
-    }
-
-    private static int httpGet(String url) throws IOException {
-        return httpGet(url, null);
-    }
-
-    private static int httpGet(String url, StringBuilder response) throws IOException {
-
-        HttpURLConnection con = (HttpURLConnection) (new URL(url)).openConnection();
-
-        con.setRequestMethod("GET");
-
-        if(Logger.DEBUG) {
-            if(response == null) {
-                response = new StringBuilder();
-            }
-        }
-
-        int responseCode = con.getResponseCode();
-        if (response != null) {
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(con.getInputStream()));
-            String inputLine;
-
-
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-
-            if(Logger.DEBUG) {
-                Logger.debug(TAG, response.toString());
-            }
-        }
-
-        return responseCode;
     }
 
     private static StringBuilder getTelegramApiUrl(String botKey, String method) {
@@ -381,7 +225,7 @@ public class TelegramHelper {
 
                         if (mUpdateCallback != null) {
 
-                            String responseText = httpGetResponseText(url);
+                            String responseText = HttpUtils.httpGetResponseText(url);
 
                             if (Logger.DEBUG) {
                                 Logger.debug(TAG, "Count:" + mCount);
@@ -439,7 +283,7 @@ public class TelegramHelper {
         updatesUrl.append("?file_id=").append(fileId);
 
         try {
-            String responseText = httpGetResponseText(updatesUrl.toString());
+            String responseText = HttpUtils.httpGetResponseText(updatesUrl.toString());
             JSONObject jresponse = new JSONObject(responseText);
             JSONObject result = jresponse.optJSONObject("result");
             if (result != null) {

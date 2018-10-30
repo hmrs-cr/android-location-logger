@@ -3,6 +3,7 @@ package com.hmsoft.locationlogger.data.commands;
 import android.content.Context;
 
 import com.hmsoft.locationlogger.common.Logger;
+import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.common.Utils;
 
@@ -104,6 +105,15 @@ public abstract class Command {
         setContext(new CommandContext(context, source, botKey, fromId, messageId));
     }
 
+    public static void sendReplyAsync(final CommandContext context, final String message) {
+        TaskExecutor.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                sendReply(context, message);
+            }
+        });
+    }
+
     public static void sendReply(CommandContext context, String message) {
         if(context.source == SOURCE_SMS) {
             Utils.sendSms(context.fromId, message, null);
@@ -182,6 +192,7 @@ public abstract class Command {
         registerCommandClass(HelpCommand.COMMAND_NAME, HelpCommand.class);
         registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
         registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
+        registerCommandClass(WifiCommand.COMMAND_NAME, WifiCommand.class);
 
         PicturesCommand.PictureContentObserver.register(context);
     }

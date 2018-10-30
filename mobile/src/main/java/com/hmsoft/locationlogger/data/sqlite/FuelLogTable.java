@@ -45,8 +45,8 @@ public class FuelLogTable {
                     COLUMN_NAME_TIMESTAMP + Helper.TYPE_INTEGER + Helper.TYPE_PRIMARY_KEY + Helper.COMMA_SEP +
                     COLUMN_NAME_LOCATION_ID + Helper.TYPE_REAL + Helper.COMMA_SEP +
                     COLUMN_NAME_ODO_VALUE + Helper.TYPE_REAL + Helper.COMMA_SEP +
-                    COLUMN_NAME_SPEND_AMOUNT + Helper.TYPE_TEXT +
-                    COLUMN_NAME_PRICE_PER_LITRE + Helper.TYPE_REAL + Helper.COMMA_SEP +
+                    COLUMN_NAME_SPEND_AMOUNT + Helper.TYPE_TEXT + Helper.COMMA_SEP +
+                    COLUMN_NAME_PRICE_PER_LITRE + Helper.TYPE_REAL +
                     ")";
 
     public static final String SQL_DROP_VIEW = "DROP VIEW " + VIEW_NAME;
