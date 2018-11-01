@@ -133,10 +133,10 @@ class PicturesCommand extends Command {
                 PreferenceManager.getDefaultSharedPreferences(context.androidContext);
 
 
-        String lastUploadedPictureDateKey = LAST_UPLOADED_PICT_DATE_KEY + "_" + contentUri.hashCode();
+        String lastUploadedPictureDateKey = LAST_UPLOADED_PICT_DATE_KEY + "_" + Math.abs(contentUri.hashCode());
         long lastGeotagedPictureDate = preferences.getLong(LAST_UPLOADED_PICT_DATE_KEY, 0);
         if(lastGeotagedPictureDate == 0) {
-            lastGeotagedPictureDate = System.currentTimeMillis() - (1000 * 60 * 60 * 24 * 8);
+            lastGeotagedPictureDate = (System.currentTimeMillis() / 1000) - (60 * 60 * 24 * 8);
         }
         lastGeotagedPictureDate = preferences.getLong(lastUploadedPictureDateKey, lastGeotagedPictureDate);
 

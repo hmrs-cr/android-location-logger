@@ -107,6 +107,12 @@
             android:title="@string/pref_set_airplanemode_title"
             android:dependency="@string/pref_service_enabled_key" />
 
+        <CheckBoxPreference
+            android:key="@string/pref_unlimited_data_key"
+            android:defaultValue="@string/pref_unlimited_data_default"
+            android:title="@string/pref_unlimited_data_title"
+            android:dependency="@string/pref_service_enabled_key" />
+
 
     </PreferenceCategory>
 

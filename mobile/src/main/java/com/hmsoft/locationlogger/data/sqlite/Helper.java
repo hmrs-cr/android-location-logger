@@ -68,6 +68,7 @@ public class Helper extends SQLiteOpenHelper {
         db.execSQL(LocationTable.SQL_CREATE_TABLE);
         db.execSQL(GeocoderTable.SQL_CREATE_TABLE);
         db.execSQL(FuelLogTable.SQL_CREATE_TABLE);
+        db.execSQL(FuelLogTable.SQL_CREATE_VIEW);
 
         for (String index : LocationTable.SQL_CREATE_INDICES) {
             db.execSQL(index);

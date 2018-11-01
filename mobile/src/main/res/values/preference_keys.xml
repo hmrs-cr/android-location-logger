@@ -29,6 +29,7 @@
     <string name="pref_nmealog_enabled_key" translatable="false">pref_nmealog_enabled</string>
     <string name="pref_set_airplanemode_key" translatable="false">pref_set_airplanemode</string>
     <string name="pref_active_profile_key" translatable="false">pref_active_profile</string>
+    <string name="pref_unlimited_data_key" translatable="false">pref_unlimited_data</string>
 
     <string name="profile_settings_restricted_key" translatable="false">profile_settings_restricted</string>
     <string name="profile_notify_events_key" translatable="false">profile_notify_events</string>

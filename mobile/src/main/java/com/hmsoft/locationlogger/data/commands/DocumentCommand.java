@@ -14,6 +14,7 @@ import android.text.TextUtils;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 
 import java.io.File;
 import java.util.HashMap;
@@ -64,12 +65,11 @@ class DocumentCommand extends InternalCommand {
         request .setTitle(fileName)
                 .setDestinationUri(Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)));
 
-        /*
-        PreferenceProfile preferences = PreferenceProfile.get(context);
 
-        if(!preferences.getBoolean(0, false)) {*/
+        PreferenceProfile preferences = PreferenceProfile.get(context);
+        if(!preferences.getBoolean(R.string.pref_unlimited_data_key, false)) {
             request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI);
-        //}
+        }
 
 
         DownloadFinishedReceiver.register(context);

@@ -79,6 +79,8 @@ public class WifiCommand extends Command {
             conf.SSID = "\"" + ssid + "\"";
             if(!TextUtils.isEmpty(password)) {
                 conf.preSharedKey = "\"" + password + "\"";
+            } else {
+                conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
             }
             networkId = mWifiManager.addNetwork(conf);
             if (networkId < 0) {
@@ -140,10 +142,12 @@ public class WifiCommand extends Command {
         String result = "Networks:\n";
         for(ScanResult scanResult : results) {
             int level = WifiManager.calculateSignalLevel(scanResult.level, 10);
+
+
             if(scanResult.SSID.equals(currentWifi)) {
-                result += "*" + scanResult.SSID + "* - " + level + "\n";
+                result += "*" + scanResult.SSID + "* - " +scanResult.capabilities + " - " + level + "\n";
             } else {
-                result += scanResult.SSID +  " - " + level +  "\n";
+                result += scanResult.SSID +  " - " +scanResult.capabilities + " - " + level +  "\n";
             }
         }
 
@@ -158,6 +162,11 @@ public class WifiCommand extends Command {
 
     private WifiManager mWifiManager;
     private IntentFilter mIntentFilter;
+
+    @Override
+    public String getSummary() {
+        return "Get Wifi list or connect to Wifi. _Wifi [SSID] [PASS]_";
+    }
 
     @Override
     public String getName() {

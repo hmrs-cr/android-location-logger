@@ -1026,6 +1026,7 @@ public class CoreService extends Service
         mSetAirplaneMode =  mPreferences.getBoolean(R.string.pref_set_airplanemode_key, mSetAirplaneMode);
         mNotifyEvents =  mPreferences.getBoolean(R.string.profile_notify_events_key, false);
         mRestrictedSettings =  mPreferences.getBoolean(R.string.profile_settings_restricted_key, false);
+        mUnlimitedData = mPreferences.getBoolean(R.string.pref_unlimited_data_key, false);
 
         mAirplaneModeOn = Settings.System.getInt(context.getContentResolver(),
                 Settings.System.AIRPLANE_MODE_ON, 0) == 1;

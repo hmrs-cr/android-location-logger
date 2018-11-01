@@ -3,9 +3,11 @@
     <string name="pref_service_settings_title">Service Settings</string>
     <string name="pref_service_enabled_title">Enable service</string>
     <string name="pref_set_airplanemode_title">Set Airplane Mode</string>
+    <string name="pref_unlimited_data_title">Unlimited data</string>
     <string name="pref_service_enabled_default" translatable="false">true</string>
     <string name="pref_vehiclemode_enabled_default" translatable="false">false</string>
     <string name="pref_set_airplanemode_default" translatable="false">false</string>
+    <string name="pref_unlimited_data_default" translatable="false">false</string>
 
     <string name="pref_passive_enabled_title">Passive updates</string>
     <string name="pref_passive_enabled_default" translatable="false">true</string>
