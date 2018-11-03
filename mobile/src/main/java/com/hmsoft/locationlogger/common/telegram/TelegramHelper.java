@@ -77,6 +77,21 @@ public class TelegramHelper {
         });
     }
 
+    public static String getBotName(String botKey) {
+        try {
+            JSONObject response = HttpUtils.httpGetResponseJson(getTelegramApiUrl(botKey, "getMe").toString());
+            if(response.optBoolean("ok")) {
+                response = response.getJSONObject("result");
+                return response.optString("first_name");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public static void sendTelegramDocument(final String botKey,
                                                  final String chatId,
                                                  final String replyId,
@@ -136,10 +151,10 @@ public class TelegramHelper {
                 }
 
                 int status = HttpUtils.httpGet(messageUrl);
-                return ++mid;
+                return status == 200 ?  ++mid : 0;
 
             } catch (Exception e) {
-                Logger.error(TAG, e.getMessage() + " - Retry: " + retryCount);
+                Logger.warning(TAG, "Retry: " + retryCount, e);
                 TaskExecutor.sleep(1);
             }
         }

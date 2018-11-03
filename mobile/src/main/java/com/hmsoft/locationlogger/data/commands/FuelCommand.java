@@ -19,6 +19,10 @@ class FuelCommand extends Command {
         return COMMAND_NAME;
     }
 
+    private void notEnoughParams() {
+        sendReply(context, "Not enough params.");
+    }
+
     @Override
     public void execute(String[] params) {
         if (params.length == 2) {
@@ -35,10 +39,14 @@ class FuelCommand extends Command {
 
 
                     sendTelegramReply(statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L\nOverall avg: " + consuption + " CRC/km");
+                } else {
+                    notEnoughParams();
                 }
             } catch (Exception e) {
                 sendTelegramReply("Error: " + e.getMessage());
             }
+        } else {
+            notEnoughParams();
         }
     }
 }

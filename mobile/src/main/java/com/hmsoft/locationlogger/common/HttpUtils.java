@@ -1,5 +1,8 @@
 package com.hmsoft.locationlogger.common;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -144,6 +147,10 @@ public class HttpUtils {
         StringBuilder response = new StringBuilder();
         httpGet(url, response);
         return response.toString();
+    }
+
+    public static JSONObject httpGetResponseJson(String url) throws IOException, JSONException {
+        return new JSONObject(httpGetResponseText(url));
     }
 
     public static int httpGet(String url) throws IOException {

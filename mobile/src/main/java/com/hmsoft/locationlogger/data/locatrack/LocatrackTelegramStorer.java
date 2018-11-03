@@ -12,6 +12,7 @@ import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -111,7 +112,9 @@ public class LocatrackTelegramStorer extends LocationStorer {
 
     @Override
     public void configure() {
-        mChatId = mContext.getString(R.string.pref_telegram_chatid);
-        mBotKey = mContext.getString(R.string.pref_telegram_botkey);
+        mChatId = PreferenceProfile.get(mContext).getString(R.string.pref_telegram_chatid_key, mContext.getString(R.string.pref_telegram_chatid_default));
+
+        mBotKey = PreferenceProfile.get(mContext).getString(R.string.pref_telegram_botkey_key,
+                mContext.getString(R.string.pref_telegram_botkey_default));
     }
 }

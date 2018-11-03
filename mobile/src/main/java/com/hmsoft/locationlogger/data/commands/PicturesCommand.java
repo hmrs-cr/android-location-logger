@@ -14,6 +14,7 @@ import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 
 import java.io.File;
 
@@ -58,8 +59,8 @@ class PicturesCommand extends Command {
                         CommandContext cmdContext = new CommandContext(
                                 context,
                                 SOURCE_TELEGRAM,
-                                context.getString(R.string.pref_telegram_botkey),
-                                context.getString(R.string.pref_telegram_chatid),
+                                PreferenceProfile.get(context).getString(R.string.pref_telegram_botkey_key, context.getString(R.string.pref_telegram_botkey_default)),
+                                PreferenceProfile.get(context).getString(R.string.pref_telegram_chatid_key, mContext.getString(R.string.pref_telegram_chatid_default)),
                                 null
                         );
                         sendPictures(cmdContext, mUri);

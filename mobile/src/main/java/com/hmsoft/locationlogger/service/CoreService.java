@@ -142,7 +142,7 @@ public class CoreService extends Service
         if (DEBUG)
             Logger.debug(TAG, "Telegram:onTelegramUpdateReceived: ChatId: %s, TelegramMessage: %s", chatId, text);
 
-        final String channelId = getString(R.string.pref_telegram_chatid);
+        final String channelId = mPreferences.getString(R.string.pref_telegram_chatid_key, getString(R.string.pref_telegram_chatid_default));
         boolean allowed;
         if (!(allowed = channelId.equals(chatId))) {
             if (mTelegramAllowedFrom == null) {
@@ -159,7 +159,7 @@ public class CoreService extends Service
         if (!allowed) {
             String msg = String.format("You are not my master!\n\nmsg:\"%s\"\nid:%s", text, chatId);
             Logger.warning(TAG, msg);
-            final String botKey = getString(R.string.pref_telegram_botkey);
+            final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
             TelegramHelper.sendTelegramMessage(botKey, channelId, null, msg);
             return;
         }
@@ -185,8 +185,8 @@ public class CoreService extends Service
 
     private synchronized void processTextMessage(final String fromSmsNumber, final String messageId, String text) {
 
-        final String botKey = getString(R.string.pref_telegram_botkey);
-        final String channelId = getString(R.string.pref_telegram_chatid);
+        final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
+        final String channelId = mPreferences.getString(R.string.pref_telegram_chatid_key, getString(R.string.pref_telegram_chatid_default));
 
         int source;
         String fromId;
@@ -880,7 +880,7 @@ public class CoreService extends Service
 
         if (mustRequestUpdates) {
             if (DEBUG) Logger.debug(TAG, "requestTelegramUpdates %d", count);
-            String botKey = getString(R.string.pref_telegram_botkey);
+            final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
             if (!TextUtils.isEmpty(botKey)) {
                 TelegramHelper.getUpdates(botKey, this, count);
             }

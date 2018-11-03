@@ -116,9 +116,10 @@ class DocumentCommand extends InternalCommand {
         public void onReceive(Context context, Intent intent) {
             long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0);
             if (mDownloads.containsKey(id)) {
+
                 String messageId = mDownloads.get(id);
-                String botKey = mContext.getString(R.string.pref_telegram_botkey);
-                String channelId = mContext.getString(R.string.pref_telegram_chatid);
+                String botKey =  PreferenceProfile.get(mContext).getString(R.string.pref_telegram_botkey_key, mContext.getString(R.string.pref_telegram_botkey_default));
+                String channelId = PreferenceProfile.get(mContext).getString(R.string.pref_telegram_chatid_key, mContext.getString(R.string.pref_telegram_chatid_default));
 
                 DownloadManager downloadManager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
                 Cursor c = downloadManager.query(new DownloadManager.Query().setFilterById(id));

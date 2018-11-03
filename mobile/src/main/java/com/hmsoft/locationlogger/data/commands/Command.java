@@ -57,6 +57,10 @@ public abstract class Command {
         return defVal;
     }
 
+    static String getString(String[] params, int index) {
+        return getString(params, index, "");
+    }
+
     static String getString(String[] params, int index, String defVal) {
         if (params != null && params.length > index) {
             return params[index];
@@ -122,8 +126,8 @@ public abstract class Command {
         }
     }
 
-    protected void sendTelegramReply(String message) {
-        TelegramHelper.sendTelegramMessage(context.botKey, context.fromId, context.messageId, message);
+    protected long sendTelegramReply(String message) {
+        return TelegramHelper.sendTelegramMessage(context.botKey, context.fromId, context.messageId, message);
     }
 
     public static Command getCommand(String command) {
@@ -193,6 +197,8 @@ public abstract class Command {
         registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
         registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
         registerCommandClass(WifiCommand.COMMAND_NAME, WifiCommand.class);
+        registerCommandClass(ConfigCommand.COMMAND_NAME, ConfigCommand.class);
+
 
         PicturesCommand.PictureContentObserver.register(context);
     }
