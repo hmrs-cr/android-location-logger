@@ -21,6 +21,7 @@ public class FuelLogTable {
     public static final String COLUMN_NAME_ODO_VALUE = "odoVal";
     public static final String COLUMN_NAME_SPEND_AMOUNT = "spendAmount";
     public static final String COLUMN_NAME_PRICE_PER_LITRE = "pricePerLitre";
+    public static final String COLUMN_NAME_LITRES = "litres";
 
 
     /*public static final String[] SQL_CREATE_INDICES = new String[]{
@@ -32,6 +33,8 @@ public class FuelLogTable {
             COLUMN_NAME_TIMESTAMP,
             COLUMN_NAME_ODO_VALUE,
             COLUMN_NAME_SPEND_AMOUNT,
+            COLUMN_NAME_PRICE_PER_LITRE,
+            COLUMN_NAME_LITRES,
             LocationTable.COLUMN_NAME_LATITUDE,
             LocationTable.COLUMN_NAME_LONGITUD
 
@@ -52,9 +55,10 @@ public class FuelLogTable {
     public static final String SQL_DROP_VIEW = "DROP VIEW " + VIEW_NAME;
     public static final String SQL_CREATE_VIEW = "CREATE VIEW IF NOT EXISTS " + VIEW_NAME + " AS " +
             "SELECT fl." + COLUMN_NAME_TIMESTAMP + ", fl." + COLUMN_NAME_ODO_VALUE + ", fl." + COLUMN_NAME_SPEND_AMOUNT +
-            ", l." + LocationTable.COLUMN_NAME_LATITUDE + ", l." + LocationTable.COLUMN_NAME_LONGITUD + " FROM " + TABLE_NAME + " AS fl" +
+            ", l." + LocationTable.COLUMN_NAME_LATITUDE + ", l." + LocationTable.COLUMN_NAME_LONGITUD + ", fl." + COLUMN_NAME_PRICE_PER_LITRE +
+            ", fl." + COLUMN_NAME_SPEND_AMOUNT + "/fl." + COLUMN_NAME_PRICE_PER_LITRE  + " AS " + COLUMN_NAME_LITRES + " FROM " + TABLE_NAME + " AS fl" +
             " LEFT JOIN " + LocationTable.TABLE_NAME + " AS l ON l." + LocationTable.COLUMN_NAME_TIMESTAMP + " = fl." + COLUMN_NAME_LOCATION_ID +
-            " OR (l." + LocationTable.COLUMN_NAME_TIMESTAMP + " BETWEEN fl." + COLUMN_NAME_LOCATION_ID + "-10000 AND fl." + COLUMN_NAME_LOCATION_ID + "+60000 and l." + LocationTable.COLUMN_NAME_EVENT + "='start')" +
+            " OR (l." + LocationTable.COLUMN_NAME_TIMESTAMP + " BETWEEN fl." + COLUMN_NAME_LOCATION_ID + "-10000 AND fl." + COLUMN_NAME_LOCATION_ID + "+120000 and l." + LocationTable.COLUMN_NAME_EVENT + "='start')" +
             " GROUP BY fl." + COLUMN_NAME_TIMESTAMP;
 
     public static final String ADD_PRICE_PER_LITRE_COLUMUN = "ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COLUMN_NAME_PRICE_PER_LITRE + Helper.TYPE_REAL;
@@ -70,8 +74,8 @@ public class FuelLogTable {
 
         Statics(int km, double litres, Date startDate, Date endDate) {
             this.km = km;
-            this.litres = Math.round(litres * 100) / 100;
-            this.avg = Math.round((km/litres) * 100) / 100;
+            this.litres = Math.round(litres * 100.0) / 100.0;
+            this.avg = Math.round((km/litres) * 100.0) / 100.0;
 
             this.startDate = startDate;
             this.endDate = endDate;
@@ -83,6 +87,9 @@ public class FuelLogTable {
         public final int odoValue;
         public final int amountSpend;
 
+        public final int pricePerLitre;
+        public final double litres;
+
         public final double lat;
         public final double lon;
 
@@ -92,11 +99,14 @@ public class FuelLogTable {
             odoValue = cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_ODO_VALUE));
             amountSpend = cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_SPEND_AMOUNT));
 
+            pricePerLitre = cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_PRICE_PER_LITRE));
+            litres = Math.round(cursor.getDouble(cursor.getColumnIndex(COLUMN_NAME_LITRES)) * 100.0) / 100.0;
+
             lat = cursor.getDouble(cursor.getColumnIndex(LocationTable.COLUMN_NAME_LATITUDE));
             lon = cursor.getDouble(cursor.getColumnIndex(LocationTable.COLUMN_NAME_LONGITUD));
         }
 
-        private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd HH:mm:ss", Locale.US);
+        private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd HH:mm", Locale.US);
         @Override
         public String toString() {
             StringBuilder stringBuilder = new StringBuilder();
@@ -108,9 +118,12 @@ public class FuelLogTable {
                 datestr = "[" + datestr + "](https://www.google.com/maps/search/?api=1&query=" + lat + "," + lon + ")";
             }
 
-            stringBuilder.append(datestr).append("  ")
+            stringBuilder
+                    .append(datestr).append("  ")
                     .append(odoValue).append("km  ")
-                    .append(amountSpend).append(" CRC");
+                    .append(amountSpend).append(" CRC  ")
+                    .append(pricePerLitre).append(" CRC  ")
+                    .append(litres).append("L");
 
 
             return stringBuilder.toString();
@@ -208,7 +221,7 @@ public class FuelLogTable {
                 }
 
                 int km = currentOdoValue - prevOdoValue;
-                double litres = currentAmount / currentPricePerLitre;
+                double litres = (double)currentAmount / (double)currentPricePerLitre;
 
                 return new Statics(km, litres, new Date(prevDate), new Date(currentDate));
             }
@@ -225,8 +238,8 @@ public class FuelLogTable {
                 COLUMN_NAME_ODO_VALUE + ") - MIN(" + COLUMN_NAME_ODO_VALUE + ")) From " + TABLE_NAME;
 
         double average = helper.getDoubleScalar(query);
-        double rounded = Math.round(average * 100);
-        return rounded / 100;
+        double rounded = Math.round(average * 100.0);
+        return rounded / 100.0;
     }
 
     public static long getCount(Helper helper) {

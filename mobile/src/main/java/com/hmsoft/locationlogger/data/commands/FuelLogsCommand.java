@@ -41,7 +41,7 @@ class FuelLogsCommand extends Command {
         } else {
             logs = new FuelLogTable.FuelLog[] { FuelLogTable.getById(Helper.getInstance(), limit) };
         }
-        String message = "";
+        String message = "*Date                    ODO       Spent         Price       Litres*\n";
         for (FuelLogTable.FuelLog log : logs) {
             String id = printIds ?  log.date.getTime() + " " : "";
             message = message + id + log + "\n";
