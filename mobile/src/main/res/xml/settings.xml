@@ -126,11 +126,6 @@
                     android:defaultValue="@string/pref_telegram_botkey_default" />
 
                 <EditTextPreference
-                    android:key="@string/pref_telegram_botkey_key"
-                    android:title="@string/pref_telegram_botkey_title"
-                    android:defaultValue="@string/pref_telegram_botkey_default" />
-
-                <EditTextPreference
                     android:key="@string/pref_telegram_chatid_key"
                     android:title="@string/pref_telegram_chatid_title"
                     android:defaultValue="@string/pref_telegram_chatid_default" />
