@@ -32,10 +32,10 @@ class FuelCommand extends Command {
                     int odo = Integer.parseInt(fuelData[0].toLowerCase().replace("km", "").trim());
                     double amount = Double.parseDouble(fuelData[1].trim());
                     double price =  Double.parseDouble(fuelData[2].trim());
-                    FuelLogTable.logFuel(Helper.getInstance(), Utils.getBestLastLocation(LocationLoggerApp.getContext()), odo, amount, price);
+                    FuelLogTable.logFuel(Utils.getBestLastLocation(LocationLoggerApp.getContext()), odo, amount, price);
 
-                    FuelLogTable.Statics statics = FuelLogTable.getMostRecentStatics(Helper.getInstance());
-                    double consuption = FuelLogTable.getAvgConsuption(Helper.getInstance());
+                    FuelLogTable.Statics statics = FuelLogTable.getMostRecentStatics();
+                    double consuption = FuelLogTable.getAvgConsuption();
 
 
                     sendTelegramReply(statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L\nOverall avg: " + consuption + " CRC/km");

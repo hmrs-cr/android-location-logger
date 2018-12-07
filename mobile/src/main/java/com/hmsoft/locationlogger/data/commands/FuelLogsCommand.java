@@ -24,7 +24,7 @@ class FuelLogsCommand extends Command {
 
         switch (getString(subParams, 0, "")) {
             case "delete":
-                FuelLogTable.delete(Helper.getInstance(), getLong(subParams, 1, -1));
+                FuelLogTable.delete(getLong(subParams, 1, -1));
                 return;
 
             case "update":
@@ -37,9 +37,9 @@ class FuelLogsCommand extends Command {
 
         FuelLogTable.FuelLog[] logs;
         if(limit < 436687200000L) {
-            logs = FuelLogTable.getLogs(Helper.getInstance(), (int)limit);
+            logs = FuelLogTable.getLogs((int)limit);
         } else {
-            logs = new FuelLogTable.FuelLog[] { FuelLogTable.getById(Helper.getInstance(), limit) };
+            logs = new FuelLogTable.FuelLog[] { FuelLogTable.getById(limit) };
         }
         String message = "*Date                    ODO       Spent         Price       Litres*\n";
         for (FuelLogTable.FuelLog log : logs) {

@@ -24,8 +24,8 @@ class AvgFuelCommand extends Command {
     public void execute(String[] params) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
 
-        FuelLogTable.Statics statics = FuelLogTable.getMostRecentStatics(Helper.getInstance());
-        double consuption = FuelLogTable.getAvgConsuption(Helper.getInstance());
+        FuelLogTable.Statics statics = FuelLogTable.getMostRecentStatics();
+        double consuption = FuelLogTable.getAvgConsuption();
         sendTelegramReply("*Last: *" + statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L (" + dateFormat.format(statics.startDate) + " - " + dateFormat.format(statics.endDate) + ")" +
                 "\n*Overall:* " + consuption + " CRC/km");
     }
