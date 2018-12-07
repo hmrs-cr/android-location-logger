@@ -15,19 +15,12 @@ public class FuelLogTable {
 
     public static final String SQL_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
 
-
     public static final String COLUMN_NAME_TIMESTAMP = "timestamp";
     public static final String COLUMN_NAME_LOCATION_ID = "locationId";
     public static final String COLUMN_NAME_ODO_VALUE = "odoVal";
     public static final String COLUMN_NAME_SPEND_AMOUNT = "spendAmount";
     public static final String COLUMN_NAME_PRICE_PER_LITRE = "pricePerLitre";
     public static final String COLUMN_NAME_LITRES = "litres";
-
-
-    /*public static final String[] SQL_CREATE_INDICES = new String[]{
-            "CREATE UNIQUE INDEX idx_latlong ON " + TABLE_NAME + " (" + COLUMN_NAME_LATITUDE +
-                    Helper.COMMA_SEP + COLUMN_NAME_LONGITUDE + ")"
-    };*/
 
     private static final String[] QUERY_COLUMNS = new String[] {
             COLUMN_NAME_TIMESTAMP,
@@ -130,25 +123,29 @@ public class FuelLogTable {
         }
     }
 
-    public static  long logFuel(Helper helper, Location location, int odoValue, double spendAmount, double pricePerLitre) {
+    public static  long logFuel(Location location, int odoValue, double spendAmount, double pricePerLitre) {
 
         insertValues.put(COLUMN_NAME_TIMESTAMP, System.currentTimeMillis());
         insertValues.put(COLUMN_NAME_LOCATION_ID, location != null ? location.getTime() : System.currentTimeMillis());
         insertValues.put(COLUMN_NAME_ODO_VALUE, odoValue);
         insertValues.put(COLUMN_NAME_SPEND_AMOUNT, spendAmount);
         insertValues.put(COLUMN_NAME_PRICE_PER_LITRE, pricePerLitre);
+
+        Helper helper = Helper.getInstance();
         helper.getWritableDatabase().insertWithOnConflict(TABLE_NAME, null, insertValues,
                 SQLiteDatabase.CONFLICT_REPLACE);
 
-        return getCount(helper);
+        return getCount();
     }
 
-    public static void delete(Helper helper, long id) {
+    public static void delete(long id) {
+        Helper helper = Helper.getInstance();
         helper.getWritableDatabase().execSQL("DELETE FROM " + TABLE_NAME + " WHERE " + COLUMN_NAME_TIMESTAMP + " = " + id);
     }
 
-    public static FuelLog getById(Helper helper, long id) {
+    public static FuelLog getById(long id) {
 
+        Helper helper = Helper.getInstance();
         Cursor cursor = helper.getReadableDatabase().query(VIEW_NAME, QUERY_COLUMNS,
                 COLUMN_NAME_TIMESTAMP + " = " + id, null, null, null, null, null);
 
@@ -164,8 +161,10 @@ public class FuelLogTable {
         return null;
     }
 
-    public static FuelLog[] getLogs(Helper helper, int limit) {
+    public static FuelLog[] getLogs(int limit) {
         String slimit = limit > 0 ? String.valueOf(limit) : null;
+        Helper helper = Helper.getInstance();
+
         Cursor cursor = helper.getReadableDatabase().query(VIEW_NAME, QUERY_COLUMNS,
                 null, null, null, null,
                 COLUMN_NAME_TIMESTAMP + " DESC ", slimit);
@@ -186,7 +185,7 @@ public class FuelLogTable {
         return new FuelLog[0];
     }
 
-    public static Statics getMostRecentStatics(Helper helper) {
+    public static Statics getMostRecentStatics() {
 
         final String[] QUERY_COLUMNS = new String[] {
                 COLUMN_NAME_ODO_VALUE,
@@ -195,6 +194,7 @@ public class FuelLogTable {
                 COLUMN_NAME_TIMESTAMP
         };
 
+        Helper helper = Helper.getInstance();
         Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, QUERY_COLUMNS,
                 null, null, null, null,
                 COLUMN_NAME_TIMESTAMP + " DESC ", "2");
@@ -233,16 +233,18 @@ public class FuelLogTable {
         return null;
     }
 
-    public static double getAvgConsuption(Helper helper) {
+    public static double getAvgConsuption() {
         final String query = "SELECT SUM(" + COLUMN_NAME_SPEND_AMOUNT +") / (MAX(" +
                 COLUMN_NAME_ODO_VALUE + ") - MIN(" + COLUMN_NAME_ODO_VALUE + ")) From " + TABLE_NAME;
 
+        Helper helper = Helper.getInstance();
         double average = helper.getDoubleScalar(query);
         double rounded = Math.round(average * 100.0);
         return rounded / 100.0;
     }
 
-    public static long getCount(Helper helper) {
+    public static long getCount() {
+        Helper helper = Helper.getInstance();
         final String ALL_COUNT_QUERY = "SELECT Count(*) FROM " + TABLE_NAME;
         return Math.round(helper.getDoubleScalar(ALL_COUNT_QUERY));
     }

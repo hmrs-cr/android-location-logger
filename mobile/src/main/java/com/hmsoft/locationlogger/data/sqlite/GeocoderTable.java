@@ -36,21 +36,24 @@ public class GeocoderTable {
                     ")";
 
 
-    public static  void saveAddress(Helper helper, long ts, double latitude, double longitude,
+    public static  void saveAddress(long ts, double latitude, double longitude,
                                     String address) {
 
         insertValues.put(COLUMN_NAME_TIMESTAMP, ts);
         insertValues.put(COLUMN_NAME_LATITUDE, latitude);
         insertValues.put(COLUMN_NAME_LONGITUDE, longitude);
         insertValues.put(COLUMN_NAME_ADDRESS, address);
+
+        Helper helper = Helper.getInstance();
         helper.getWritableDatabase().insertWithOnConflict(TABLE_NAME, null, insertValues,
                 SQLiteDatabase.CONFLICT_REPLACE);
     }
 
-    public static String getAddress(Helper helper, double latitude, double longitude) {
+    public static String getAddress(double latitude, double longitude) {
         queryValues[0] = String.valueOf(latitude);
         queryValues[1] = String.valueOf(longitude);
 
+        Helper helper = Helper.getInstance();
         Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, QUERY_COLUMNS,
                 COLUMN_NAME_LATITUDE + " = ? AND " + COLUMN_NAME_LONGITUDE + " = ?",
                 queryValues, null, null, null);

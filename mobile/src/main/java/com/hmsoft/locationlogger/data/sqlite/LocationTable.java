@@ -94,27 +94,31 @@ public class LocationTable {
         return location;
     }
 
-    public static LocationSet getAllNotUploaded(Helper helper) {
+    public static LocationSet getAllNotUploaded() {
+        Helper helper = Helper.getInstance();
         Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, null,
                 COLUMN_NAME_UPLOAD_DATE + " = 0", null, null, null, COLUMN_NAME_TIMESTAMP, null);
         return new DatabaseLocationSet(cursor);
     }
 
-    public static LocationSet getAllFromDate(Helper helper, long date) {
+    public static LocationSet getAllFromDate(long date) {
+        Helper helper = Helper.getInstance();
         sUpdateValuesValues[0] = String.valueOf(date);
         Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, null,
                 COLUMN_NAME_TIMESTAMP + " > ?", sUpdateValuesValues, null, null, COLUMN_NAME_TIMESTAMP, null);
         return new DatabaseLocationSet(cursor);
     }
 
-    public static void setUploadDate(Helper helper, Location location) {
+    public static void setUploadDate(Location location) {
+        Helper helper = Helper.getInstance();
         SQLiteDatabase writable = helper.getWritableDatabase();
         sUpdateValues.put(COLUMN_NAME_UPLOAD_DATE, System.currentTimeMillis());
         sUpdateValuesValues[0] = String.valueOf(location.getTime());
         writable.update(TABLE_NAME, sUpdateValues, TIMESTAMP_WHERE_CONDITION, sUpdateValuesValues);
     }
 
-    public static long getCount(Helper helper, boolean includeNotUploadedOnly) {
+    public static long getCount(boolean includeNotUploadedOnly) {
+
         final String NOT_UPLOADED_COUNT_QUERY = "SELECT Count(*) FROM " + TABLE_NAME +
                 " WHERE " + COLUMN_NAME_UPLOAD_DATE + " = 0";
         final String ALL_COUNT_QUERY = "SELECT Count(*) FROM " + TABLE_NAME;
@@ -126,10 +130,12 @@ public class LocationTable {
             query = ALL_COUNT_QUERY;
         }
 
+        Helper helper = Helper.getInstance();
         return Math.round(helper.getDoubleScalar(query));
     }
 
-    public static LocatrackLocation getLast(Helper helper) {
+    public static LocatrackLocation getLast() {
+        Helper helper = Helper.getInstance();
         Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, null, null, null, null,
                 null, COLUMN_NAME_TIMESTAMP + " DESC", "1");
         if(cursor != null) {
@@ -145,7 +151,8 @@ public class LocationTable {
         return null;
     }
 
-    public static long getLastTime(Helper helper) {
+    public static long getLastTime() {
+        Helper helper = Helper.getInstance();
         Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME,
                 new String[]{COLUMN_NAME_TIMESTAMP}, null, null, null,
                 null, COLUMN_NAME_TIMESTAMP + " DESC", "1");
@@ -163,10 +170,10 @@ public class LocationTable {
         return 0;
     }
 
-    public static synchronized long saveToDatabase(Helper helper, LocatrackLocation location, float minDistance) {
+    public static synchronized long saveToDatabase(LocatrackLocation location, float minDistance) {
 
         if(sLastInsertedLocation == null) {
-            sLastInsertedLocation = getLast(helper);
+            sLastInsertedLocation = getLast();
         }
 
         long c = 1;
@@ -219,6 +226,7 @@ public class LocationTable {
             sInsertValues.put(COLUMN_NAME_SPEED, location.getSpeed());
             sInsertValues.put(COLUMN_NAME_UPLOAD_DATE, location.uploadTime);
 
+            Helper helper = Helper.getInstance();
             SQLiteDatabase db = helper.getWritableDatabase();
 
             if(update) {
@@ -241,7 +249,8 @@ public class LocationTable {
         return c;
     }
 
-    public static synchronized void prepareDmlStatements(Helper helper) {
+    public static synchronized void prepareDmlStatements() {
+        Helper helper = Helper.getInstance();
         SQLiteDatabase db = helper.getWritableDatabase();
         if(sInsertStatement == null) {
             sInsertStatement = db.compileStatement(INSERT_SQL);
@@ -251,7 +260,8 @@ public class LocationTable {
         }
     }
 
-    public static synchronized void startBulkInsert(Helper helper) {
+    public static synchronized void startBulkInsert() {
+        Helper helper = Helper.getInstance();
         SQLiteDatabase db = helper.getWritableDatabase();
         if(sInsertStatement == null) {
             if(!db.inTransaction()) {
@@ -262,7 +272,8 @@ public class LocationTable {
         }
     }
 
-    public static synchronized void stopBulkInsert(Helper helper) {
+    public static synchronized void stopBulkInsert() {
+        Helper helper = Helper.getInstance();
         SQLiteDatabase db = helper.getWritableDatabase();
         if(sInsertStatement != null) {
             if(db.inTransaction()) {
@@ -274,12 +285,13 @@ public class LocationTable {
         }
     }
 
-    public static Location getFromTimestamp(Helper helper, long timestamp, long timeRange) {
+    public static Location getFromTimestamp(long timestamp, long timeRange) {
         if(timeRange == 0) timeRange = 1000 * 60 * 15;
         String select = String.format("SELECT * FROM %s WHERE %s <= %d AND %s >= %d ORDER BY ABS(%d - %s) LIMIT 1",
                 TABLE_NAME, COLUMN_NAME_TIMESTAMP, timestamp + timeRange, COLUMN_NAME_TIMESTAMP,
                 timestamp - timeRange, timestamp, COLUMN_NAME_TIMESTAMP);
 
+        Helper helper = Helper.getInstance();
         Cursor cursor = helper.getReadableDatabase().rawQuery(select, null);
         if(cursor != null) {
             try {

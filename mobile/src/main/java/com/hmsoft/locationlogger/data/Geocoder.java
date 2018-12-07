@@ -59,7 +59,7 @@ public class Geocoder {
         String address = GeoCoderMemCache.getAddress(lat, lon);
         
         if(TextUtils.isEmpty(address)) {
-           address = GeocoderTable.getAddress(Helper.getInstance(), lat, lon);
+           address = GeocoderTable.getAddress(lat, lon);
             if(!TextUtils.isEmpty(address)) {
                 // add to mem cache
                 GeoCoderMemCache.addAddress(lat, lon, address);
@@ -80,7 +80,7 @@ public class Geocoder {
         double lon = Math.round(location.getLongitude() * ROUND) / ROUND;
 
         GeoCoderMemCache.addAddress(lat, lon, address);
-		GeocoderTable.saveAddress(Helper.getInstance(), location.getTime(), lat, lon, address);
+		GeocoderTable.saveAddress(location.getTime(), lat, lon, address);
         if(Logger.DEBUG) Logger.debug(TAG, "Address '%s' added to MEM/SQL cache.", address);
     }
 

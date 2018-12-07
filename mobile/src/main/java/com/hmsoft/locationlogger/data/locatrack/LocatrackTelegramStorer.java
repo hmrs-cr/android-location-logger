@@ -44,7 +44,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
             if (Logger.DEBUG)
                 Logger.debug(TAG, "No event to notify.");
 
-            return false;
+            return true;
         }
 
         String netTypeName = "-";

@@ -26,16 +26,15 @@ public class LocatrackDb extends LocationStorer {
     }
 
     public static Location getLocationFromTimestamp(long timestamp, long timeRange) {
-        return LocationTable.getFromTimestamp(Helper.getInstance(),
-                timestamp, timeRange);
+        return LocationTable.getFromTimestamp(timestamp, timeRange);
     }
 
     public static LocationSet getNotUploadedLocations() {
-        return LocationTable.getAllNotUploaded(Helper.getInstance());
+        return LocationTable.getAllNotUploaded();
     }
 
     public static LocationSet getAllFromDate(long date) {
-        return LocationTable.getAllFromDate(Helper.getInstance(), date);
+        return LocationTable.getAllFromDate(date);
     }
 
     public static void transactionBegin() {
@@ -50,23 +49,23 @@ public class LocatrackDb extends LocationStorer {
     }
 
     public static void setUploadDate(Location location) {
-        LocationTable.setUploadDate(Helper.getInstance(), location);
+        LocationTable.setUploadDate(location);
     }
 
     @Override
     public void setUploadDateToday(Location location) {
-        LocationTable.setUploadDate(Helper.getInstance(), location);
+        LocationTable.setUploadDate(location);
     }
 
     public static long getCount(boolean includeNotUploadedOnly) {
-        return  LocationTable.getCount(Helper.getInstance(), includeNotUploadedOnly);
+        return  LocationTable.getCount(includeNotUploadedOnly);
     }
 	
     public static LocatrackLocation last() {
-        return LocationTable.getLast(Helper.getInstance());
+        return LocationTable.getLast();
     }
 	public static long getLastLocationTime() {
-        return  LocationTable.getLastTime(Helper.getInstance());
+        return  LocationTable.getLastTime();
     }
 
     @Override
@@ -76,7 +75,7 @@ public class LocatrackDb extends LocationStorer {
             if(Logger.DEBUG) Logger.debug(TAG, "saveLocationToLocalDatabase");
         }
 
-        long i = LocationTable.saveToDatabase(Helper.getInstance(), location, mMinimunDistance);
+        long i = LocationTable.saveToDatabase(location, mMinimunDistance);
         if (Logger.DEBUG) {
             if(Logger.DEBUG) Logger.debug(TAG, "saveLocationToLocalDatabase location saved: %d", i);
         }
@@ -92,7 +91,7 @@ public class LocatrackDb extends LocationStorer {
     }
 
     public void prepareDmlStatements() {
-        LocationTable.prepareDmlStatements(Helper.getInstance());
+        LocationTable.prepareDmlStatements();
     }
 
     @Override
@@ -104,12 +103,12 @@ public class LocatrackDb extends LocationStorer {
     @Override
     public void open() throws IOException {
         super.open();
-        LocationTable.startBulkInsert(Helper.getInstance());
+        LocationTable.startBulkInsert();
     }
 
     @Override
     public void close() {
-        LocationTable.stopBulkInsert(Helper.getInstance());
+        LocationTable.stopBulkInsert();
         super.close();
     }
 }
