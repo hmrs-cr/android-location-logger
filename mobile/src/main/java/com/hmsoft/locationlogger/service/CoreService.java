@@ -49,6 +49,7 @@ import com.hmsoft.locationlogger.data.commands.Command;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
+import com.hmsoft.locationlogger.data.sqlite.TripTable;
 import com.hmsoft.locationlogger.receivers.StartServiceReceiver;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
@@ -635,6 +636,13 @@ public class CoreService extends Service
 
                     if (DIAGNOSTICS && mLocationLogEnabled) {
                         pw = PerfWatch.start(TAG, "Start: Store location");
+                    }
+
+                    if(LocatrackLocation.EVENT_STOP.equals(location.event)) {
+                        TripTable.Trip trip = TripTable.insertTrip(location.getTime(), true);
+                        if(trip != null) {
+                            location.extraInfo = trip.toString() + "\n\n" + location.extraInfo;
+                        }
                     }
 
                     for (LocationStorer storer : mLocationStorers) {
