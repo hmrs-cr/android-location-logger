@@ -3,6 +3,7 @@ package com.hmsoft.locationlogger.data.sqlite;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Pair;
 
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 
@@ -12,12 +13,20 @@ import java.util.TimeZone;
 
 public class TripTable {
     public static final String TABLE_NAME = "trip";
+    public static final String VIEW_NAME = TABLE_NAME + "View";
 
     public static final String SQL_CREATE_TABLE  = "CREATE TABLE " + TABLE_NAME +
                                                    " (id INTEGER PRIMARY KEY, startLocation INTEGER, endLocation INTEGER)";
 
-    private static final String[] selection = new String[2];
-    private static final String[] columns = new String[1];
+    public static final String SQL_CREATE_VIEW  = "CREATE VIEW " + VIEW_NAME + " AS SELECT t.id, " +
+            "COALESCE(g.address, 'Trip #' || t.id) FROM trip AS t JOIN location AS l ON l.timestamp=t.endLocation " +
+            "LEFT JOIN geocoder AS g ON g.latitude = ROUND(l.latitude, 3) AND g.longitude = ROUND(l.longitude, 3) " +
+            "ORDER BY endLocation DESC LIMIT 16";
+
+    private static final String[] locationSelection = new String[2];
+    private static final String[] tripSelection = new String[1];
+    private static final String[] locationColumns = new String[1];
+    private static final String[] tripColumns = new String[2];
 
     public static class Trip {
 
@@ -88,12 +97,13 @@ public class TripTable {
 
         @Override
         public String toString() {
-            return "*Duration:* " + this.duration + "\n" +
-                    "*Max Speed:* " + this.maxSpeed + "km/h\n" +
-                    "*Avg Speed:* " +  this.avgSpeed + "km/h\n" +
-                    "*Max Altitude:* " + this.maxAltitude + "msnm\n" +
-                    "*Min Altitude:* " + this.minAltitude + "msnm\n" +
-                    "*Points:* " + this.pointNumber;
+
+            return "Duration: " + this.duration + "\n" +
+                    "Max Speed: " + (Math.round(this.maxSpeed * 100.0) / 100.0) + "\n" +
+                    "Avg Speed: " +  (Math.round(this.avgSpeed * 100.0) / 100.0) + "\n" +
+                    "Max Altitude: " + (Math.round(this.maxAltitude * 100.0) / 100.0) + "\n" +
+                    "Min Altitude: " + (Math.round(this.minAltitude * 100.0) / 100.0) + "\n" +
+                    "Points: " + this.pointNumber;
         }
     }
 
@@ -101,14 +111,14 @@ public class TripTable {
         Helper helper = Helper.getInstance();
 
 
-        selection[0] = event;
-        selection[1] = String.valueOf(fromTimeStamp);
-        columns[0] = LocationTable.COLUMN_NAME_TIMESTAMP;
+        locationSelection[0] = event;
+        locationSelection[1] = String.valueOf(fromTimeStamp);
+        locationColumns[0] = LocationTable.COLUMN_NAME_TIMESTAMP;
 
         SQLiteDatabase database = helper.getReadableDatabase();
-        Cursor cursor = database.query(LocationTable.TABLE_NAME, columns,
+        Cursor cursor = database.query(LocationTable.TABLE_NAME, locationColumns,
                 LocationTable.COLUMN_NAME_EVENT + " = ? AND " + LocationTable.COLUMN_NAME_TIMESTAMP + "< ?",
-                selection, null, null, LocationTable.COLUMN_NAME_TIMESTAMP + " DESC", "1");
+                locationSelection, null, null, LocationTable.COLUMN_NAME_TIMESTAMP + " DESC", "1");
 
         long result = 0;
         if(cursor.moveToFirst()) {
@@ -157,5 +167,46 @@ public class TripTable {
         }
 
         return trip;
+    }
+
+    public static Trip getTripbyId(String id) {
+        Helper helper = Helper.getInstance();
+
+        tripColumns[0] = "startLocation";
+        tripColumns[1] = "endLocation";
+
+        tripSelection[0] = id;
+
+        SQLiteDatabase database = helper.getReadableDatabase();
+        Cursor cursor = database.query(TABLE_NAME, tripColumns,
+                 "id = ?", tripSelection, null, null, null);
+
+        if(cursor.moveToFirst()) {
+            long start = cursor.getLong(0);
+            long stop = cursor.getLong(1);
+            return Trip.createTrip(start, stop);
+        }
+
+        cursor.close();
+
+        return null;
+    }
+
+    public static Pair[] getTrips() {
+        Helper helper = Helper.getInstance();
+        SQLiteDatabase database = helper.getReadableDatabase();
+        Cursor cursor = database.query(VIEW_NAME, null,null, null,
+                null, null, null);
+
+        Pair[] result = new Pair[cursor.getCount()];
+        int i = 0;
+        while (cursor.moveToNext()) {
+            Pair<String, String> record = Pair.create(cursor.getString(0), cursor.getString(1));
+            result[i++] = record;
+        }
+
+        cursor.close();
+
+        return result;
     }
 }

@@ -126,6 +126,7 @@ public class CoreService extends Service
     static int sLastBatteryLevel = 99;
     boolean mChargingStart;
     boolean mChargingStop;
+    boolean mChargingStartStop;
     boolean mAirplaneModeOn;
 
 
@@ -445,8 +446,9 @@ public class CoreService extends Service
             fireEvents = true;
             requestTelegramUpdates();
         } else if (sLastBatteryLevel > 100 && newLevel <= 100) {
-            if(DEBUG) Logger.debug(TAG, "Charging stop");
-            mChargingStop = true;
+            if(DEBUG) Logger.debug(TAG, "Charging stop " + mChargingStart);
+            mChargingStartStop = mChargingStart;
+            mChargingStop = !mChargingStartStop;
             mChargingStart = false;
             fireEvents = true;
         }
@@ -593,6 +595,8 @@ public class CoreService extends Service
                 location.event = LocatrackLocation.EVENT_START;
             } else if (mChargingStop) {
                 location.event = LocatrackLocation.EVENT_STOP;
+            } else if(mChargingStartStop) {
+                location.event = LocatrackLocation.EVENT_STARTSTOP;
             }
         }
 
@@ -641,7 +645,11 @@ public class CoreService extends Service
                     if(LocatrackLocation.EVENT_STOP.equals(location.event)) {
                         TripTable.Trip trip = TripTable.insertTrip(location.getTime(), true);
                         if(trip != null) {
-                            location.extraInfo = trip.toString() + "\n\n" + location.extraInfo;
+                            String extraInfo = location.extraInfo;
+                            location.extraInfo = trip.toString();
+                            if(!TextUtils.isEmpty(extraInfo)) {
+                                location.extraInfo += "\n\n" + extraInfo;
+                            }
                         }
                     }
 
@@ -705,6 +713,7 @@ public class CoreService extends Service
         mStoreHandlerRunning = false;
         mChargingStart = false;
         mChargingStop = false;
+        mChargingStartStop = false;
         if (mAirplaneModeOn) {
             Utils.setAirplaneMode(getApplicationContext(), true);
         }

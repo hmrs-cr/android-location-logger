@@ -198,7 +198,7 @@ public abstract class Command {
         registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
         registerCommandClass(WifiCommand.COMMAND_NAME, WifiCommand.class);
         registerCommandClass(ConfigCommand.COMMAND_NAME, ConfigCommand.class);
-
+        registerCommandClass(GetTrip.COMMAND_NAME, GetTrip.class);
 
         PicturesCommand.PictureContentObserver.register(context);
     }

@@ -70,6 +70,7 @@ public class Helper extends SQLiteOpenHelper {
         db.execSQL(FuelLogTable.SQL_CREATE_TABLE);
         db.execSQL(FuelLogTable.SQL_CREATE_VIEW);
         db.execSQL(TripTable.SQL_CREATE_TABLE);
+        db.execSQL(TripTable.SQL_CREATE_VIEW);
 
         for (String index : LocationTable.SQL_CREATE_INDICES) {
             db.execSQL(index);
@@ -83,22 +84,5 @@ public class Helper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if(Logger.DEBUG) Logger.debug(TAG, "onUpgrade");
-        if(newVersion == 10) {
-            db.execSQL(TripTable.SQL_CREATE_TABLE);
-        } else
-        if(newVersion > 6) {
-            db.execSQL(FuelLogTable.SQL_DROP_VIEW);
-            db.execSQL(FuelLogTable.SQL_CREATE_VIEW);
-        } else if(newVersion > 4) {
-            db.execSQL(FuelLogTable.SQL_CREATE_VIEW);
-            db.execSQL(FuelLogTable.ADD_PRICE_PER_LITRE_COLUMUN);
-            db.execSQL(FuelLogTable.UPDATE_PRICE_PER_LITRE_COLUMUN);
-        } else if(newVersion == 4) {
-            db.execSQL(FuelLogTable.SQL_CREATE_TABLE);
-        } else if(newVersion < 4) {
-            db.execSQL(LocationTable.SQL_DROP_TABLE);
-            db.execSQL(GeocoderTable.SQL_DROP_TABLE);
-            onCreate(db);
-        }
     }
 }
