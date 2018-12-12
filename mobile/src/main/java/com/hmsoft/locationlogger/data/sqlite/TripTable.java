@@ -40,15 +40,17 @@ public class TripTable {
         public final double maxAltitude;
         public final double minAltitude;
         public final int pointNumber;
+        public final double  distance;
 
-        public static Trip createTrip(long startTimeStamp, long endTimeStamp) {
-            Trip trip = new Trip(startTimeStamp, endTimeStamp);
+        static Trip createTrip(long startTimeStamp, long endTimeStamp, float distance) {
+            Trip trip = new Trip(startTimeStamp, endTimeStamp, distance);
             return trip;
         }
 
-        private Trip(long startTimeStamp, long endTimeStamp) {
+        private Trip(long startTimeStamp, long endTimeStamp, float distance) {
             this.startTimeStamp = startTimeStamp;
             this.endTimeStamp = endTimeStamp;
+            this.distance = distance;
 
             SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
 
@@ -99,6 +101,7 @@ public class TripTable {
         public String toString() {
 
             return "Duration: " + this.duration + "\n" +
+                    "Distance: " + (Math.round((this.distance / 1000) * 100.0) / 100.0) + "\n" +
                     "Max Speed: " + (Math.round(this.maxSpeed * 100.0) / 100.0) + "\n" +
                     "Avg Speed: " +  (Math.round(this.avgSpeed * 100.0) / 100.0) + "\n" +
                     "Max Altitude: " + (Math.round(this.maxAltitude * 100.0) / 100.0) + "\n" +
@@ -130,7 +133,7 @@ public class TripTable {
         return result;
     }
 
-    public static long insertTrip(long startLocation, long endLocation) {
+    public static long insertTrip(long startLocation, long endLocation, float distance) {
         Helper helper = Helper.getInstance();
         ContentValues values = new ContentValues();
         values.put("startLocation", startLocation);
@@ -139,7 +142,7 @@ public class TripTable {
                 SQLiteDatabase.CONFLICT_IGNORE);
     }
   
-    public static Trip getTrip(long fromTimeStamp, boolean isEndTimeStamp) {
+    public static Trip getTrip(long fromTimeStamp, boolean isEndTimeStamp, float distance) {
         if(fromTimeStamp == 0) {
             fromTimeStamp = Long.MAX_VALUE;
         }
@@ -148,22 +151,22 @@ public class TripTable {
         if(endTimeStamp > 0) {
             long startTimeStamp = getLocationTimeStamp(endTimeStamp, LocatrackLocation.EVENT_START);
             if(startTimeStamp > 0) {
-                return Trip.createTrip(startTimeStamp, endTimeStamp);
+                return Trip.createTrip(startTimeStamp, endTimeStamp, distance);
             }
         }
         return null;
     }
 
-    public static Trip insertTrip(long fromTimeStamp, boolean isEndTimeStamp) {
+    public static Trip insertTrip(long fromTimeStamp, float distance, boolean isEndTimeStamp) {
 
-        Trip trip = getTrip(fromTimeStamp, isEndTimeStamp);
+        Trip trip = getTrip(fromTimeStamp, isEndTimeStamp, distance);
 
         while(trip != null && trip.pointNumber == 0) {
-            trip = getTrip(trip.startTimeStamp, false);
+            trip = getTrip(trip.startTimeStamp, false, distance);
         }
 
         if(trip != null) {
-            insertTrip(trip.startTimeStamp, trip.endTimeStamp);
+            insertTrip(trip.startTimeStamp, trip.endTimeStamp, distance);
         }
 
         return trip;
@@ -174,6 +177,7 @@ public class TripTable {
 
         tripColumns[0] = "startLocation";
         tripColumns[1] = "endLocation";
+        //tripColumns[2] = "distance";
 
         tripSelection[0] = id;
 
@@ -184,7 +188,8 @@ public class TripTable {
         if(cursor.moveToFirst()) {
             long start = cursor.getLong(0);
             long stop = cursor.getLong(1);
-            return Trip.createTrip(start, stop);
+            float distance = 0;//cursor.getFloat(2);
+            return Trip.createTrip(start, stop, distance);
         }
 
         cursor.close();
