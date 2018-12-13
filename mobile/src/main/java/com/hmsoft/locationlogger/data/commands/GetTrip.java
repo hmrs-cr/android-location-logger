@@ -4,6 +4,8 @@ import android.util.Pair;
 
 import com.hmsoft.locationlogger.data.sqlite.TripTable;
 
+import java.util.Date;
+
 public class GetTrip extends Command {
     static final String COMMAND_NAME = "GetTrip";
 
@@ -17,14 +19,15 @@ public class GetTrip extends Command {
         return COMMAND_NAME;
     }
 
-
     @Override
     public void execute(String[] params) {
         if(params.length == 2) {
            String id = params[1];
            TripTable.Trip trip = TripTable.getTripbyId(id);
            if(trip != null) {
-               sendReply(context, trip.toString());
+               Date date = new Date(trip.endTimeStamp);
+               String tripString = date + "\n" + trip;
+               sendReply(context, tripString);
            } else {
                sendReply(context, "Trip not found.");
            }

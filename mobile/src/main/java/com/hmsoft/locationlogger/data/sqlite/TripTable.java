@@ -33,14 +33,15 @@ public class TripTable {
         public final long startTimeStamp;
         public final long endTimeStamp;
 
-        public final String duration; // HH:mm:ss
-        public final int length; // Meters
+        public final String duration; // HH:mm:ss        
         public final double maxSpeed; // km/h
         public final double avgSpeed; // km/h
         public final double maxAltitude;
         public final double minAltitude;
         public final int pointNumber;
         public final double  distance;
+      
+      private String objectString = null;
 
         static Trip createTrip(long startTimeStamp, long endTimeStamp, float distance) {
             Trip trip = new Trip(startTimeStamp, endTimeStamp, distance);
@@ -53,11 +54,10 @@ public class TripTable {
             this.distance = distance;
 
             SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
-
+            
             Date date = new Date(endTimeStamp - startTimeStamp);
             format.setTimeZone(TimeZone.getTimeZone("UTC"));
             this.duration = format.format(date);
-            this.length = 0;
 
             Helper helper = Helper.getInstance();
 
@@ -98,15 +98,18 @@ public class TripTable {
         }
 
         @Override
-        public String toString() {
-
-            return "Duration: " + this.duration + "\n" +
-                    "Distance: " + (Math.round((this.distance / 1000) * 100.0) / 100.0) + "\n" +
+        public String toString() {            
+          if(objectString == null) {
+            double constSpeed = (this.distance / ((endTimeStamp - startTimeStamp) / 1000)) * 3.6;
+            objectString = "Duration: " + this.duration + "\n" +
+                    "Distance: " + (Math.round((this.distance / 1000.0) * 100.0) / 100.0) + "\n" +
                     "Max Speed: " + (Math.round(this.maxSpeed * 100.0) / 100.0) + "\n" +
-                    "Avg Speed: " +  (Math.round(this.avgSpeed * 100.0) / 100.0) + "\n" +
+                    "Avg Speed: " +  (Math.round(this.avgSpeed * 100.0) / 100.0) + " (" + (Math.round(constSpeed * 100.0) / 100.0) + ")\n" +
                     "Max Altitude: " + (Math.round(this.maxAltitude * 100.0) / 100.0) + "\n" +
                     "Min Altitude: " + (Math.round(this.minAltitude * 100.0) / 100.0) + "\n" +
                     "Points: " + this.pointNumber;
+          }
+            return objectString;          
         }
     }
 
