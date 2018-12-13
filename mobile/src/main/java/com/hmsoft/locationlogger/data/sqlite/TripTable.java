@@ -16,7 +16,7 @@ public class TripTable {
     public static final String VIEW_NAME = TABLE_NAME + "View";
 
     public static final String SQL_CREATE_TABLE  = "CREATE TABLE " + TABLE_NAME +
-                                                   " (id INTEGER PRIMARY KEY, startLocation INTEGER, endLocation INTEGER)";
+                                                   " (id INTEGER PRIMARY KEY, startLocation INTEGER, endLocation INTEGER, distance INTEGER)";
 
     public static final String SQL_CREATE_VIEW  = "CREATE VIEW " + VIEW_NAME + " AS SELECT t.id, " +
             "COALESCE(g.address, 'Trip #' || t.id) FROM trip AS t JOIN location AS l ON l.timestamp=t.endLocation " +
@@ -26,7 +26,7 @@ public class TripTable {
     private static final String[] locationSelection = new String[2];
     private static final String[] tripSelection = new String[1];
     private static final String[] locationColumns = new String[1];
-    private static final String[] tripColumns = new String[2];
+    private static final String[] tripColumns = new String[3];
 
     public static class Trip {
 
@@ -141,6 +141,7 @@ public class TripTable {
         ContentValues values = new ContentValues();
         values.put("startLocation", startLocation);
         values.put("endLocation", endLocation);
+        values.put("distance", distance);
         return helper.getWritableDatabase().insertWithOnConflict(TABLE_NAME, null,  values,
                 SQLiteDatabase.CONFLICT_IGNORE);
     }
@@ -169,6 +170,11 @@ public class TripTable {
         }
 
         if(trip != null) {
+
+            if(trip.pointNumber < 5) {
+                return null;
+            }
+
             insertTrip(trip.startTimeStamp, trip.endTimeStamp, distance);
         }
 
@@ -180,7 +186,7 @@ public class TripTable {
 
         tripColumns[0] = "startLocation";
         tripColumns[1] = "endLocation";
-        //tripColumns[2] = "distance";
+        tripColumns[2] = "distance";
 
         tripSelection[0] = id;
 
@@ -188,15 +194,16 @@ public class TripTable {
         Cursor cursor = database.query(TABLE_NAME, tripColumns,
                  "id = ?", tripSelection, null, null, null);
 
-        if(cursor.moveToFirst()) {
-            long start = cursor.getLong(0);
-            long stop = cursor.getLong(1);
-            float distance = 0;//cursor.getFloat(2);
-            return Trip.createTrip(start, stop, distance);
+        try {
+            if (cursor.moveToFirst()) {
+                long start = cursor.getLong(0);
+                long stop = cursor.getLong(1);
+                float distance = cursor.getFloat(2);
+                return Trip.createTrip(start, stop, distance);
+            }
+        } finally {
+            cursor.close();
         }
-
-        cursor.close();
-
         return null;
     }
 

@@ -21,7 +21,7 @@ public class Helper extends SQLiteOpenHelper {
     public static final String TYPE_PRIMARY_KEY = " PRIMARY KEY";
     public static final String COMMA_SEP = ",";
 
-    public static final int DATABASE_VERSION = 11;
+    public static final int DATABASE_VERSION = 12;
     public static final String DATABASE_NAME = "locatrack.db";
 
     private static Helper instance;
@@ -84,5 +84,8 @@ public class Helper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if(Logger.DEBUG) Logger.debug(TAG, "onUpgrade");
+        if(newVersion == 12) {
+            db.execSQL("ALTER TABLE trip ADD COLUMN distance INTEGER");
+        }
     }
 }

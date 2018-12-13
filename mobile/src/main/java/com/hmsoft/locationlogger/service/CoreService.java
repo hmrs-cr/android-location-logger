@@ -576,25 +576,29 @@ public class CoreService extends Service
     }
 
     private void processTripData(LocatrackLocation location) {
-      if(LocatrackLocation.EVENT_START.equals(location.event)) {
-            mDistance = 0;
-            mLastTripLocation = location;
-        } else if(LocatrackLocation.EVENT_STOP.equals(location.event)) {
-            TripTable.Trip trip = mDistance > 500 ? TripTable.insertTrip(location.getTime(), mDistance, true) : null;
+        if (LocatrackLocation.EVENT_START.equals(location.event)) {
+            if (mLastTripLocation == null) {
+                mDistance = 0;
+                mLastTripLocation = location;
+            } else {
+                location.event = LocatrackLocation.EVENT_RESTART;
+            }
+        } else if (LocatrackLocation.EVENT_STOP.equals(location.event)) {
+            TripTable.Trip trip = TripTable.insertTrip(location.getTime(), mDistance, true);
             mDistance = 0;
             mLastTripLocation = null;
-            if(trip != null) {
+            if (trip != null) {
                 String extraInfo = location.extraInfo;
                 location.extraInfo = trip.toString();
-                if(!TextUtils.isEmpty(extraInfo)) {
+                if (!TextUtils.isEmpty(extraInfo)) {
                     location.extraInfo += "\n\n" + extraInfo;
                 }
             }
         } else {
-            if(mLastSavedLocation != null && Utils.isFromGps(mLastTripLocation)) {
+            if (mLastTripLocation != null && Utils.isFromGps(mLastTripLocation)) {
                 mDistance += mLastTripLocation.distanceTo(location);
-                mLastTripLocation = location;
             }
+            mLastTripLocation = location;
         }
     }
 

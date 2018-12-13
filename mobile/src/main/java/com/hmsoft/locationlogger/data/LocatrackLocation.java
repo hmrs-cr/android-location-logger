@@ -12,6 +12,7 @@ public class LocatrackLocation extends Location {
     public static final String EVENT_LOGIN = "login";
     public static final String EVENT_LOW_BATTERY = "low-battery";
     public static final String EVENT_NEW_SIM = "new-sim";
+    public static final String EVENT_RESTART = "restart";
 
     public String event = "";
     public String extraInfo;
