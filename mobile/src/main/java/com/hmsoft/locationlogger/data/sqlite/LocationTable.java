@@ -87,18 +87,11 @@ public class LocationTable {
         location.setAccuracy(cursor.getFloat(cursor.getColumnIndex(COLUMN_NAME_ACCURACY)));
         location.setSpeed(cursor.getFloat(cursor.getColumnIndex(COLUMN_NAME_SPEED)));
 
-        location.uploadTime = cursor.getLong(cursor.getColumnIndex(COLUMN_NAME_UPLOAD_DATE));
+        //location.uploadTime = cursor.getLong(cursor.getColumnIndex(COLUMN_NAME_UPLOAD_DATE));
         location.batteryLevel = cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_BATTERY_LEVEL));
         location.event = cursor.getString(cursor.getColumnIndex(COLUMN_NAME_EVENT));
 
         return location;
-    }
-
-    public static LocationSet getAllNotUploaded() {
-        Helper helper = Helper.getInstance();
-        Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, null,
-                COLUMN_NAME_UPLOAD_DATE + " = 0", null, null, null, COLUMN_NAME_TIMESTAMP, null);
-        return new DatabaseLocationSet(cursor);
     }
 
     public static LocationSet getAllFromDate(long date) {
@@ -115,23 +108,6 @@ public class LocationTable {
         sUpdateValues.put(COLUMN_NAME_UPLOAD_DATE, System.currentTimeMillis());
         sUpdateValuesValues[0] = String.valueOf(location.getTime());
         writable.update(TABLE_NAME, sUpdateValues, TIMESTAMP_WHERE_CONDITION, sUpdateValuesValues);
-    }
-
-    public static long getCount(boolean includeNotUploadedOnly) {
-
-        final String NOT_UPLOADED_COUNT_QUERY = "SELECT Count(*) FROM " + TABLE_NAME +
-                " WHERE " + COLUMN_NAME_UPLOAD_DATE + " = 0";
-        final String ALL_COUNT_QUERY = "SELECT Count(*) FROM " + TABLE_NAME;
-
-        String query;
-        if(includeNotUploadedOnly) {
-            query = NOT_UPLOADED_COUNT_QUERY;
-        } else {
-            query = ALL_COUNT_QUERY;
-        }
-
-        Helper helper = Helper.getInstance();
-        return Math.round(helper.getDoubleScalar(query));
     }
 
     public static LocatrackLocation getLast() {
@@ -151,24 +127,6 @@ public class LocationTable {
         return null;
     }
 
-    public static long getLastTime() {
-        Helper helper = Helper.getInstance();
-        Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME,
-                new String[]{COLUMN_NAME_TIMESTAMP}, null, null, null,
-                null, COLUMN_NAME_TIMESTAMP + " DESC", "1");
-
-        if(cursor != null) {
-            try	{
-                if(cursor.moveToFirst()) {
-                    return cursor.getLong(0);
-                }
-            }
-            finally	{
-                cursor.close();
-            }
-        }
-        return 0;
-    }
 
     public static synchronized long saveToDatabase(LocatrackLocation location, float minDistance) {
 
@@ -282,110 +240,6 @@ public class LocationTable {
             }
             sInsertStatement = null;
             sUpdateStatement = null;
-        }
-    }
-
-    public static Location getFromTimestamp(long timestamp, long timeRange) {
-        if(timeRange == 0) timeRange = 1000 * 60 * 15;
-        String select = String.format("SELECT * FROM %s WHERE %s <= %d AND %s >= %d ORDER BY ABS(%d - %s) LIMIT 1",
-                TABLE_NAME, COLUMN_NAME_TIMESTAMP, timestamp + timeRange, COLUMN_NAME_TIMESTAMP,
-                timestamp - timeRange, timestamp, COLUMN_NAME_TIMESTAMP);
-
-        Helper helper = Helper.getInstance();
-        Cursor cursor = helper.getReadableDatabase().rawQuery(select, null);
-        if(cursor != null) {
-            try {
-                if(cursor.moveToFirst()) {
-                    return loadFromCursor(cursor);
-                }
-            } finally {
-                cursor.close();
-            }
-        }
-        return null;
-    }
-
-    private static class DatabaseLocationSet implements LocationSet, Iterator<LocatrackLocation> {
-
-        private final Cursor cursor;
-        private boolean hasNext;
-
-        public DatabaseLocationSet(Cursor cursor) {
-            this.cursor = cursor;
-            this.hasNext = cursor != null && cursor.moveToFirst();
-        }
-
-        @Override
-        public int getCount() {
-            return cursor == null ? 0 : cursor.getCount();
-        }
-
-        @Override
-        public long getDateStart() {
-            return 0;
-        }
-
-        @Override
-        public void setDateStart(long dateStart) {
-
-        }
-
-        @Override
-        public long getDateEnd() {
-            return 0;
-        }
-
-        @Override
-        public void setDateEnd(long dateEnd) {
-
-        }
-
-        @Override
-        public LocatrackLocation[] toArray() {
-            LocatrackLocation[] locations = new LocatrackLocation[cursor.getCount()];
-            int i = 0;
-            if(hasNext) {
-                while (true) {
-                    locations[i++] = LocationTable.loadFromCursor(cursor);
-                    if(!cursor.moveToNext()) {
-                        break;
-                    }
-                }
-            }
-
-            hasNext = false;
-            hasNext();
-
-            return locations;
-        }
-
-        @Override
-        public Iterator<LocatrackLocation> iterator() {
-            return this;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (!hasNext && cursor != null) {
-                cursor.close();
-                if(Logger.DEBUG) Logger.debug(TAG, "Cursor closed.");
-            }
-            return hasNext;
-        }
-
-        @Override
-        public LocatrackLocation next() {
-            LocatrackLocation loc = null;
-            if (hasNext) {
-                loc = LocationTable.loadFromCursor(cursor);
-                hasNext = cursor.moveToNext();
-            }
-            return loc;
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
         }
     }
 }

@@ -5,6 +5,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Pair;
 
+import com.hmsoft.locationlogger.common.Gpx;
+import com.hmsoft.locationlogger.data.LocationSet;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 
 import java.text.SimpleDateFormat;
@@ -14,14 +16,19 @@ import java.util.TimeZone;
 public class TripTable {
     public static final String TABLE_NAME = "trip";
     public static final String VIEW_NAME = TABLE_NAME + "View";
+    public static final String DETAIL_VIEW_NAME = TABLE_NAME + "DetailView";
 
-    public static final String SQL_CREATE_TABLE  = "CREATE TABLE " + TABLE_NAME +
-                                                   " (id INTEGER PRIMARY KEY, startLocation INTEGER, endLocation INTEGER, distance INTEGER)";
+    public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME +
+            " (id INTEGER PRIMARY KEY, startLocation INTEGER, endLocation INTEGER, distance INTEGER)";
 
-    public static final String SQL_CREATE_VIEW  = "CREATE VIEW " + VIEW_NAME + " AS SELECT t.id, " +
+    public static final String SQL_CREATE_VIEW = "CREATE VIEW " + VIEW_NAME + " AS SELECT t.id, " +
             "COALESCE(g.address, 'Trip #' || t.id) FROM trip AS t JOIN location AS l ON l.timestamp=t.endLocation " +
             "LEFT JOIN geocoder AS g ON g.latitude = ROUND(l.latitude, 3) AND g.longitude = ROUND(l.longitude, 3) " +
             "ORDER BY endLocation DESC LIMIT 16";
+
+    public static final String SQL_CREATE_DETAIL_VIEW = "CREATE VIEW " + DETAIL_VIEW_NAME + " AS SELECT t.id, l.timestamp, " +
+            "l.latitude, l.longitude, l.altitude, l.accuracy, l.speed, l.batteryLevel, l.event FROM trip AS t JOIN " +
+            "location AS l ON l.timestamp BETWEEN t.startLocation AND t.endLocation";
 
     private static final String[] locationSelection = new String[2];
     private static final String[] tripSelection = new String[1];
@@ -30,6 +37,7 @@ public class TripTable {
 
     public static class Trip {
 
+        private long id;
         public final long startTimeStamp;
         public final long endTimeStamp;
 
@@ -39,13 +47,17 @@ public class TripTable {
         public final double maxAltitude;
         public final double minAltitude;
         public final int pointNumber;
-        public final double  distance;
-      
-      private String objectString = null;
+        public final double distance;
+
+        private String objectString = null;
 
         static Trip createTrip(long startTimeStamp, long endTimeStamp, float distance) {
             Trip trip = new Trip(startTimeStamp, endTimeStamp, distance);
             return trip;
+        }
+
+        void setId(long id) {
+            this.id = id;
         }
 
         private Trip(long startTimeStamp, long endTimeStamp, float distance) {
@@ -54,7 +66,7 @@ public class TripTable {
             this.distance = distance;
 
             SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
-            
+
             Date date = new Date(endTimeStamp - startTimeStamp);
             format.setTimeZone(TimeZone.getTimeZone("UTC"));
             this.duration = format.format(date);
@@ -73,19 +85,18 @@ public class TripTable {
             int count = 0;
 
             Cursor cursor = helper.getReadableDatabase().rawQuery(query, null);
-            if(cursor != null) {
-                try	{
-                    if(cursor.moveToFirst()) {
+            if (cursor != null) {
+                try {
+                    if (cursor.moveToFirst()) {
                         count = cursor.getInt(4);
-                        if(count > 0) {
+                        if (count > 0) {
                             maxSpeed = cursor.getDouble(0) * 3.6;
                             avgSpeed = cursor.getDouble(1) * 3.6;
                             maxAltitude = cursor.getDouble(2);
                             minAltitude = cursor.getDouble(3);
                         }
                     }
-                }
-                finally	{
+                } finally {
                     cursor.close();
                 }
             }
@@ -98,18 +109,36 @@ public class TripTable {
         }
 
         @Override
-        public String toString() {            
-          if(objectString == null) {
-            double constSpeed = (this.distance / ((endTimeStamp - startTimeStamp) / 1000)) * 3.6;
-            objectString = "Duration: " + this.duration + "\n" +
-                    "Distance: " + (Math.round((this.distance / 1000.0) * 100.0) / 100.0) + "\n" +
-                    "Max Speed: " + (Math.round(this.maxSpeed * 100.0) / 100.0) + "\n" +
-                    "Avg Speed: " +  (Math.round(this.avgSpeed * 100.0) / 100.0) + " (" + (Math.round(constSpeed * 100.0) / 100.0) + ")\n" +
-                    "Max Altitude: " + (Math.round(this.maxAltitude * 100.0) / 100.0) + "\n" +
-                    "Min Altitude: " + (Math.round(this.minAltitude * 100.0) / 100.0) + "\n" +
-                    "Points: " + this.pointNumber;
-          }
-            return objectString;          
+        public String toString() {
+            if (objectString == null) {
+                double constSpeed = (this.distance / ((endTimeStamp - startTimeStamp) / 1000)) * 3.6;
+                objectString = "Duration: " + this.duration + "\n" +
+                        "Distance: " + (Math.round((this.distance / 1000.0) * 100.0) / 100.0) + "\n" +
+                        "Max Speed: " + (Math.round(this.maxSpeed * 100.0) / 100.0) + "\n" +
+                        "Avg Speed: " + (Math.round(this.avgSpeed * 100.0) / 100.0) + " (" + (Math.round(constSpeed * 100.0) / 100.0) + ")\n" +
+                        "Max Altitude: " + (Math.round(this.maxAltitude * 100.0) / 100.0) + "\n" +
+                        "Min Altitude: " + (Math.round(this.minAltitude * 100.0) / 100.0) + "\n" +
+                        "Points: " + this.pointNumber;
+            }
+            return objectString;
+        }
+
+        public String toGpxString() {
+            String gpxName = "Trip " + Gpx.df.format(new Date(this.endTimeStamp));
+            String gpxDesc = this.toString();
+            LocationSet points = this.getLocations();
+            return Gpx.createGpx(points, gpxName, gpxDesc);
+        }
+
+        public LocationSet getLocations() {
+            Helper helper = Helper.getInstance();
+            SQLiteDatabase database = helper.getReadableDatabase();
+            tripSelection[0] = Long.toString(this.id);
+            Cursor cursor = database.query(SQL_CREATE_DETAIL_VIEW, null,
+                    "id = ?", tripSelection, null, null, null, null);
+            DatabaseLocationSet locationSet = new DatabaseLocationSet(cursor);
+            locationSet.setAutoClose(false);
+            return locationSet;
         }
     }
 
@@ -127,7 +156,7 @@ public class TripTable {
                 locationSelection, null, null, LocationTable.COLUMN_NAME_TIMESTAMP + " DESC", "1");
 
         long result = 0;
-        if(cursor.moveToFirst()) {
+        if (cursor.moveToFirst()) {
             result = cursor.getLong(0);
         }
 
@@ -142,19 +171,19 @@ public class TripTable {
         values.put("startLocation", startLocation);
         values.put("endLocation", endLocation);
         values.put("distance", distance);
-        return helper.getWritableDatabase().insertWithOnConflict(TABLE_NAME, null,  values,
+        return helper.getWritableDatabase().insertWithOnConflict(TABLE_NAME, null, values,
                 SQLiteDatabase.CONFLICT_IGNORE);
     }
-  
+
     public static Trip getTrip(long fromTimeStamp, boolean isEndTimeStamp, float distance) {
-        if(fromTimeStamp == 0) {
+        if (fromTimeStamp == 0) {
             fromTimeStamp = Long.MAX_VALUE;
         }
 
         long endTimeStamp = isEndTimeStamp ? fromTimeStamp : getLocationTimeStamp(fromTimeStamp, LocatrackLocation.EVENT_STOP);
-        if(endTimeStamp > 0) {
+        if (endTimeStamp > 0) {
             long startTimeStamp = getLocationTimeStamp(endTimeStamp, LocatrackLocation.EVENT_START);
-            if(startTimeStamp > 0) {
+            if (startTimeStamp > 0) {
                 return Trip.createTrip(startTimeStamp, endTimeStamp, distance);
             }
         }
@@ -165,17 +194,18 @@ public class TripTable {
 
         Trip trip = getTrip(fromTimeStamp, isEndTimeStamp, distance);
 
-        while(trip != null && trip.pointNumber == 0) {
+        while (trip != null && trip.pointNumber == 0) {
             trip = getTrip(trip.startTimeStamp, false, distance);
         }
 
-        if(trip != null) {
+        if (trip != null) {
 
-            if(trip.pointNumber < 5) {
+            if (trip.pointNumber < 5) {
                 return null;
             }
 
-            insertTrip(trip.startTimeStamp, trip.endTimeStamp, distance);
+            long id = insertTrip(trip.startTimeStamp, trip.endTimeStamp, distance);
+            trip.setId(id);
         }
 
         return trip;
@@ -192,7 +222,7 @@ public class TripTable {
 
         SQLiteDatabase database = helper.getReadableDatabase();
         Cursor cursor = database.query(TABLE_NAME, tripColumns,
-                 "id = ?", tripSelection, null, null, null);
+                "id = ?", tripSelection, null, null, null);
 
         try {
             if (cursor.moveToFirst()) {
@@ -210,7 +240,7 @@ public class TripTable {
     public static Pair[] getTrips() {
         Helper helper = Helper.getInstance();
         SQLiteDatabase database = helper.getReadableDatabase();
-        Cursor cursor = database.query(VIEW_NAME, null,null, null,
+        Cursor cursor = database.query(VIEW_NAME, null, null, null,
                 null, null, null);
 
         Pair[] result = new Pair[cursor.getCount()];

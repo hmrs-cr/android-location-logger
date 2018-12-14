@@ -595,10 +595,12 @@ public class CoreService extends Service
                 }
             }
         } else {
-            if (mLastTripLocation != null && Utils.isFromGps(mLastTripLocation)) {
-                mDistance += mLastTripLocation.distanceTo(location);
+            if (mLastTripLocation != null) {
+                if(Utils.isFromGps(mLastTripLocation)) {
+                    mDistance += mLastTripLocation.distanceTo(location);
+                }
+                mLastTripLocation = location;
             }
-            mLastTripLocation = location;
         }
     }
 

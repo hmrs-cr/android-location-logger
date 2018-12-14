@@ -25,27 +25,8 @@ public class LocatrackDb extends LocationStorer {
         mContext = context;
     }
 
-    public static Location getLocationFromTimestamp(long timestamp, long timeRange) {
-        return LocationTable.getFromTimestamp(timestamp, timeRange);
-    }
-
-    public static LocationSet getNotUploadedLocations() {
-        return LocationTable.getAllNotUploaded();
-    }
-
     public static LocationSet getAllFromDate(long date) {
         return LocationTable.getAllFromDate(date);
-    }
-
-    public static void transactionBegin() {
-        Helper.getInstance().getWritableDatabase().beginTransaction();
-    }
-
-
-    public static void transactionCommit() {
-        SQLiteDatabase db = Helper.getInstance().getWritableDatabase();
-        db.setTransactionSuccessful();
-        db.endTransaction();
     }
 
     public static void setUploadDate(Location location) {
@@ -57,15 +38,8 @@ public class LocatrackDb extends LocationStorer {
         LocationTable.setUploadDate(location);
     }
 
-    public static long getCount(boolean includeNotUploadedOnly) {
-        return  LocationTable.getCount(includeNotUploadedOnly);
-    }
-	
     public static LocatrackLocation last() {
         return LocationTable.getLast();
-    }
-	public static long getLastLocationTime() {
-        return  LocationTable.getLastTime();
     }
 
     @Override

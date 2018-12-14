@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 def versionMajor = 1
 def versionMinor = 1
-def verCode = 50
+def verCode = 53
 def APP_NAME = "LocationLogger"
 
 def buildTime() {
