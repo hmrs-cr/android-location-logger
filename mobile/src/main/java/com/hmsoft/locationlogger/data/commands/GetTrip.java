@@ -27,18 +27,21 @@ public class GetTrip extends Command {
     @Override
     public void execute(String[] params) {
         if (params.length == 2) {
-            String id = params[1];
-            TripTable.Trip trip = TripTable.getTripbyId(id);
-            if (trip != null) {
-                Date date = new Date(trip.endTimeStamp);
-                String tripString = date + "\n" + trip;
-                sendReply(context, tripString);
-            } else {
-                sendReply(context, "Trip not found.");
+            String[] supParams = params[1].split(" ", 2);
+
+            String id = supParams[0];
+            if(supParams.length == 1) {
+                TripTable.Trip trip = TripTable.getTripbyId(id);
+                if (trip != null) {
+                    Date date = new Date(trip.endTimeStamp);
+                    String tripString = date + "\n" + trip;
+                    sendReply(context, tripString);
+                } else {
+                    sendReply(context, "Trip not found.");
+                }
+            } else if(supParams.length == 2 && supParams[1].equals("gpx")) {
+                handleGpx(id);
             }
-        } else if (params.length == 3 && params[2].equals("gpx")) {
-            String id = params[1];
-            handleGpx(id);
         } else {
             Pair[] trips = TripTable.getTrips();
             String reply = "";
@@ -54,9 +57,9 @@ public class GetTrip extends Command {
 
     private void handleGpx(String id) {
 
-        final File gpxFile = new File(context.androidContext.getCacheDir(), "Trip" + id + ".gpx");
+        final File gpxFile = new File(context.androidContext.getCacheDir(), "Trip-" + id + ".gpx");
 
-        if(!gpxFile.exists()) {
+        if (!gpxFile.exists()) {
             TripTable.Trip trip = TripTable.getTripbyId(id);
             if (trip == null) {
                 sendReply(context, "Trip not found.");
@@ -72,12 +75,12 @@ public class GetTrip extends Command {
 
             }
 
-            if(!gpxFile.exists()) {
+            if (!gpxFile.exists()) {
                 sendReply(context, "Failed to create GPX for trip.");
                 return;
             }
-
-            TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, gpxFile);
         }
+
+        TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, gpxFile);
     }
 }

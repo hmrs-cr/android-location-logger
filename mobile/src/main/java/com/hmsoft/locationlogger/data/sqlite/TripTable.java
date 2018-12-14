@@ -37,7 +37,7 @@ public class TripTable {
 
     public static class Trip {
 
-        private long id;
+        private String id;
         public final long startTimeStamp;
         public final long endTimeStamp;
 
@@ -56,7 +56,7 @@ public class TripTable {
             return trip;
         }
 
-        void setId(long id) {
+        void setId(String id) {
             this.id = id;
         }
 
@@ -133,8 +133,8 @@ public class TripTable {
         public LocationSet getLocations() {
             Helper helper = Helper.getInstance();
             SQLiteDatabase database = helper.getReadableDatabase();
-            tripSelection[0] = Long.toString(this.id);
-            Cursor cursor = database.query(SQL_CREATE_DETAIL_VIEW, null,
+            tripSelection[0] = this.id;
+            Cursor cursor = database.query(DETAIL_VIEW_NAME, null,
                     "id = ?", tripSelection, null, null, null, null);
             DatabaseLocationSet locationSet = new DatabaseLocationSet(cursor);
             locationSet.setAutoClose(false);
@@ -205,7 +205,7 @@ public class TripTable {
             }
 
             long id = insertTrip(trip.startTimeStamp, trip.endTimeStamp, distance);
-            trip.setId(id);
+            trip.setId(String.valueOf(id));
         }
 
         return trip;
@@ -229,7 +229,9 @@ public class TripTable {
                 long start = cursor.getLong(0);
                 long stop = cursor.getLong(1);
                 float distance = cursor.getFloat(2);
-                return Trip.createTrip(start, stop, distance);
+                Trip trip = Trip.createTrip(start, stop, distance);
+                trip.setId(id);
+                return trip;
             }
         } finally {
             cursor.close();

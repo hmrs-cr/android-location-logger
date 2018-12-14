@@ -15,6 +15,7 @@ import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
+import com.hmsoft.locationlogger.data.sqlite.Helper;
 
 import java.io.File;
 import java.util.HashMap;
@@ -126,6 +127,7 @@ class DocumentCommand extends InternalCommand {
 
                 int status = -1;
                 int reason = -1;
+                String fileName = "";
 
                 if (c.moveToNext()) {
                     int i = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
@@ -137,6 +139,10 @@ class DocumentCommand extends InternalCommand {
                     if (i > -1) {
                         reason = c.getInt(i);
                     }
+                    i = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME);
+                    if (i > -1) {
+                        fileName = c.getString(i);
+                    }
                 }
 
                 String message;
@@ -144,6 +150,9 @@ class DocumentCommand extends InternalCommand {
                     message = "Download done, unknown status.";
                 } else if (DownloadManager.STATUS_SUCCESSFUL == status) {
                     message = "Download done!";
+                    if(fileName.endsWith("database.backup.db")) {
+                        Helper.getInstance().importDB(fileName);
+                    }
                 } else {
                     message = "Download failed. " + reason;
                 }

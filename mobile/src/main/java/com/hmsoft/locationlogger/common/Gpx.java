@@ -26,14 +26,16 @@ public final class Gpx {
 
 
         for (LocatrackLocation l : points) {
-            sb.append("            <trkpt lat=\"");sb.append(l.getLatitude());sb.append("\" lon=\"");sb.append(l.getLongitude());sb.append("\">");
-            sb.append("                <time>");sb.append(df.format(new Date(l.getTime())));sb.append("</time>\n");
-            sb.append("                <ele>");sb.append(l.getAltitude());sb.append("</ele>\n");
-            sb.append("                <speed>");sb.append(l.getSpeed());sb.append("</speed>\n");
-            if(!TextUtils.isEmpty(l.event)) {
-                sb.append("                <name>");sb.append(l.event);sb.append("</name>\n");
+            if(l.getAccuracy() < 10) {
+                sb.append("            <trkpt lat=\"");sb.append(l.getLatitude());sb.append("\" lon=\"");sb.append(l.getLongitude());sb.append("\">\n");
+                sb.append("                <time>");sb.append(df.format(new Date(l.getTime())));sb.append("</time>\n");
+                sb.append("                <ele>");sb.append(l.getAltitude());sb.append("</ele>\n");
+                sb.append("                <speed>");sb.append(l.getSpeed());sb.append("</speed>\n");
+                if(!TextUtils.isEmpty(l.event)) {
+                    sb.append("                <name>");sb.append(l.event);sb.append("</name>\n");
+                }
+                sb.append("            </trkpt>\n");
             }
-            sb.append("            </trkpt>\n");
         }
 
         sb.append("        </trkseg>\n    </trk>\n</gpx>");
