@@ -34,7 +34,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
 
     public LocatrackTelegramStorer(Context context) {
         mContext = context;
-        mDateFormat = new SimpleDateFormat("yyyy-MM-dd KK:mm:ss a", Locale.US);
+        mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss a", Locale.US);
         mConnectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
     }
 

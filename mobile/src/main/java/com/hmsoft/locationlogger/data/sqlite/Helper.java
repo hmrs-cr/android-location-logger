@@ -24,7 +24,7 @@ public class Helper extends SQLiteOpenHelper {
     public static final String TYPE_PRIMARY_KEY = " PRIMARY KEY";
     public static final String COMMA_SEP = ",";
 
-    public static final int DATABASE_VERSION = 14;
+    public static final int DATABASE_VERSION = 17;
     public static final String DATABASE_NAME = "locatrack.db";
 
     private static Helper instance;
@@ -116,8 +116,11 @@ public class Helper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if(Logger.DEBUG) Logger.debug(TAG, "onUpgrade");
-        if(newVersion == 14) {
+        if(newVersion == 17) {
+            db.execSQL("DROP VIEW " + TripTable.DETAIL_VIEW_NAME);
+            db.execSQL("DROP VIEW " + TripTable.VIEW_NAME);
             db.execSQL(TripTable.SQL_CREATE_DETAIL_VIEW);
+            db.execSQL(TripTable.SQL_CREATE_VIEW);
         }
     }
 }

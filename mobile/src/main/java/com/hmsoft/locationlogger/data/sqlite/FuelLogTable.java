@@ -5,9 +5,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 
-import java.text.SimpleDateFormat;
+import com.hmsoft.locationlogger.common.Utils;
+
 import java.util.Date;
-import java.util.Locale;
 
 public class FuelLogTable {
     public static final String TABLE_NAME = "fuelLog";
@@ -99,13 +99,12 @@ public class FuelLogTable {
             lon = cursor.getDouble(cursor.getColumnIndex(LocationTable.COLUMN_NAME_LONGITUD));
         }
 
-        private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd HH:mm", Locale.US);
         @Override
         public String toString() {
             StringBuilder stringBuilder = new StringBuilder();
 
 
-            String datestr = dateFormat.format(date);
+            String datestr = Utils.dateFormat.format(date);
 
             if(lat != 0 && lon != 0) {
                 datestr = "[" + datestr + "](https://www.google.com/maps/search/?api=1&query=" + lat + "," + lon + ")";

@@ -584,7 +584,7 @@ public class CoreService extends Service
                 location.event = LocatrackLocation.EVENT_RESTART;
             }
         } else if (LocatrackLocation.EVENT_STOP.equals(location.event)) {
-            TripTable.Trip trip = TripTable.insertTrip(location.getTime(), mDistance, true);
+            TripTable.TripDetail trip = TripTable.insertTrip(location.getTime(), mDistance, true);
             mDistance = 0;
             mLastTripLocation = null;
             if (trip != null) {

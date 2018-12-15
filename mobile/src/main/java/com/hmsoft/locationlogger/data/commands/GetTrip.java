@@ -1,7 +1,6 @@
 package com.hmsoft.locationlogger.data.commands;
 
 import android.text.TextUtils;
-import android.util.Pair;
 
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.data.sqlite.TripTable;
@@ -30,42 +29,60 @@ public class GetTrip extends Command {
             String[] supParams = params[1].split(" ", 2);
 
             String id = supParams[0];
-            if(supParams.length == 1) {
-                TripTable.Trip trip = TripTable.getTripbyId(id);
-                if (trip != null) {
-                    Date date = new Date(trip.endTimeStamp);
-                    String tripString = date + "\n" + trip;
-                    sendReply(context, tripString);
-                } else {
-                    sendReply(context, "Trip not found.");
-                }
+            if(id.endsWith("all")) {
+                handleTripList(true);
+            } else if(supParams.length == 1) {
+                HandleSingle(id);
             } else if(supParams.length == 2 && supParams[1].equals("gpx")) {
                 handleGpx(id);
             }
         } else {
-            Pair[] trips = TripTable.getTrips();
-            String reply = "";
-            for (Pair trip : trips) {
-                reply += "#" + trip.first + ":  " + trip.second + "\n";
-            }
-            if(TextUtils.isEmpty(reply)) {
-                reply = "No trips found.";
-            }
-            sendReply(context, reply);
+            handleTripList(false);
         }
+    }
+
+    private void HandleSingle(String id) {
+
+        TripTable.TripDetail trip = TripTable.getTripbyId(id);
+        if (trip != null) {
+            Date date = new Date(trip.endTimeStamp);
+            String tripString = date + "\n" + trip;
+            sendReply(context, tripString);
+        } else {
+            sendReply(context, "Trip not found.");
+        }
+    }
+
+    private void handleTripList(boolean all) {
+        TripTable.Trip[] trips = TripTable.getTrips(all ? -1 : 0);
+        String reply = "";
+        for (TripTable.Trip trip : trips) {
+            reply += trip + "\n";
+        }
+        if(TextUtils.isEmpty(reply)) {
+            reply = "No trips found.";
+        }
+        sendReply(context, reply);
     }
 
     private void handleGpx(String id) {
 
-        final File gpxFile = new File(context.androidContext.getCacheDir(), "Trip-" + id + ".gpx");
-
-        if (!gpxFile.exists()) {
-            TripTable.Trip trip = TripTable.getTripbyId(id);
-            if (trip == null) {
-                sendReply(context, "Trip not found.");
-                return;
+        TripTable.TripDetail trip = null;
+        if("last".equals(id)) {
+            trip = TripTable.getTripbyId(id);
+            if (trip != null) {
+                id = trip.id;
             }
+        }
 
+        final File gpxFile = new File(context.androidContext.getCacheDir(), "Trip-" + id + ".gpx");
+        if (!gpxFile.exists()) {
+            if(trip == null) {
+                trip = TripTable.getTripbyId(id);
+                if(trip == null) {
+                    sendReply(context, "Trip not found.");
+                }
+            }
             try {
                 FileWriter writer = new FileWriter(gpxFile, false);
                 writer.append(trip.toGpxString());

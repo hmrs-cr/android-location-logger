@@ -15,13 +15,17 @@ import com.hmsoft.locationlogger.data.LocatrackLocation;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 public class Utils {
 
     private static final boolean DEBUG = Logger.DEBUG;
     private static final String TAG = "Utils";
+
+    public static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd HH:mm", Locale.US);
 
     private Utils(){}
 
