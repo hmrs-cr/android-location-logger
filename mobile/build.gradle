@@ -18,7 +18,7 @@ android {
 
     defaultConfig {
         applicationId "com.hmsoft." + APP_NAME.toLowerCase()
-        minSdkVersion 14
+        minSdkVersion 19
         targetSdkVersion 23
         versionName versionStringBase
         versionCode verCode

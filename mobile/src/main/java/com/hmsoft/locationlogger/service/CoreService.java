@@ -48,8 +48,8 @@ import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.commands.Command;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
+import com.hmsoft.locationlogger.data.locatrack.LocatrackTripStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
-import com.hmsoft.locationlogger.data.sqlite.TripTable;
 import com.hmsoft.locationlogger.receivers.StartServiceReceiver;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
@@ -100,7 +100,6 @@ public class CoreService extends Service
 
     //region UI Data fields
     private Location mLastSavedLocation = null;
-    private Location mLastTripLocation = null;
     private int mLocationCount = 0;
     String mLastSaveAddress = null;
     //endregion UI Data fields
@@ -125,7 +124,6 @@ public class CoreService extends Service
     private Handler mStoreHandler;
 
     static int sLastBatteryLevel = 99;
-    float mDistance;
     boolean mChargingStart;
     boolean mChargingStop;
     boolean mChargingStartStop;
@@ -575,35 +573,6 @@ public class CoreService extends Service
         }
     }
 
-    private void processTripData(LocatrackLocation location) {
-        if (LocatrackLocation.EVENT_START.equals(location.event)) {
-            if (mLastTripLocation == null) {
-                mDistance = 0;
-                mLastTripLocation = location;
-            } else {
-                location.event = LocatrackLocation.EVENT_RESTART;
-            }
-        } else if (LocatrackLocation.EVENT_STOP.equals(location.event)) {
-            TripTable.TripDetail trip = TripTable.insertTrip(location.getTime(), mDistance, true);
-            mDistance = 0;
-            mLastTripLocation = null;
-            if (trip != null) {
-                String extraInfo = location.extraInfo;
-                location.extraInfo = trip.toString();
-                if (!TextUtils.isEmpty(extraInfo)) {
-                    location.extraInfo += "\n\n" + extraInfo;
-                }
-            }
-        } else {
-            if (mLastTripLocation != null) {
-                if(Utils.isFromGps(mLastTripLocation)) {
-                    mDistance += mLastTripLocation.distanceTo(location);
-                }
-                mLastTripLocation = location;
-            }
-        }
-    }
-
     private void saveLocation(final LocatrackLocation location) {
 
         setEventData(location);
@@ -671,8 +640,6 @@ public class CoreService extends Service
                     if (DIAGNOSTICS && mLocationLogEnabled) {
                         pw = PerfWatch.start(TAG, "Start: Store location");
                     }
-
-                    processTripData(location);
 
                     for (LocationStorer storer : mLocationStorers) {
                         locationStored = locationStored & storer.storeLocation(location);
@@ -1083,7 +1050,7 @@ public class CoreService extends Service
     }
 
     protected LocationStorer[] createAndConfigureStorers() {
-        LocationStorer[] storers = new LocationStorer[2];
+        LocationStorer[] storers = new LocationStorer[3];
 
         LocatrackDb dbStorer = new LocatrackDb(getApplicationContext());
         dbStorer.prepareDmlStatements();
@@ -1092,8 +1059,9 @@ public class CoreService extends Service
         LocatrackTelegramStorer telegramStorer = new LocatrackTelegramStorer(getApplicationContext());
         telegramStorer.configure();;
 
-        storers[0] = dbStorer;
-        storers[1] = telegramStorer;
+        storers[0] = new LocatrackTripStorer();
+        storers[1] = dbStorer;
+        storers[2] = telegramStorer;
 
         return storers;
     }
