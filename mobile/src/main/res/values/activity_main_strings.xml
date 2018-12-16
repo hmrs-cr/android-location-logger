@@ -16,7 +16,6 @@
     <string name="next_sync_time_text">Within %1$d %2$s</string>
 
     <string name="action_settings">Settings</string>
-    <string name="action_webserver">Start export Server</string>
 
     <string name="lable_last_entry">Last Entry:</string>
     <string name="generic_loading">Loading…</string>

@@ -16,8 +16,6 @@
     <string name="next_sync_time_text">Dentro de %1$d %2$s</string>
 
     <string name="action_settings">Opciones</string>
-    <string name="action_webserver">Iniciar servidor de exportacón</string>
-
     <string name="lable_last_entry">Ultima entrada:</string>
     <string name="generic_loading">Cargando…</string>
     <string name="service_enabled">Servicio Activado:</string>
