@@ -459,8 +459,8 @@ public class CoreService extends Service
             acquireWakeLock();
             startLocationListener();
             int intv = -1;
-            if(mChargingStop && mPreferences.getInterval(sLastBatteryLevel)  > 900) {
-                intv = 900;
+            if(mChargingStop && mPreferences.getInterval(sLastBatteryLevel)  > 150) {
+                intv = 150;
             }
             setLocationAlarm(intv);
         }
@@ -595,7 +595,7 @@ public class CoreService extends Service
             } else if (mChargingStop) {
                 location.event = LocatrackLocation.EVENT_STOP;
             } else if(mChargingStartStop) {
-                location.event = LocatrackLocation.EVENT_STARTSTOP;
+                location.event = LocatrackLocation.EVENT_RESTOP;
             }
         }
 
@@ -687,7 +687,7 @@ public class CoreService extends Service
     public void acquireWakeLock() {
         if (mWakeLockEnabled) {
             if (mWakeLock == null) {
-                mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Utils");
+                mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "locatrack:wakelock:location");
                 mWakeLock.setReferenceCounted(false);
             }
             if(!mWakeLock.isHeld()) {
@@ -828,6 +828,9 @@ public class CoreService extends Service
             mGpsProviderEnabled = mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
             long time = mGpsTimeout / 4;
+            if(DEBUG) {
+                mGpsTimeout = 10;
+            }
 
             float minDistance = mMinimumDistance / 2;
 

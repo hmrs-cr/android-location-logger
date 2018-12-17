@@ -1,4 +1,4 @@
-intervals=21600,10800,5400,3600,1800,15,1
+intervals=21600,10800,5400,3600,1800,6,1
 update_interval=60
 service_enabled=true
 pref_instant_upload_enabled=false

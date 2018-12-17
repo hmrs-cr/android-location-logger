@@ -23,13 +23,15 @@ public class LocatrackTelegramStorer extends LocationStorer {
 
     private static final String TAG = "LocatrackTelegramStorer";
     private static final boolean DEBUG = Logger.DEBUG;
-
+    private static final long EVENT_TIME_WINDOW = 60 * 1000 * 3;
 
     private final Context mContext;
 
     private String mBotKey;
     private String mChatId;
     private DateFormat mDateFormat;
+    private long mLastStartTime = 0;
+    private long mLastStopTime = 0;
     private ConnectivityManager mConnectivityManager;
 
     public LocatrackTelegramStorer(Context context) {
@@ -45,6 +47,17 @@ public class LocatrackTelegramStorer extends LocationStorer {
                 Logger.debug(TAG, "No event to notify.");
 
             return true;
+        }
+
+        if(eventTooFast(location)) {
+            if (Logger.DEBUG) {
+                Logger.debug(TAG, "Event '" + location.event + "' too fast.");
+            }
+            return true;
+        }
+
+        if (Logger.DEBUG) {
+            Logger.debug(TAG, "Notifing event " + location.event);
         }
 
         String netTypeName = "-";
@@ -64,6 +77,31 @@ public class LocatrackTelegramStorer extends LocationStorer {
         String message = getEventMessage(location, netTypeName);
         long messageId = TelegramHelper.sendTelegramMessage(mBotKey, mChatId, message);
         return messageId > 0;
+    }
+
+    private boolean eventTooFast(LocatrackLocation location) {
+
+        if(!TextUtils.isEmpty(location.extraInfo)) {
+            return false;
+        }
+
+        if(!TextUtils.isEmpty(location.event)) {
+            if(location.event.contains(LocatrackLocation.EVENT_START)) {
+                if(location.getTime() - mLastStartTime < EVENT_TIME_WINDOW) {
+                    return true;
+                }
+                mLastStopTime = 0;
+                mLastStartTime = location.getTime();
+            } else if (location.event.contains(LocatrackLocation.EVENT_STOP)) {
+                if(location.getTime() - mLastStopTime < EVENT_TIME_WINDOW) {
+                    return true;
+                }
+                mLastStartTime = 0;
+                mLastStopTime = location.getTime();
+            }
+        }
+
+        return false;
     }
 
     private String getEventMessage(LocatrackLocation location, String netWorkType) {

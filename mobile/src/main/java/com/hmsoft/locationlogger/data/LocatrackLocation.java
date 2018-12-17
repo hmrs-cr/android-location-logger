@@ -7,12 +7,14 @@ import android.os.Bundle;
 public class LocatrackLocation extends Location {
 
     public static final String EVENT_START = "start";
+    public static final String EVENT_MOVEMENT_START = "movement/" + EVENT_START;
+    public static final String EVENT_RESTART = "re" + EVENT_START;
+
     public static final String EVENT_STOP = "stop";
-    public static final String EVENT_STARTSTOP = "start/stop";
-    public static final String EVENT_LOGIN = "login";
+    public static final String EVENT_MOVEMENT_STOP = "movement/" + EVENT_STOP;
+    public static final String EVENT_RESTOP = "re" + EVENT_STOP;
+
     public static final String EVENT_LOW_BATTERY = "low-battery";
-    public static final String EVENT_NEW_SIM = "new-sim";
-    public static final String EVENT_RESTART = "restart";
 
     public String event = "";
     public String extraInfo;
