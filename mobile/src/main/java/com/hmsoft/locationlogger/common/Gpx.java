@@ -17,28 +17,28 @@ public final class Gpx {
 
     public static String createGpx(LocationSet points, String name, String description) {
 
-        StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n<gpx xmlns=\"http://www.topografix.com/GPX/1/1\" creator=\"HM Software\" version=\"1.1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"  xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">\n");
+        StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?><gpx xmlns=\"http://www.topografix.com/GPX/1/1\" creator=\"HM Software\" version=\"1.1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"  xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">");
 
-        sb.append("    <trk>\n");
-        sb.append("        <name>");sb.append(name);sb.append("</name>\n");
-        sb.append("        <desc>");sb.append(description);sb.append("</desc>");
-        sb.append("        <trkseg>\n");
+        sb.append("<trk>");
+        sb.append("<name>");sb.append(name);sb.append("</name>");
+        sb.append("<desc>");sb.append(description);sb.append("</desc>");
+        sb.append("<trkseg>");
 
 
         for (LocatrackLocation l : points) {
             if(l.getAccuracy() < 10) {
-                sb.append("            <trkpt lat=\"");sb.append(l.getLatitude());sb.append("\" lon=\"");sb.append(l.getLongitude());sb.append("\">\n");
-                sb.append("                <time>");sb.append(df.format(new Date(l.getTime())));sb.append("</time>\n");
-                sb.append("                <ele>");sb.append(l.getAltitude());sb.append("</ele>\n");
-                sb.append("                <speed>");sb.append(l.getSpeed());sb.append("</speed>\n");
+                sb.append("<trkpt lat=\"");sb.append(l.getLatitude());sb.append("\" lon=\"");sb.append(l.getLongitude());sb.append("\">");
+                sb.append("<time>");sb.append(df.format(new Date(l.getTime())));sb.append("</time>");
+                sb.append("<ele>");sb.append(l.getAltitude());sb.append("</ele>");
+                sb.append("<speed>");sb.append(l.getSpeed());sb.append("</speed>");
                 if(!TextUtils.isEmpty(l.event)) {
-                    sb.append("                <name>");sb.append(l.event);sb.append("</name>\n");
+                    sb.append("<name>");sb.append(l.event);sb.append("</name>");
                 }
-                sb.append("            </trkpt>\n");
+                sb.append("</trkpt>");
             }
         }
 
-        sb.append("        </trkseg>\n    </trk>\n</gpx>");
+        sb.append("</trkseg></trk></gpx>");
 
         return sb.toString();
         /*try {
