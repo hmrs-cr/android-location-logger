@@ -175,4 +175,8 @@ public class PreferenceProfile {
 
         return mPreferences.getBoolean(key, defValue);
     }
+
+    public SharedPreferences getPreferences() {
+        return mPreferences;
+    }
 }

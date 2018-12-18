@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.text.TextUtils;
 
+import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
@@ -150,9 +151,7 @@ class DocumentCommand extends InternalCommand {
                     message = "Download done, unknown status.";
                 } else if (DownloadManager.STATUS_SUCCESSFUL == status) {
                     message = "Download done!";
-                    if(fileName.endsWith("database.backup.db")) {
-                        Helper.getInstance().importDB(fileName);
-                    }
+                    processDownload(fileName);
                 } else {
                     message = "Download failed. " + reason;
                 }
@@ -161,6 +160,16 @@ class DocumentCommand extends InternalCommand {
                 TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, message);
 
                 mDownloads.remove(id);
+            }
+        }
+
+        private void processDownload(String fileName) {
+            if (fileName.endsWith("database.backup.db")) {
+                Helper.getInstance().importDB(fileName);
+            } else if (fileName.contains("/LocationLogger-") && fileName.endsWith(".apk")) {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(Uri.fromFile(new File(fileName)),"application/vnd.android.package-archive");
+                 LocationLoggerApp.getContext().startActivity(intent);
             }
         }
     }

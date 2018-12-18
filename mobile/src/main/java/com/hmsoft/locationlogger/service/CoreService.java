@@ -11,6 +11,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -27,6 +28,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
@@ -1104,6 +1106,21 @@ public class CoreService extends Service
         mAlarmSyncCallback = PendingIntent.getService(context, 0, i, 0);
 
         ActionReceiver.register(this);
+
+        checkVersion();
+    }
+
+    private void checkVersion() {
+        final String VERSION_KEY = "__VERSION_CODE";
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        int lastVersionCode = prefs.getInt(VERSION_KEY, 0);
+        if(BuildConfig.VERSION_CODE > lastVersionCode) {
+            final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
+            String chatId = mPreferences.getString(R.string.pref_telegram_chatid_key, getString(R.string.pref_telegram_chatid_default));
+            String message = "*App Updated.*\n\n" + Constants.VERSION_STRING;
+            TelegramHelper.sendTelegramMessageAsync(botKey, chatId, message);
+            prefs.edit().putInt(VERSION_KEY, BuildConfig.VERSION_CODE).apply();
+        }
     }
 
     @Override
