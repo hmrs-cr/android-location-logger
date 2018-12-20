@@ -1,5 +1,7 @@
 package com.hmsoft.locationlogger.data.commands;
 
+import android.content.SharedPreferences;
+
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 
 import java.util.Map;
@@ -16,27 +18,77 @@ public class PrefCommand extends Command {
     @Override
     public void execute(String[] params) {
         if(params.length == 2) {
-            String[] subParams = params[1].split(" ");
-            PreferenceProfile prefs = PreferenceProfile.get(context.androidContext);
+            String[] subParams = params[1].split(" ", 3);
             if(subParams[0].equals("get")) {
-                String prefKey = null;
-                if(subParams.length == 2) {
-                    prefKey = subParams[1];
-                }
-                if(prefKey == null) {
-                    Map<String, ?> allPrefs = prefs.getPreferences().getAll();
-                    String result = "";
-                    for (String key : allPrefs.keySet()) {
-                        String value = allPrefs.get(key).toString();
-                        result += "*" + key + ":* " + value + "\n";
-                    }
-                    sendReply(context, result);
+                getPreference(subParams);
+
+            } else if(subParams[0].equals("set")) {
+                if(subParams.length > 2) {
+                    setPreference(subParams);
                 } else {
-
+                    sendReply(context, "Missing parameters");
                 }
-            } else if(subParams[0].equals("")) {
-
             }
         }
+    }
+
+    private void setPreference(String[] subParams) {
+        try {
+            PreferenceProfile prefs = PreferenceProfile.get(context.androidContext);
+            Map<String, ?> allPrefs = prefs.getPreferences().getAll();
+            String prefKey = subParams[1].toLowerCase();
+            String prefValue = subParams[2];
+            SharedPreferences.Editor editor = prefs.getPreferences().edit();
+            boolean found = false;
+            for (String key : allPrefs.keySet()) {
+                if (key.equals(prefKey)) {
+                    found = true;
+                    Object value = allPrefs.get(key);
+                    if (value instanceof Long) {
+                        editor.putLong(key, Long.valueOf(prefValue)).commit();
+                    } else if (value instanceof Integer) {
+                        editor.putInt(key, Integer.valueOf(prefValue)).commit();
+                    } else if (value instanceof Float) {
+                        editor.putFloat(key, Float.valueOf(prefValue)).commit();
+                    } else if (value instanceof Boolean) {
+                        editor.putBoolean(key, Boolean.valueOf(prefValue)).commit();
+                    } else if (value instanceof String) {
+                        editor.putString(key, prefValue).commit();
+                    }
+                    break;
+                }
+            }
+            if(!found) {
+                editor.putString(prefKey, prefValue).commit();
+            }
+            sendReply(context, "Success!");
+        } catch (Exception e) {
+            sendReply(context, e.getMessage());
+        }
+    }
+
+    private void getPreference(String[] subParams) {
+        String prefKey = null;
+        if(subParams.length == 2) {
+            prefKey = subParams[1];
+        }
+
+        PreferenceProfile prefs = PreferenceProfile.get(context.androidContext);
+        Map<String, ?> allPrefs = prefs.getPreferences().getAll();
+        String result = "";
+        for (String key : allPrefs.keySet()) {
+
+            if(prefKey == null || key.equals(prefKey)) {
+                Object value = allPrefs.get(key);
+                result += "*" + key + ":* "+ value.toString() + "\n";
+                if(key.equals(prefKey)) {
+                    break;
+                }
+            }
+        }
+        if(result.length() == 0) {
+            result = "No preference found.";
+        }
+        sendReply(context, result);
     }
 }

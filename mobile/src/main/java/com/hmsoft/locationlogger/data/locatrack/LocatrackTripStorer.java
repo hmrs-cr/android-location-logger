@@ -40,7 +40,7 @@ public class LocatrackTripStorer extends LocationStorer {
         } else if (LocatrackLocation.EVENT_STOP.equals(location.event)) {
             TripTable.TripDetail trip = TripTable.insertTrip(location.getTime(), mDistance, true);
             if(Logger.DEBUG) {
-                Logger.debug(TAG, "Ending trio. Distance:" + (mDistance * 3.6));
+                Logger.debug(TAG, "Ending trip. Distance:" + (mDistance * 3.6));
             }
             mDistance = 0;
             mLastTripLocation = null;
