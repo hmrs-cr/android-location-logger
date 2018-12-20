@@ -130,6 +130,11 @@
                     android:title="@string/pref_telegram_chatid_title"
                     android:defaultValue="@string/pref_telegram_chatid_default" />
 
+                    <EditTextPreference
+                        android:key="@string/pref_notification_number_key"
+                        android:title="@string/pref_notification_number_title"
+                        android:defaultValue="@string/pref_notification_number_default" />
+
                 <EditTextPreference
                     android:key="@string/pref_synctime_key"
                     android:title="@string/pref_synctime_title"

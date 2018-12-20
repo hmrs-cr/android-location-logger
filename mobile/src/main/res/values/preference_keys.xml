@@ -22,6 +22,7 @@
     <string name="pref_locatrack_deviceid_key" translatable="false">locatrack_deviceid</string>
     <string name="pref_telegram_botkey_key" translatable="false">pref_telegram_botkey</string>
     <string name="pref_telegram_chatid_key" translatable="false">pref_telegram_chatid</string>
+    <string name="pref_notification_number_key" translatable="false">pref_notification_number</string>
 
     <string name="pref_locatrack_activated_key" translatable="false">locatrack_activated</string>
     

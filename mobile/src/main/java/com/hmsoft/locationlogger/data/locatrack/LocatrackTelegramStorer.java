@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
+import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
@@ -76,7 +77,28 @@ public class LocatrackTelegramStorer extends LocationStorer {
 
         String message = getEventMessage(location, netTypeName);
         long messageId = TelegramHelper.sendTelegramMessage(mBotKey, mChatId, message);
-        return messageId > 0;
+
+        boolean success = messageId > 0;
+        if(!success) {
+            sendBackupMessage(message);
+        }
+
+        return success;
+    }
+
+    private void sendBackupMessage(String message) {
+        if(Logger.DEBUG) {
+            Logger.debug(TAG, "Sending sms event notification.");
+        }
+
+        String number = PreferenceProfile.get(mContext).getString(R.string.pref_notification_number_key,
+                mContext.getString(R.string.pref_notification_number_default));
+        if(!TextUtils.isEmpty(number)) {
+            message = message.replace("*", "").replace("_", "").replace("%", "");
+            Utils.sendSms(number, message, null);
+        } else if(Logger.DEBUG) {
+            Logger.debug(TAG, "No notification number.");
+        }
     }
 
     private boolean eventTooFast(LocatrackLocation location) {

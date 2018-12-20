@@ -92,6 +92,7 @@ public class CoreService extends Service
     private boolean mTimeoutRoutinePending;
     private LocationListener mNetLocationListener;
     private LocationListener mGpsLocationListener;
+    private LocationListener mPassiveLocationListener;
     private LocatrackLocation mCurrentBestLocation;
     private PowerManager mPowerManager;
     private ComponentName mMapIntentComponent = null;
@@ -485,15 +486,25 @@ public class CoreService extends Service
         if (Utils.isBetterLocation(location, mCurrentBestLocation, timeDelta, mMinimumAccuracy,
                 mMaxReasonableSpeed)) {
 
-
-            mCurrentBestLocation = new LocatrackLocation(location);
-            if ((!mGpsProviderEnabled) ||
-                    (Utils.isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
-                saveLocation(mCurrentBestLocation);
-                message = "*** Location saved";
-                stopLocationListener();
+            if(LocationManager.PASSIVE_PROVIDER.equals(provider)) {
+                if (/*mLocationRequest == null ||*/ mLocationManager == null) {
+                    mCurrentBestLocation = new LocatrackLocation(location);
+                    saveLocation(mCurrentBestLocation);
+                    message = "*** Location saved (passive)";
+                } else {
+                    message = "Ignored passive location while in location request.";
+                }
             } else {
-                message = "No good GPS location.";
+
+                mCurrentBestLocation = new LocatrackLocation(location);
+                if ((!mGpsProviderEnabled) ||
+                        (Utils.isFromGps(mCurrentBestLocation) && location.getAccuracy() <= mBestAccuracy)) {
+                    saveLocation(mCurrentBestLocation);
+                    message = "*** Location saved";
+                    stopLocationListener();
+                } else {
+                    message = "No good GPS location.";
+                }
             }
 
         } else {
@@ -853,6 +864,8 @@ public class CoreService extends Service
             }
         }
 
+        startPassiveLocationListener();
+
         if (!mTimeoutRoutinePending) {
             if(Logger.DEBUG) Logger.debug(TAG, "Executing gps timeout in %d seconds", mGpsTimeout);
             mTimeoutRoutinePending = true;
@@ -898,6 +911,36 @@ public class CoreService extends Service
         } else {
             if (DEBUG)
                 Logger.debug(TAG, "Requesting telegram updates too fast:" + (SystemClock.elapsedRealtime() - mLastTelegamUpdate / 1000));
+        }
+    }
+
+    private void startPassiveLocationListener() {
+        if (/*mRequestPassiveLocationUpdates && */mPassiveLocationListener == null) {
+            if(Logger.DEBUG) Logger.debug(TAG, "startPassiveLocationListener");
+            mPassiveLocationListener = new LocationListener(this, LocationManager.PASSIVE_PROVIDER);
+
+
+            LocationManager locationManager = this.mLocationManager;
+            if (locationManager == null) {
+                locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            }
+            locationManager.requestLocationUpdates (LocationManager.PASSIVE_PROVIDER, 60000,
+                    mMinimumDistance / 2, mPassiveLocationListener);
+        }
+    }
+
+    private void stopPassiveLocationListener() {
+        if (mPassiveLocationListener != null) {
+            LocationManager locationManager = this.mLocationManager;
+            if (locationManager == null) {
+                locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            }
+
+            locationManager.removeUpdates(mPassiveLocationListener);
+            if(Logger.DEBUG) Logger.debug(TAG, "stopPassiveLocationListener:Android Location");
+
+            mPassiveLocationListener.mService = null;
+            mPassiveLocationListener = null;
         }
     }
 
@@ -967,6 +1010,7 @@ public class CoreService extends Service
 
         if (intent.hasExtra(Constants.EXTRA_STOP_ALARM)) {
             mAlarm.cancel(mAlarmLocationCallback);
+            stopPassiveLocationListener();
             stopLocationListener();
             cleanup();
         }
@@ -1133,6 +1177,7 @@ public class CoreService extends Service
         mAlarm.cancel(mAlarmLocationCallback);
         mAlarm.cancel(mAlarmSyncCallback);
 
+        stopPassiveLocationListener();
         stopLocationListener();
         stopForeground(true);
 
