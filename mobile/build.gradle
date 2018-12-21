@@ -7,7 +7,7 @@ def APP_NAME = "LocationLogger"
 
 def buildTime() {
     def date = new Date()
-    def formattedDate = date.format('yyyyMMddHHmms')
+    def formattedDate = date.format('yyyyMMddHHmmss')
     return formattedDate
 }
 
@@ -40,22 +40,26 @@ android {
          Frontier {
              versionName versionStringBase + "-frontier"
              buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
+             buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
          }
 
 
         bhp103 {
             versionName versionStringBase + "-BHP103"
             buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
+            buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
         }
         
         genTracker {
             versionName versionStringBase + "-GenTracker"
             buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
+            buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
         }
         
         publicEdition {
             versionName versionStringBase + "-Public"
             buildConfigField "boolean", "DEFAULT_CONFIGURED", "false"
+            buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
         }
      }
 

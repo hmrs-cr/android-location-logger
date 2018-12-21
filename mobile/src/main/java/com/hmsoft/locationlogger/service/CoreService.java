@@ -1155,15 +1155,18 @@ public class CoreService extends Service
     }
 
     private void checkVersion() {
-        final String VERSION_KEY = "__VERSION_CODE";
+        final String VERSION_KEY = "version";
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        int lastVersionCode = prefs.getInt(VERSION_KEY, 0);
-        if(BuildConfig.VERSION_CODE > lastVersionCode) {
+        long lastVersionCode = prefs.getLong(VERSION_KEY, 0);
+        if(Logger.DEBUG) {
+            Logger.debug(TAG, "Current version: " + BuildConfig.BUILD_TIME  + ", Prev Version: " + lastVersionCode);
+        }
+        if(BuildConfig.BUILD_TIME > lastVersionCode) {
             final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
             String chatId = mPreferences.getString(R.string.pref_telegram_chatid_key, getString(R.string.pref_telegram_chatid_default));
             String message = "*App Updated.*\n\n" + Constants.VERSION_STRING;
             TelegramHelper.sendTelegramMessageAsync(botKey, chatId, message);
-            prefs.edit().putInt(VERSION_KEY, BuildConfig.VERSION_CODE).apply();
+            prefs.edit().putLong(VERSION_KEY, BuildConfig.BUILD_TIME).apply();
         }
     }
 
