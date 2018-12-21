@@ -1,5 +1,6 @@
 package com.hmsoft.locationlogger.data.locatrack;
 
+import android.location.Location;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.common.Logger;
@@ -14,8 +15,9 @@ public class LocatrackTripStorer extends LocationStorer {
     private static final String TAG = "LocatrackTripStorer";
     private final long STOP_TIME =  60 * 1000 * 2;
 
-    private LocatrackLocation mLastReportedLocation = null;
-    private LocatrackLocation mLastTripLocation = null;
+    private Location mLastReportedLocation = null;
+    private Location mLastTripLocation = null;
+    private Location mStopedLocation = null;
     private float mDistance;
 
     private boolean mIsMoving = false;
@@ -68,7 +70,7 @@ public class LocatrackTripStorer extends LocationStorer {
         return true;
     }
 
-    private void calculateMovement(LocatrackLocation firstLocation, LocatrackLocation lastLocation) {
+    private void calculateMovement(Location firstLocation, LocatrackLocation lastLocation) {
         float duration = (lastLocation.getTime() - firstLocation.getTime()) / 1000.0f;
         float distanceTo = lastLocation.distanceTo(firstLocation);
         float speed = distanceTo / duration;
@@ -87,22 +89,24 @@ public class LocatrackTripStorer extends LocationStorer {
                     mIsStoped = true;
                     mIsMoving = false;
 
-                    onMovementStart(lastLocation);
+                    mStopedLocation = lastLocation;
+                    onMovementStop(lastLocation);
                 }
                 mMovingCount = 0;
             }
         } else if (speed > 0.2f) {
-            if((mMovingCount++ > 3 || distanceTo > 500) && !mIsMoving) {
+            if(!mIsMoving && (mMovingCount++ > 2 || distanceTo > 500 ||
+                    (mStopedLocation != null && mStopedLocation.distanceTo(lastLocation) > 900))) {
                 mIsMoving = true;
                 mIsStoped = false;
 
-                onMovementStop(lastLocation);
+                onMovementStart(lastLocation);
             }
             mFirstStopedTime = 0;
         }
     }
 
-    private void onMovementStop(LocatrackLocation location) {
+    private void onMovementStart(LocatrackLocation location) {
         if(TextUtils.isEmpty(location.event)) {
             location.event = LocatrackLocation.EVENT_MOVEMENT_START;
         }
@@ -111,7 +115,7 @@ public class LocatrackTripStorer extends LocationStorer {
         }
     }
 
-    private void onMovementStart(LocatrackLocation location) {
+    private void onMovementStop(LocatrackLocation location) {
         if(TextUtils.isEmpty(location.event)) {
             location.event = LocatrackLocation.EVENT_MOVEMENT_STOP;
         }
