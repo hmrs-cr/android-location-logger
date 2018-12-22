@@ -1,18 +1,23 @@
 package com.hmsoft.locationlogger.data.locatrack;
 
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.text.TextUtils;
 
+import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.data.sqlite.TripTable;
 
 public class LocatrackTripStorer extends LocationStorer {
 
 
     private static final String TAG = "LocatrackTripStorer";
+    private static final String MOVEMENT_PREF_KEY = "calculate_movement";
+
     private final long STOP_TIME =  60 * 1000 * 2;
 
     private Location mLastReportedLocation = null;
@@ -25,6 +30,7 @@ public class LocatrackTripStorer extends LocationStorer {
 
     private int mMovingCount = 0;
     private long mFirstStopedTime = 0;
+    private boolean mCalculateMovement;
 
 
     @Override
@@ -39,6 +45,7 @@ public class LocatrackTripStorer extends LocationStorer {
             } else {
                 location.event = LocatrackLocation.EVENT_RESTART;
             }
+            configure();
         } else if (LocatrackLocation.EVENT_STOP.equals(location.event)) {
             TripTable.TripDetail trip = TripTable.insertTrip(location.getTime(), mDistance, true);
             if(Logger.DEBUG) {
@@ -53,6 +60,7 @@ public class LocatrackTripStorer extends LocationStorer {
                     location.extraInfo += "\n\n" + extraInfo;
                 }
             }
+            configure();
         } else {
             if (mLastTripLocation != null) {
                 if(Utils.isFromGps(mLastTripLocation)) {
@@ -71,6 +79,13 @@ public class LocatrackTripStorer extends LocationStorer {
     }
 
     private void calculateMovement(Location firstLocation, LocatrackLocation lastLocation) {
+        if(mCalculateMovement) {
+            if(Logger.DEBUG) {
+                Logger.debug(TAG, "Calculate movement disabled");
+            }
+           return;
+        }
+
         float duration = (lastLocation.getTime() - firstLocation.getTime()) / 1000.0f;
         float distanceTo = lastLocation.distanceTo(firstLocation);
         float speed = distanceTo / duration;
@@ -125,7 +140,13 @@ public class LocatrackTripStorer extends LocationStorer {
     }
 
     @Override
-    public void configure() {
+    public LocationStorer configure() {
+        SharedPreferences prefs = PreferenceProfile.get(LocationLoggerApp.getContext()).getPreferences();
+        if(!prefs.contains(MOVEMENT_PREF_KEY)) {
+            prefs.edit().putBoolean(MOVEMENT_PREF_KEY, true).apply();
+        }
+        mCalculateMovement = prefs.getBoolean(MOVEMENT_PREF_KEY, true);
 
+        return this;
     }
 }

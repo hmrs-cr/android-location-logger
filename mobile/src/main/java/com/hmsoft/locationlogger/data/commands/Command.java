@@ -200,7 +200,5 @@ public abstract class Command {
         registerCommandClass(ConfigCommand.COMMAND_NAME, ConfigCommand.class);
         registerCommandClass(GetTripCommand.COMMAND_NAME, GetTripCommand.class);
         registerCommandClass(PrefCommand.COMMAND_NAME, PrefCommand.class);
-
-        PicturesCommand.PictureContentObserver.register(context);
     }
 }

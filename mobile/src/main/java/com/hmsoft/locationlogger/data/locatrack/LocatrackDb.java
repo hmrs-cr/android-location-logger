@@ -1,7 +1,6 @@
 package com.hmsoft.locationlogger.data.locatrack;
 
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 
 import com.hmsoft.locationlogger.R;
@@ -10,7 +9,6 @@ import com.hmsoft.locationlogger.data.LocationSet;
 import com.hmsoft.locationlogger.data.LocationStorer;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
-import com.hmsoft.locationlogger.data.sqlite.Helper;
 import com.hmsoft.locationlogger.data.sqlite.LocationTable;
 
 import java.io.IOException;
@@ -64,14 +62,13 @@ public class LocatrackDb extends LocationStorer {
         return success;
     }
 
-    public void prepareDmlStatements() {
-        LocationTable.prepareDmlStatements();
-    }
-
     @Override
-    public void configure() {
+    public LocationStorer configure() {
         PreferenceProfile preferences = PreferenceProfile.get(mContext);
         mMinimunDistance = preferences.getInt(R.string.pref_minimun_distance_key, String.valueOf(mMinimunDistance));
+        LocationTable.prepareDmlStatements();
+
+        return this;
     }
 
     @Override

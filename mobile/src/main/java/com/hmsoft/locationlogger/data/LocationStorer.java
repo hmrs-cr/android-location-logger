@@ -19,7 +19,7 @@ public abstract class LocationStorer {
     protected int mTotalFail = 0;
 
 	public abstract boolean storeLocation(LocatrackLocation location);
-	public abstract void configure();
+	public abstract LocationStorer configure();
 
     public void setUploadDateToday(Location location) {
 

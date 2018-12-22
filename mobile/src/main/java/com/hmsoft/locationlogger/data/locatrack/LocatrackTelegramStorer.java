@@ -171,10 +171,12 @@ public class LocatrackTelegramStorer extends LocationStorer {
     }
 
     @Override
-    public void configure() {
+    public LocationStorer configure() {
         mChatId = PreferenceProfile.get(mContext).getString(R.string.pref_telegram_chatid_key, mContext.getString(R.string.pref_telegram_chatid_default));
 
         mBotKey = PreferenceProfile.get(mContext).getString(R.string.pref_telegram_botkey_key,
                 mContext.getString(R.string.pref_telegram_botkey_default));
+
+        return this;
     }
 }

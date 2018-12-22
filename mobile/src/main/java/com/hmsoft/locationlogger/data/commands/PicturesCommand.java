@@ -173,11 +173,11 @@ class PicturesCommand extends Command {
     @Override
     public void execute(String[] params) {
 
-        Uri contentUri = MediaStore.Images.Media.INTERNAL_CONTENT_URI;
+        Uri contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
 
         String[] subParams = getSubParams(params);
-        if(contains(subParams, "external")) {
-            contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+        if(contains(subParams, "internal")) {
+            contentUri = MediaStore.Images.Media.INTERNAL_CONTENT_URI;
         }
 
         sendPictures(context, contentUri);

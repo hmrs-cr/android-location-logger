@@ -660,7 +660,7 @@ public class CoreService extends Service
 
                     if (DIAGNOSTICS && mLocationLogEnabled) {
                         if (pw != null) {
-                            pw.stop(TAG, "End: Upload location Success: " + locationStored);
+                            pw.stop(TAG, "End: Store location Success: " + locationStored);
                         }
                     }
                 } finally {
@@ -1099,18 +1099,11 @@ public class CoreService extends Service
     }
 
     protected LocationStorer[] createAndConfigureStorers() {
-        LocationStorer[] storers = new LocationStorer[3];
-
-        LocatrackDb dbStorer = new LocatrackDb(getApplicationContext());
-        dbStorer.prepareDmlStatements();
-        dbStorer.configure();
-
-        LocatrackTelegramStorer telegramStorer = new LocatrackTelegramStorer(getApplicationContext());
-        telegramStorer.configure();;
-
-        storers[0] = new LocatrackTripStorer();
-        storers[1] = dbStorer;
-        storers[2] = telegramStorer;
+        LocationStorer[] storers = new LocationStorer[] {
+                new LocatrackTripStorer().configure(),
+                new LocatrackDb(getApplicationContext()).configure(),
+                new LocatrackTelegramStorer(getApplicationContext()).configure(),
+        };
 
         return storers;
     }
