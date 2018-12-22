@@ -623,6 +623,7 @@ public class CoreService extends Service
     }
 
     private void storeLocation(final LocatrackLocation location) {
+        acquireWakeLock();
         if (mStoreHandlerRunning) {
             if (DEBUG) Logger.debug(TAG, "Store handler still running, Stuck?");
             destroyStoreThread();
@@ -633,7 +634,7 @@ public class CoreService extends Service
             mStoreThread.start();
             Looper looper = mStoreThread.getLooper();
             mStoreHandler = new Handler(looper);
-            if(DEBUG) Logger.info(TAG, "StoreThread created");
+            if (DEBUG) Logger.info(TAG, "StoreThread created");
             if (DEBUG) Toast.makeText(this, "StoreThread created", Toast.LENGTH_SHORT).show();
         }
 
@@ -791,9 +792,9 @@ public class CoreService extends Service
                     setContentIntent(mLocationActivityIntent).
                     setWhen(when).
                     setAutoCancel(false).
-                    setOngoing(true).
                     setContentTitle(contentTitle).
-                    setPriority(NotificationCompat.PRIORITY_MAX);
+                    setVisibility(NotificationCompat.VISIBILITY_PRIVATE).
+                    setPriority(NotificationCompat.PRIORITY_MIN);
 
 
             if (mapPendingIntent != null) {
@@ -807,7 +808,7 @@ public class CoreService extends Service
                 notificationBuilder.setContentText(mPreferences.activeProfileName);
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && !mRestrictedSettings) {
+            if (!mRestrictedSettings) {
 
                 if (mUpdateLocationIntent == null) {
                     Intent updateIntent = new Intent(context, CoreService.class);
@@ -1070,7 +1071,7 @@ public class CoreService extends Service
         mMaxReasonableSpeed = mPreferences.getFloat(R.string.pref_max_speed_key, String.valueOf(mMaxReasonableSpeed)); // meters/seconds
         mMinimumAccuracy = mPreferences.getInt(R.string.pref_minimun_accuracy_key, String.valueOf(mMinimumAccuracy)); // meters
         mBestAccuracy = mPreferences.getInt(R.string.pref_best_accuracy_key, String.valueOf(mBestAccuracy)); // meters
-        mNotificationEnabled = mPreferences.getBoolean(R.string.pref_notificationicon_enabled_key, Boolean.parseBoolean(getString(R.string.pref_passive_enabled_default)));
+        mNotificationEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O || mPreferences.getBoolean(R.string.pref_notificationicon_enabled_key, Boolean.parseBoolean(getString(R.string.pref_passive_enabled_default)));
         mWakeLockEnabled = mPreferences.getBoolean(R.string.pref_wackelock_enabled_key, Boolean.parseBoolean(getString(R.string.pref_wackelock_enabled_default)));
         mLocationLogEnabled = mPreferences.getBoolean(R.string.pref_loglocations_key, Boolean.parseBoolean(getString(R.string.pref_loglocations_default)));
         String[] syncTime = mPreferences.getString(R.string.pref_synctime_key, mSyncHour + ":" + mSyncMinute).split(":");
@@ -1197,7 +1198,11 @@ public class CoreService extends Service
     public static void start(Context context, Intent intent) {
         context = context.getApplicationContext();
         intent.setClass(context, CoreService.class);
-        context.startService(intent);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent);
+        } else {
+            context.startService(intent);
+        }
     }
 
     public static void start(Context context, String option) {
