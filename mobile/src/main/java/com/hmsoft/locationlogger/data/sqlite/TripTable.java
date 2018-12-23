@@ -39,6 +39,8 @@ public class TripTable {
     private static final String[] locationColumns = new String[1];
     private static final String[] tripColumns = new String[3];
 
+    //public interface
+
     public static class Trip {
         public String id;
         public final double distance;

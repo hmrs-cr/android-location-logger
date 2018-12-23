@@ -60,7 +60,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class CoreService extends Service
-    implements TelegramHelper.UpdateCallback {
+    implements TelegramHelper.UpdateCallback, LocatrackTripStorer.MovementChangeCallback {
 
     //region Static fields
     private static final String TAG = "CoreService";
@@ -105,6 +105,11 @@ public class CoreService extends Service
     private Location mLastSavedLocation = null;
     private int mLocationCount = 0;
     String mLastSaveAddress = null;
+
+    Boolean mIsMoving;
+    Boolean mIsNotMoving;
+    float mDistance;
+
     //endregion UI Data fields
 
     //region Core fields
@@ -213,6 +218,15 @@ public class CoreService extends Service
         } else {
             Command.sendReply(context, "Command not found.");
         }
+    }
+
+    @Override
+    public void onMovementChange(Boolean isMoving, Boolean isNotMoving, float distance) {
+        this.mIsMoving = isMoving;
+        this.mIsNotMoving = isNotMoving;
+        this.mDistance = distance;
+        mNeedsToUpdateUI = true;
+        updateUIIfNeeded();
     }
 
     //endregion Telegram Methods
@@ -752,6 +766,8 @@ public class CoreService extends Service
 
             long when = 0;
             int accuracy = 0;
+            float speed = 0;
+            String provider = "-";
             String contentTitle;
             PendingIntent mapPendingIntent = null;
             if (mLastSavedLocation != null) {
@@ -777,6 +793,8 @@ public class CoreService extends Service
 
                 when = mLastSavedLocation.getTime();
                 accuracy = Math.round(mLastSavedLocation.getAccuracy());
+                provider = mLastSavedLocation.getProvider().substring(0, 1);
+                speed = mLastSavedLocation.getSpeed() * 3.6f;
             }
 
             if (!TextUtils.isEmpty(mLastSaveAddress)) {
@@ -794,16 +812,29 @@ public class CoreService extends Service
                     setAutoCancel(false).
                     setContentTitle(contentTitle).
                     setVisibility(NotificationCompat.VISIBILITY_PRIVATE).
+                    setSubText(mPreferences.activeProfileName).
                     setPriority(NotificationCompat.PRIORITY_MIN);
-
 
             if (mapPendingIntent != null) {
                 notificationBuilder.setContentIntent(mapPendingIntent);
             }
 
             if (mLocationCount > -1) {
+                String status = "";
+                if(mIsMoving != null || mIsNotMoving != null) {
+                    if(mIsMoving && mIsNotMoving) {
+                        status = "Wrong! ";
+                    } else if(mIsMoving) {
+                        status = "Moving ";
+                    } else if(mIsNotMoving) {
+                        status = "Stopped ";
+                    }
+                }
+                if(speed > 0.5) {
+                    status += String.format("%.1f", speed) + "km/h ";
+                }
                 notificationBuilder.setContentText(getString(R.string.service_content,
-                        mLocationCount, accuracy, mPreferences.activeProfileName));
+                        mLocationCount, accuracy, provider, mDistance/1000f, status));
             } else {
                 notificationBuilder.setContentText(mPreferences.activeProfileName);
             }
@@ -1101,7 +1132,7 @@ public class CoreService extends Service
 
     protected LocationStorer[] createAndConfigureStorers() {
         LocationStorer[] storers = new LocationStorer[] {
-                new LocatrackTripStorer().configure(),
+                new LocatrackTripStorer(this).configure(),
                 new LocatrackDb(getApplicationContext()).configure(),
                 new LocatrackTelegramStorer(getApplicationContext()).configure(),
         };

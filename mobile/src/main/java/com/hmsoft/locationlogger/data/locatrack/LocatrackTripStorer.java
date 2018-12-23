@@ -33,6 +33,21 @@ public class LocatrackTripStorer extends LocationStorer {
     private boolean mCalculateMovement;
 
 
+    public interface MovementChangeCallback {
+        void onMovementChange(Boolean isMoving, Boolean isNotMoving, float distance);
+    }
+
+    private final MovementChangeCallback movementChangeCallback;
+
+    public LocatrackTripStorer() {
+        this.movementChangeCallback = null;
+    }
+
+    public LocatrackTripStorer(MovementChangeCallback movementChangeCallback) {
+        this.movementChangeCallback = movementChangeCallback;
+    }
+
+
     @Override
     public boolean storeLocation(LocatrackLocation location) {
         if (LocatrackLocation.EVENT_START.equals(location.event)) {
@@ -52,8 +67,6 @@ public class LocatrackTripStorer extends LocationStorer {
                 if (Logger.DEBUG) {
                     Logger.debug(TAG, "Ending trip. Distance:" + (mDistance * 3.6));
                 }
-                mDistance = 0;
-                mLastTripLocation = null;
                 if (trip != null) {
                     String extraInfo = location.extraInfo;
                     location.extraInfo = trip.toString();
@@ -62,8 +75,9 @@ public class LocatrackTripStorer extends LocationStorer {
                     }
                 }
                 configure();
-
             }
+            mDistance = 0;
+            mLastTripLocation = null;
         } else {
             if (mLastTripLocation != null) {
                 if(Utils.isFromGps(mLastTripLocation)) {
@@ -78,11 +92,12 @@ public class LocatrackTripStorer extends LocationStorer {
             mLastReportedLocation = location;
 
         }
+        doCallback();
         return true;
     }
 
     private void calculateMovement(Location firstLocation, LocatrackLocation lastLocation) {
-        if(mCalculateMovement) {
+        if(!mCalculateMovement) {
             if(Logger.DEBUG) {
                 Logger.debug(TAG, "Calculate movement disabled");
             }
@@ -124,6 +139,13 @@ public class LocatrackTripStorer extends LocationStorer {
         }
     }
 
+    private void doCallback() {
+        if(this.movementChangeCallback != null) {
+            Boolean moving = mCalculateMovement ? mIsMoving : null;
+            Boolean notMoving = mCalculateMovement ? mIsStoped : null;
+            this.movementChangeCallback.onMovementChange(moving, notMoving, mDistance);
+        }
+    }
     private void onMovementStart(LocatrackLocation location) {
         if(TextUtils.isEmpty(location.event)) {
             location.event = LocatrackLocation.EVENT_MOVEMENT_START;
