@@ -47,20 +47,23 @@ public class LocatrackTripStorer extends LocationStorer {
             }
             configure();
         } else if (LocatrackLocation.EVENT_STOP.equals(location.event)) {
-            TripTable.TripDetail trip = TripTable.insertTrip(location.getTime(), mDistance, true);
-            if(Logger.DEBUG) {
-                Logger.debug(TAG, "Ending trip. Distance:" + (mDistance * 3.6));
-            }
-            mDistance = 0;
-            mLastTripLocation = null;
-            if (trip != null) {
-                String extraInfo = location.extraInfo;
-                location.extraInfo = trip.toString();
-                if (!TextUtils.isEmpty(extraInfo)) {
-                    location.extraInfo += "\n\n" + extraInfo;
+            if(mDistance > 500) {
+                TripTable.TripDetail trip = TripTable.insertTrip(location.getTime(), mDistance, true);
+                if (Logger.DEBUG) {
+                    Logger.debug(TAG, "Ending trip. Distance:" + (mDistance * 3.6));
                 }
+                mDistance = 0;
+                mLastTripLocation = null;
+                if (trip != null) {
+                    String extraInfo = location.extraInfo;
+                    location.extraInfo = trip.toString();
+                    if (!TextUtils.isEmpty(extraInfo)) {
+                        location.extraInfo += "\n\n" + extraInfo;
+                    }
+                }
+                configure();
+
             }
-            configure();
         } else {
             if (mLastTripLocation != null) {
                 if(Utils.isFromGps(mLastTripLocation)) {
