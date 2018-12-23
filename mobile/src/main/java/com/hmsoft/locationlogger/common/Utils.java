@@ -5,14 +5,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationManager;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.provider.Settings;
 import android.telephony.SmsManager;
 
+import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
@@ -201,5 +205,56 @@ public class Utils {
                 .append("Android Version: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");
 
         return generalInfo.toString();
+    }
+
+    public static void playAudio(String fileName, boolean loudestPossible) {
+
+        if(DEBUG) {
+            Logger.debug(TAG, "Playing audio: " + fileName);
+        }
+
+        AudioManager _audioManager = null;
+        int _originalVolume = 0;
+        if(loudestPossible) {
+            _audioManager = (AudioManager) LocationLoggerApp.getContext().getSystemService(Context.AUDIO_SERVICE);
+            _originalVolume = _audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+            _audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, _audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
+
+            if(DEBUG) {
+                Logger.debug(TAG, "Original volume: " + _originalVolume + ", Max Volume: " +
+                        _audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
+            }
+        }
+
+        final AudioManager audioManager = _audioManager;
+        final int originalVolume = _originalVolume;
+
+        MediaPlayer mp = new MediaPlayer();
+        mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        try {
+            mp.setDataSource(/*"content:/" +*/ fileName);
+            mp.prepare();
+            mp.start();
+            mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener()
+            {
+                @Override
+                public void onCompletion(MediaPlayer mp)
+                {
+                    if(DEBUG) {
+                        Logger.debug(TAG, "MediaPlayer.onCompletion v" + originalVolume);
+                    }
+                    if(audioManager != null) {
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                                originalVolume, 0);
+                    }
+                }
+            });
+        } catch (IOException e) {
+            if(audioManager != null) {
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                        originalVolume, 0);
+            }
+            Logger.error(TAG, "Failed to play audio", e);
+        }
     }
 }

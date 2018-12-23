@@ -31,6 +31,7 @@ public class TelegramHelper {
 
     private static final String TAG = "TelegramHelper";
 
+    public static final String VOICE_PREFIX = "voice_";
     private static final String TELEGRAM_API_PROTOCOL = "https://";
     private static final String TELEGRAM_API_HOST = "api.telegram.org";
     private static final String TELEGRAM_API_URL = TELEGRAM_API_PROTOCOL + TELEGRAM_API_HOST;
@@ -264,9 +265,15 @@ public class TelegramHelper {
                                         String text = message.optString("text");
                                         if (TextUtils.isEmpty(text)) {
                                             JSONObject document = message.optJSONObject("document");
+                                            if(document == null) {
+                                                document = message.optJSONObject("voice");
+                                                if(document != null) {
+                                                    document.put("file_name", VOICE_PREFIX);
+                                                }
+                                            }
                                             if (document != null) {
                                                 text = String.format("document %s|%s",
-                                                        document.getString("file_name"),
+                                                        document.optString("file_name"),
                                                         document.getString("file_id"));
                                             }
                                         }

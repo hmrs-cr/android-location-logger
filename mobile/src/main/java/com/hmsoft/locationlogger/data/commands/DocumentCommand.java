@@ -14,11 +14,14 @@ import android.text.TextUtils;
 import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
+import com.hmsoft.locationlogger.common.TaskExecutor;
+import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.data.sqlite.Helper;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,22 +64,46 @@ class DocumentCommand extends InternalCommand {
 
         Context context = this.context.androidContext;
 
+        boolean isSilentDownload = false;
+        File downloadDestination = null;
+        if(isSilent(fileName)) {
+            isSilentDownload = true;
+            try {
+                 fileName = TextUtils.isEmpty(fileName) ?  "document_" : fileName;
+                downloadDestination = File.createTempFile(fileName, null,
+                        context.getExternalCacheDir());
+                downloadDestination.delete();
+            } catch (IOException e) {
+                downloadDestination = new File(context.getExternalCacheDir(), "document.tmp");
+            }
+        } else {
+            downloadDestination = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+        }
+
         if(DEBUG) Logger.debug(TAG, "Downloading file %s from %s", fileName, downloadUrl);
+
         DownloadManager downloadManager = (DownloadManager)context.getSystemService(Context.DOWNLOAD_SERVICE);
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
-        request .setTitle(fileName)
-                .setDestinationUri(Uri.fromFile(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)));
-
+        request.setDestinationUri(Uri.fromFile(downloadDestination));
 
         PreferenceProfile preferences = PreferenceProfile.get(context);
-        if(!preferences.getBoolean(R.string.pref_unlimited_data_key, false)) {
-            request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI);
+        if(isSilentDownload) {
+
+        } else {
+            request.setTitle(fileName);
+            if (!preferences.getBoolean(R.string.pref_unlimited_data_key, false)) {
+                request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI);
+            }
         }
 
 
         DownloadFinishedReceiver.register(context);
 
         return downloadManager.enqueue(request);
+    }
+
+    private boolean isSilent(String fileName) {
+        return TextUtils.isEmpty(fileName) || fileName.startsWith(TelegramHelper.VOICE_PREFIX);
     }
 
     private static class DownloadFinishedReceiver extends BroadcastReceiver {
@@ -163,13 +190,20 @@ class DocumentCommand extends InternalCommand {
             }
         }
 
-        private void processDownload(String fileName) {
+        private void processDownload(final String fileName) {
             if (fileName.endsWith("database.backup.db")) {
                 Helper.getInstance().importDB(fileName);
             } else if (fileName.contains("/LocationLogger-") && fileName.endsWith(".apk")) {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setDataAndType(Uri.fromFile(new File(fileName)),"application/vnd.android.package-archive");
                  LocationLoggerApp.getContext().startActivity(intent);
+            } else if(fileName.contains("/" + TelegramHelper.VOICE_PREFIX) && fileName.endsWith(".tmp")) {
+                TaskExecutor.executeOnNewThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Utils.playAudio(fileName, true);
+                    }
+                });
             }
         }
     }
