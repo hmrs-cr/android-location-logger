@@ -343,13 +343,16 @@ public class MainActivity extends ActionBarActivity {
         if (menu == null) menu = mMenu;
         if(menu != null) {
             MenuItem settingsMenu = menu.findItem(R.id.action_settings);
-            if (settingsMenu != null) {
+            MenuItem fakeSettingsMenu = menu.findItem(R.id.action_settings2);
+            if (settingsMenu != null && fakeSettingsMenu != null) {
                 if (mRestrictedSettings && mRestrictedSettingsCount > 0) {
                     mRestrictedSettingsCount--;
                     settingsMenu.setVisible(false);
+                    fakeSettingsMenu.setVisible(true);
                 } else {
                     mRestrictedSettingsCount = 6;
                     settingsMenu.setVisible(true);
+                    fakeSettingsMenu.setVisible(false);
                 }
             }
         }
