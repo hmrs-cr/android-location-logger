@@ -51,11 +51,8 @@ public class FuelLogTable {
             ", l." + LocationTable.COLUMN_NAME_LATITUDE + ", l." + LocationTable.COLUMN_NAME_LONGITUD + ", fl." + COLUMN_NAME_PRICE_PER_LITRE +
             ", fl." + COLUMN_NAME_SPEND_AMOUNT + "/fl." + COLUMN_NAME_PRICE_PER_LITRE  + " AS " + COLUMN_NAME_LITRES + " FROM " + TABLE_NAME + " AS fl" +
             " LEFT JOIN " + LocationTable.TABLE_NAME + " AS l ON l." + LocationTable.COLUMN_NAME_TIMESTAMP + " = fl." + COLUMN_NAME_LOCATION_ID +
-            " OR (l." + LocationTable.COLUMN_NAME_TIMESTAMP + " BETWEEN fl." + COLUMN_NAME_LOCATION_ID + "-10000 AND fl." + COLUMN_NAME_LOCATION_ID + "+300000 and l." + LocationTable.COLUMN_NAME_EVENT + "='start')" +
+            " OR (l." + LocationTable.COLUMN_NAME_TIMESTAMP + " BETWEEN fl." + COLUMN_NAME_LOCATION_ID + "-10000 AND fl." + COLUMN_NAME_LOCATION_ID + "+300000 and l." + LocationTable.COLUMN_NAME_EVENT + " IN ('start', 'restart'))" +
             " GROUP BY fl." + COLUMN_NAME_TIMESTAMP;
-
-    public static final String ADD_PRICE_PER_LITRE_COLUMUN = "ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COLUMN_NAME_PRICE_PER_LITRE + Helper.TYPE_REAL;
-    public static final String UPDATE_PRICE_PER_LITRE_COLUMUN = "UPDATE " + TABLE_NAME + " SET " + COLUMN_NAME_PRICE_PER_LITRE + "=586 WHERE " + COLUMN_NAME_TIMESTAMP + " < 1540353004898 AND " + COLUMN_NAME_PRICE_PER_LITRE + " IS NULL";
 
     public static class Statics {
         public final int km;
