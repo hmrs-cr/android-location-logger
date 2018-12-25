@@ -18,7 +18,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -131,7 +130,7 @@ public class CoreService extends Service
     private HandlerThread mStoreThread = null;
     private Handler mStoreHandler;
 
-    static int sLastBatteryLevel = 99;
+    static int sLastBatteryLevel = -1;
     boolean mChargingStart;
     boolean mChargingStop;
     boolean mChargingStartStop;
@@ -256,19 +255,10 @@ public class CoreService extends Service
                 case Intent.ACTION_USER_PRESENT:
                     mService.handleUserPresent();
                     break;
-                case Intent.ACTION_BATTERY_CHANGED:
-                    int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-                    boolean plugged = (intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
-
-                    boolean charging = (
-                            (status == BatteryManager.BATTERY_STATUS_CHARGING) ||
-                                    ((status == BatteryManager.BATTERY_STATUS_FULL) && plugged)
-                    );
-
-                    int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
-                    if (charging) level += 100;
-
-                    mService.handleBatteryLevelChange(level);
+                case Intent.ACTION_POWER_DISCONNECTED:
+                case Intent.ACTION_POWER_CONNECTED:
+                    Utils.resetBatteryLevel();
+                    mService.handleBatteryLevelChange(Utils.getBatteryLevel());
                     break;
                 case SMS_RECEIVED_ACTION:
                     Bundle intentExtras = intent.getExtras();
@@ -295,7 +285,8 @@ public class CoreService extends Service
             if(sInstance == null) {
                 sInstance = new ActionReceiver(service);
                 IntentFilter filter = new IntentFilter();
-                filter.addAction(Intent.ACTION_BATTERY_CHANGED);
+                filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+                filter.addAction(Intent.ACTION_POWER_CONNECTED);
                 filter.addAction(Intent.ACTION_USER_PRESENT);
                 filter.addAction(SMS_RECEIVED_ACTION);
                 filter.addAction(Constants.ACTION_BALANCE_SMS);
@@ -456,13 +447,13 @@ public class CoreService extends Service
 
     void handleBatteryLevelChange(int newLevel) {
         boolean fireEvents = false;
-        if (sLastBatteryLevel <= 100 && newLevel > 100) {
+        if ((sLastBatteryLevel <= 0 || sLastBatteryLevel <= 100) && newLevel > 100) {
             if(DEBUG) Logger.debug(TAG, "Charging start");
             mChargingStart = true;
             mChargingStop = false;
             fireEvents = true;
             requestTelegramUpdates();
-        } else if (sLastBatteryLevel > 100 && newLevel <= 100) {
+        } else if ((sLastBatteryLevel < 0 || sLastBatteryLevel > 100) && newLevel <= 100) {
             if(DEBUG) Logger.debug(TAG, "Charging stop " + mChargingStart);
             mChargingStartStop = mChargingStart;
             mChargingStop = !mChargingStartStop;
@@ -532,7 +523,9 @@ public class CoreService extends Service
         if (mPendingNotifyInfo == null) {
             mPendingNotifyInfo = new StringBuilder();
         }
-        mPendingNotifyInfo.insert(0, notifyInfo);
+        if(mPendingNotifyInfo.indexOf(notifyInfo) < 0) {
+            mPendingNotifyInfo.insert(0, notifyInfo);
+        }
     }
 
     protected boolean isBetterLocation(Location location, Location currentBestLocation) {
@@ -546,7 +539,7 @@ public class CoreService extends Service
     }
 
     private boolean isCharging() {
-        return sLastBatteryLevel > 100;
+        return Utils.getBatteryLevel() > 100;
     }
 
     private void saveLastLocation() {
@@ -615,7 +608,7 @@ public class CoreService extends Service
     }
 
     private void setEventData(LocatrackLocation location) {
-        location.batteryLevel = sLastBatteryLevel;
+        location.batteryLevel = Utils.getBatteryLevel();
         if (mNotifyEvents) {
             if (mChargingStart) {
                 location.event = LocatrackLocation.EVENT_START;
@@ -730,6 +723,7 @@ public class CoreService extends Service
         mChargingStart = false;
         mChargingStop = false;
         mChargingStartStop = false;
+        Utils.resetBatteryLevel();
         if (mAirplaneModeOn) {
             Utils.setAirplaneMode(getApplicationContext(), true);
         }
@@ -862,8 +856,8 @@ public class CoreService extends Service
             Utils.setAirplaneMode(this, false);
         }
 
-        mAirplaneModeOn = ((mSetAirplaneMode && sLastBatteryLevel <= 100) ||
-                        sLastBatteryLevel < CRITICAL_BATTERY_LEV);
+        mAirplaneModeOn = (Utils.getBatteryLevel() < CRITICAL_BATTERY_LEV ||
+                (mSetAirplaneMode && Utils.getBatteryLevel() <= 100));
 
         if (mLocationManager == null) {
 
@@ -929,7 +923,7 @@ public class CoreService extends Service
 
         final long UPDATES_WINDOW = 1000 * 60 * 10;
 
-        boolean fastestUpdates = DEBUG || now || (isCharging() && (mUnlimitedData || isWifiConnected()));
+        boolean fastestUpdates = DEBUG || now || ((mUnlimitedData || isWifiConnected()) && isCharging());
         boolean mustRequestUpdates = fastestUpdates ||
                 (SystemClock.elapsedRealtime() - mLastTelegamUpdate > UPDATES_WINDOW);
 
@@ -1009,7 +1003,7 @@ public class CoreService extends Service
                 NetworkInfo networkInfo = mConnectivityManager.getActiveNetworkInfo();
                 networkYpe = networkInfo != null ? networkInfo.getType() : -1;
             }
-            interval = mPreferences.getInterval(sLastBatteryLevel, networkYpe);
+            interval = mPreferences.getInterval(Utils.getBatteryLevel(), networkYpe);
         }
 
         if(DEBUG) {
@@ -1049,6 +1043,7 @@ public class CoreService extends Service
 
         if(alarmCallBack || (startAlarm)) {
             acquireWakeLock();
+            Utils.resetBatteryLevel();
             startLocationListener();
         }
 
@@ -1061,13 +1056,14 @@ public class CoreService extends Service
 
             String notifyInfo = intent.getStringExtra(Constants.EXTRA_NOTIFY_INFO);
             if(!TextUtils.isEmpty(notifyInfo)) {
-                insertNotifyInfo(notifyInfo);
+                insertNotifyInfo(notifyInfo + "\n");
             }
 
             if(intent.hasExtra(Constants.EXTRA_BALANCE_SMS)) {
                 sendAvailBalanceSms();
             }
 
+            Utils.resetBatteryLevel();
             startLocationListener();
         }
 
@@ -1077,7 +1073,7 @@ public class CoreService extends Service
         }
 
         if(intent.hasExtra(Constants.EXTRA_SYNC)) {
-            if(sLastBatteryLevel > 10) {
+            if(Utils.getBatteryLevel() > 10) {
                 sendAvailBalanceSms();
             }
             
@@ -1177,6 +1173,7 @@ public class CoreService extends Service
         ActionReceiver.register(this);
 
         checkVersion();
+        insertNotifyInfo("Service started.\n");
     }
 
     private void checkVersion() {
@@ -1187,10 +1184,8 @@ public class CoreService extends Service
             Logger.debug(TAG, "Current version: " + BuildConfig.BUILD_TIME  + ", Prev Version: " + lastVersionCode);
         }
         if(BuildConfig.BUILD_TIME > lastVersionCode) {
-            final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
-            String chatId = mPreferences.getString(R.string.pref_telegram_chatid_key, getString(R.string.pref_telegram_chatid_default));
-            String message = "*App Updated.*\n\n" + Constants.VERSION_STRING;
-            TelegramHelper.sendTelegramMessageAsync(botKey, chatId, message);
+            String message = "App Updated: " + Constants.VERSION_STRING + "\n";
+            insertNotifyInfo(message);
             prefs.edit().putLong(VERSION_KEY, BuildConfig.BUILD_TIME).apply();
         }
     }

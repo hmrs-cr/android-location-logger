@@ -3,12 +3,14 @@ package com.hmsoft.locationlogger.common;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.provider.Settings;
 import android.telephony.SmsManager;
@@ -256,5 +258,38 @@ public class Utils {
             }
             Logger.error(TAG, "Failed to play audio", e);
         }
+    }
+
+
+    private static final IntentFilter batteryIntentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+    private static int sLastBatteryLevel = -1;
+
+    public static int resetBatteryLevel() {
+        int lastBatteryLevel = sLastBatteryLevel;
+        sLastBatteryLevel = -1;
+        return lastBatteryLevel;
+    }
+
+    public static int getBatteryLevel(Intent intent) {
+        boolean plugged = (intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
+        sLastBatteryLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
+        if (plugged) sLastBatteryLevel += 100;
+
+        return sLastBatteryLevel;
+    }
+
+    public static int getBatteryLevel() {
+        if (sLastBatteryLevel < 0) {
+            Intent intent = LocationLoggerApp.getContext().registerReceiver(null,
+                    batteryIntentFilter);
+
+            sLastBatteryLevel = getBatteryLevel(intent);
+
+            if(DEBUG) {
+                Logger.debug(TAG, "Getting battery level: " + sLastBatteryLevel);
+            }
+        }
+
+        return sLastBatteryLevel;
     }
 }
