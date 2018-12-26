@@ -145,7 +145,7 @@ public class WifiCommand extends Command {
 
 
             if(scanResult.SSID.equals(currentWifi)) {
-                result += "*" + scanResult.SSID + "* - " +scanResult.capabilities + " - " + level + "\n";
+                result += "*" + scanResult.SSID + "* - " + level + "\n";
             } else {
                 result += scanResult.SSID +  " - " +scanResult.capabilities + " - " + level +  "\n";
             }

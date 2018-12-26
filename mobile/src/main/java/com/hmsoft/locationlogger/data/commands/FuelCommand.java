@@ -11,7 +11,7 @@ class FuelCommand extends Command {
 
     @Override
     public String getSummary() {
-        return "Log fuel consuptions: _fuel ODO AMOUNT PRICEPERLITRE_.";
+        return "Log fuel consuptions: _fuel ODO PRICEPERLITRE AMOUNT.";
     }
 
     @Override
@@ -30,8 +30,8 @@ class FuelCommand extends Command {
                 String[] fuelData = params[1].split(" ");
                 if (fuelData.length == 3) {
                     int odo = Integer.parseInt(fuelData[0].toLowerCase().replace("km", "").trim());
-                    double amount = Double.parseDouble(fuelData[1].trim());
-                    double price =  Double.parseDouble(fuelData[2].trim());
+                    double price =  Double.parseDouble(fuelData[1].trim());
+                    double amount = Double.parseDouble(fuelData[2].trim());
                     FuelLogTable.logFuel(Utils.getBestLastLocation(LocationLoggerApp.getContext()), odo, amount, price);
 
                     FuelLogTable.Statics statics = FuelLogTable.getMostRecentStatics();

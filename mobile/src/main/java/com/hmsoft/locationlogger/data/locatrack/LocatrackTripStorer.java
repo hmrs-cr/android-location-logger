@@ -86,6 +86,7 @@ public class LocatrackTripStorer extends LocationStorer {
                 }
                 mLastTripLocation = location;
             }
+
             if(mLastReportedLocation != null) {
                 calculateMovement(mLastReportedLocation, location);
             }
