@@ -25,6 +25,9 @@ public final class Constants {
     public static final String EXTRA_BALANCE_SMS = EXTRA_NAMESPACE + ".BALANCE_SMS";
     public static final String EXTRA_CONFIGURE = EXTRA_NAMESPACE + ".CONFIGURE";
     public static final String EXTRA_SYNC = EXTRA_NAMESPACE + ".SYNC";
+    public static final String EXTRA_BATTERY_LEVEL = EXTRA_NAMESPACE + ".EXTRA_BATTERY_LEVEL";
+    public static final String EXTRA_SMS_FROM_ADDR =  EXTRA_NAMESPACE + ".EXTRA_SMS_FROM_ADDR";
+    public static final String EXTRA_SMS_BODY =  EXTRA_NAMESPACE + ".EXTRA_SMS_BODY";
 
 
     private Constants() {

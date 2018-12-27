@@ -279,7 +279,11 @@ public class Utils {
     }
 
     public static int getBatteryLevel() {
-        if (sLastBatteryLevel < 0) {
+        return getBatteryLevel(false);
+    }
+
+    public static int getBatteryLevel(boolean fresh) {
+        if (fresh || sLastBatteryLevel < 0) {
             Intent intent = LocationLoggerApp.getContext().registerReceiver(null,
                     batteryIntentFilter);
 

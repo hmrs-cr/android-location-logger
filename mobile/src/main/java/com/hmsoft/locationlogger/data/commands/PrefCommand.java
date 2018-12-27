@@ -3,6 +3,7 @@ package com.hmsoft.locationlogger.data.commands;
 import android.content.SharedPreferences;
 
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
+import com.hmsoft.locationlogger.service.CoreService;
 
 import java.util.Map;
 
@@ -61,6 +62,7 @@ public class PrefCommand extends Command {
             if(!found) {
                 editor.putString(prefKey, prefValue).commit();
             }
+            CoreService.configure(context.androidContext);
             sendReply(context, "Success!");
         } catch (Exception e) {
             sendReply(context, e.getMessage());

@@ -31,7 +31,6 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
-import android.telephony.SmsMessage;
 import android.text.TextUtils;
 import android.widget.Toast;
 
@@ -234,7 +233,6 @@ public class CoreService extends Service
 
     private static class ActionReceiver extends BroadcastReceiver {
         private static final String TAG = "UserPresentReceiver";
-        private static final String SMS_RECEIVED_ACTION = "android.provider.Telephony.SMS_RECEIVED";
 
         private static ActionReceiver sInstance;
 
@@ -252,28 +250,8 @@ public class CoreService extends Service
                 return;
             }
             switch (intent.getAction()) {
-                case Intent.ACTION_USER_PRESENT:
+                case Intent.ACTION_SCREEN_ON:
                     mService.handleUserPresent();
-                    break;
-                case Intent.ACTION_POWER_DISCONNECTED:
-                case Intent.ACTION_POWER_CONNECTED:
-                    Utils.resetBatteryLevel();
-                    mService.handleBatteryLevelChange(Utils.getBatteryLevel());
-                    break;
-                case SMS_RECEIVED_ACTION:
-                    Bundle intentExtras = intent.getExtras();
-                    if (intentExtras != null) {
-                        Object[] sms = (Object[]) intentExtras.get("pdus");
-                        if(sms == null) break;
-                        for (Object sm : sms) {
-                            SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) sm);
-
-                            String smsBody = smsMessage.getMessageBody();
-                            String address = smsMessage.getOriginatingAddress();
-
-                            mService.handleSms(address, smsBody);
-                        }
-                    }
                     break;
                 case Constants.ACTION_BALANCE_SMS:
                     mService.handleSmsResult(getResultCode());
@@ -285,10 +263,7 @@ public class CoreService extends Service
             if(sInstance == null) {
                 sInstance = new ActionReceiver(service);
                 IntentFilter filter = new IntentFilter();
-                filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-                filter.addAction(Intent.ACTION_POWER_CONNECTED);
-                filter.addAction(Intent.ACTION_USER_PRESENT);
-                filter.addAction(SMS_RECEIVED_ACTION);
+                filter.addAction(Intent.ACTION_SCREEN_ON);
                 filter.addAction(Constants.ACTION_BALANCE_SMS);
                 service.getApplicationContext().registerReceiver(sInstance, filter);
             }
@@ -1067,6 +1042,17 @@ public class CoreService extends Service
             startLocationListener();
         }
 
+        if(intent.hasExtra(Constants.EXTRA_BATTERY_LEVEL)) {
+            int level = intent.getIntExtra(Constants.EXTRA_BATTERY_LEVEL, -1);
+            this.handleBatteryLevelChange(level);
+        }
+
+        if(intent.hasExtra(Constants.EXTRA_SMS_BODY) && intent.hasExtra(Constants.EXTRA_SMS_FROM_ADDR)) {
+            String address = intent.getStringExtra(Constants.EXTRA_SMS_FROM_ADDR);
+            String body = intent.getStringExtra(Constants.EXTRA_SMS_BODY);
+            this.handleSms(address, body);
+        }
+
         if (intent.hasExtra(Constants.EXTRA_CONFIGURE)) {
             mPreferences = PreferenceProfile.get(getApplicationContext());
             configure(true);
@@ -1174,6 +1160,7 @@ public class CoreService extends Service
 
         checkVersion();
         insertNotifyInfo("Service started.\n");
+        updateNotification();
     }
 
     private void checkVersion() {
@@ -1238,9 +1225,7 @@ public class CoreService extends Service
     }
 
     public static void start(Context context) {
-        Intent i = new Intent();
-        i.putExtra(Constants.EXTRA_START_ALARM, 1);
-        start(context, i);
+        start(context, Constants.EXTRA_START_ALARM);
     }
 
     public static void configure(Context context) {
@@ -1280,6 +1265,19 @@ public class CoreService extends Service
             }
         }
         return false;
+    }
+
+    public static void powerConnectionChange(Context context, int batteryLevel) {
+        Intent i = new Intent();
+        i.putExtra(Constants.EXTRA_BATTERY_LEVEL, batteryLevel);
+        start(context, i);
+    }
+
+    public static void handleSms(Context context, String address, String smsBody) {
+        Intent i = new Intent();
+        i.putExtra(Constants.EXTRA_SMS_FROM_ADDR, address);
+        i.putExtra(Constants.EXTRA_SMS_BODY, smsBody);
+        start(context, i);
     }
 
     void sendAvailBalanceSms() {
