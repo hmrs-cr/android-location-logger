@@ -30,6 +30,9 @@ public final class Constants {
     public static final String EXTRA_SMS_BODY =  EXTRA_NAMESPACE + ".EXTRA_SMS_BODY";
 
 
+    public static final String PREF_KEY_CALCULATE_MOVEMENT = "calculate_movement";
+
+
     private Constants() {
     }
 }

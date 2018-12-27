@@ -80,7 +80,7 @@ public class Utils {
         return null;
     }
 
-    public static void setAirplaneMode(Context context, boolean  isEnabled) {
+    /*public static void setAirplaneMode(Context context, boolean  isEnabled) {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) return;
         try {
             boolean enabled = Settings.System.getInt(context.getContentResolver(),
@@ -100,7 +100,7 @@ public class Utils {
         } catch (Exception ignored) {
             Logger.error(TAG, ignored.getMessage());
         }
-    }
+    }*/
 
     public static boolean isFromGps(Location location) {
         return LocationManager.GPS_PROVIDER.equals(location.getProvider()) ||

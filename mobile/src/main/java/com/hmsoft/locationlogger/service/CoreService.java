@@ -81,6 +81,7 @@ public class CoreService extends Service
     private boolean mNotificationEnabled = true;
     private boolean mWakeLockEnabled = false;
     private boolean mLocationLogEnabled = false;
+    private boolean mRequestPassiveLocationUpdates = true;
     private int mSyncHour = 0;
     private int mSyncMinute = 30;
     private boolean mUnlimitedData;
@@ -699,9 +700,9 @@ public class CoreService extends Service
         mChargingStop = false;
         mChargingStartStop = false;
         Utils.resetBatteryLevel();
-        if (mAirplaneModeOn) {
+        /*if (mAirplaneModeOn) {
             Utils.setAirplaneMode(getApplicationContext(), true);
-        }
+        }*/
         if (mWakeLock != null) {
             if(DIAGNOSTICS && mLocationLogEnabled) Logger.info(TAG, "releaseLocationLock");
             mWakeLock.release();
@@ -827,9 +828,9 @@ public class CoreService extends Service
     }
 
     void startLocationListener() {
-        if(mAirplaneModeOn) {
+        /*if(mAirplaneModeOn) {
             Utils.setAirplaneMode(this, false);
-        }
+        }*/
 
         mAirplaneModeOn = (Utils.getBatteryLevel() < CRITICAL_BATTERY_LEV ||
                 (mSetAirplaneMode && Utils.getBatteryLevel() <= 100));
@@ -916,7 +917,7 @@ public class CoreService extends Service
     }
 
     private void startPassiveLocationListener() {
-        if (/*mRequestPassiveLocationUpdates && */mPassiveLocationListener == null) {
+        if (mRequestPassiveLocationUpdates && mPassiveLocationListener == null) {
             if(Logger.DEBUG) Logger.debug(TAG, "startPassiveLocationListener");
             mPassiveLocationListener = new LocationListener(this, LocationManager.PASSIVE_PROVIDER);
 
@@ -1095,6 +1096,11 @@ public class CoreService extends Service
         mNotifyEvents =  mPreferences.getBoolean(R.string.profile_notify_events_key, false);
         mRestrictedSettings =  mPreferences.getBoolean(R.string.profile_settings_restricted_key, false);
         mUnlimitedData = mPreferences.getBoolean(R.string.pref_unlimited_data_key, false);
+
+        mRequestPassiveLocationUpdates = mPreferences.getPreferences().getBoolean(Constants.PREF_KEY_CALCULATE_MOVEMENT, true);
+        if(!mRequestPassiveLocationUpdates) {
+            stopPassiveLocationListener();
+        }
 
         mAirplaneModeOn = Settings.System.getInt(context.getContentResolver(),
                 Settings.System.AIRPLANE_MODE_ON, 0) == 1;

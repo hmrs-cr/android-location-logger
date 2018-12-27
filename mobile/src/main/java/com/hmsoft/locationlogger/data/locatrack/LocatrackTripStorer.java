@@ -5,6 +5,7 @@ import android.location.Location;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.LocationLoggerApp;
+import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.LocationStorer;
@@ -16,7 +17,7 @@ public class LocatrackTripStorer extends LocationStorer {
 
 
     private static final String TAG = "LocatrackTripStorer";
-    private static final String MOVEMENT_PREF_KEY = "calculate_movement";
+    private static final String MOVEMENT_PREF_KEY = Constants.PREF_KEY_CALCULATE_MOVEMENT;
 
     private final long STOP_TIME =  60 * 1000 * 2;
 
