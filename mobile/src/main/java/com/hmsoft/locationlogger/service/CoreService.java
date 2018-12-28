@@ -803,8 +803,12 @@ public class CoreService extends Service
                 if(speed > 0.5) {
                     status += String.format("%.1f", speed) + "km/h ";
                 }
+                String distance = "";
+                if(isCharging()) {
+                    distance = String.format("%1$.1fkm", mDistance/1000f);
+                }
                 notificationBuilder.setContentText(getString(R.string.service_content,
-                        mLocationCount, accuracy, provider, mDistance/1000f, status));
+                        mLocationCount, accuracy, provider,distance, status));
             } else {
                 notificationBuilder.setContentText(mPreferences.activeProfileName);
             }
@@ -1190,8 +1194,11 @@ public class CoreService extends Service
         cleanup();
         ActionReceiver.unregister(this);
         Command.cleanupAll();
-        mAlarm.cancel(mAlarmLocationCallback);
-        mAlarm.cancel(mAlarmSyncCallback);
+
+        if(mAlarm != null) {
+            mAlarm.cancel(mAlarmLocationCallback);
+            mAlarm.cancel(mAlarmSyncCallback);
+        }
 
         stopPassiveLocationListener();
         stopLocationListener();
@@ -1215,7 +1222,17 @@ public class CoreService extends Service
     //region Helper functions
 
     public static void start(Context context, Intent intent) {
+
         context = context.getApplicationContext();
+
+        if(!Utils.hasAllPermissions()) {
+            if(DEBUG) {
+                Logger.debug(TAG, "Missing permissions.");
+            }
+            Utils.showSettingActivity(context);
+            return;
+        }
+
         intent.setClass(context, CoreService.class);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent);

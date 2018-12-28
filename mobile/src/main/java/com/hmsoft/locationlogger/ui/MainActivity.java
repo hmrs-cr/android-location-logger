@@ -293,11 +293,6 @@ public class MainActivity extends ActionBarActivity {
 
         ((TextView)findViewById(R.id.labelVersion)).setText(String.format("%s - %s",
                 getString(R.string.app_name), Constants.VERSION_STRING));
-
-       // Start service if not running.
-        if(!CoreService.isRunning(this)) {
-            StartServiceReceiver.enable(this);
-        }
     }
 
 
@@ -326,7 +321,9 @@ public class MainActivity extends ActionBarActivity {
     }
 
     void updateUI() {
-        LoadUITask.run(this);
+        if(Utils.hasAllPermissions()) {
+            LoadUITask.run(this);
+        }
     }
 
     @Override
@@ -369,10 +366,28 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private int requestCount = 5;
     @Override
     protected void onResume() {
         if(Logger.DEBUG) Logger.debug(TAG, "onResume");
+
         super.onResume();
+
+        if(Utils.hasAllPermissions()) {
+            // Start service if not running.
+            if(!CoreService.isRunning(this)) {
+                StartServiceReceiver.enable(this);
+            }
+        } else {
+            if(requestCount-- < 0) {
+                Utils.showSettingActivity(this);
+            } else {
+                Utils.requestAllPermissions(this);
+            }
+        }
+
+
+
         if(!mConfigured) return;
         PreferenceProfile preferences = PreferenceProfile.get(getApplicationContext());
         mRestrictedSettings = preferences.getBoolean(R.string.profile_settings_restricted_key, false);
