@@ -88,7 +88,7 @@ class DocumentCommand extends InternalCommand {
 
         PreferenceProfile preferences = PreferenceProfile.get(context);
         if(isSilentDownload) {
-
+            request.setAllowedOverMetered(true);
         } else {
             request.setTitle(fileName);
             if (!preferences.getBoolean(R.string.pref_unlimited_data_key, false)) {

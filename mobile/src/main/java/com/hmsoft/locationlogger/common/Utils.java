@@ -321,7 +321,7 @@ public class Utils {
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
                         originalVolume, 0);
             }
-            Logger.error(TAG, "Failed to play audio", e);
+            Logger.error(TAG, "Failed to play audio", e.getClass().getName() + ": " + e.getMessage());
         }
     }
 

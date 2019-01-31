@@ -27,6 +27,6 @@ class AvgFuelCommand extends Command {
         FuelLogTable.Statics statics = FuelLogTable.getMostRecentStatics();
         double consuption = FuelLogTable.getAvgConsuption();
         sendTelegramReply("*Last: *" + statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L (" + dateFormat.format(statics.startDate) + " - " + dateFormat.format(statics.endDate) + ")" +
-                "\n*Overall:* " + consuption + " CRC/km");
+                "\n*Overall:* " + consuption + " km/L");
     }
 }

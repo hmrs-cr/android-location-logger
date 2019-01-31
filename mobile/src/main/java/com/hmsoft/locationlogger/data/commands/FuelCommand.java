@@ -38,7 +38,7 @@ class FuelCommand extends Command {
                     double consuption = FuelLogTable.getAvgConsuption();
 
 
-                    sendTelegramReply(statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L\nOverall avg: " + consuption + " CRC/km");
+                    sendTelegramReply(statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L\nOverall avg: " + consuption + " km/L");
                 } else {
                     notEnoughParams();
                 }
