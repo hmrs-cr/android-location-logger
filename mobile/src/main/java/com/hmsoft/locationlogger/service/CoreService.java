@@ -41,6 +41,7 @@ import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.common.Utils;
+import com.hmsoft.locationlogger.common.WifiApManager;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
@@ -85,6 +86,7 @@ public class CoreService extends Service
     private int mSyncHour = 0;
     private int mSyncMinute = 30;
     private boolean mUnlimitedData;
+    private boolean mNoSynAlarm;
     LocationManager mLocationManager;
     private boolean mNetProviderEnabled;
     private boolean mGpsProviderEnabled;
@@ -134,7 +136,6 @@ public class CoreService extends Service
     boolean mChargingStart;
     boolean mChargingStop;
     boolean mChargingStartStop;
-    boolean mAirplaneModeOn;
 
 
     StringBuilder mPendingNotifyInfo;
@@ -429,16 +430,21 @@ public class CoreService extends Service
             mChargingStop = false;
             fireEvents = true;
             requestTelegramUpdates();
+            if(mUnlimitedData) {
+                WifiApManager.configApState(this, true);
+            }
         } else if ((sLastBatteryLevel < 0 || sLastBatteryLevel > 100) && newLevel <= 100) {
             if(DEBUG) Logger.debug(TAG, "Charging stop " + mChargingStart);
             mChargingStartStop = mChargingStart;
             mChargingStop = !mChargingStartStop;
             mChargingStart = false;
             fireEvents = true;
+            if(mUnlimitedData) {
+                WifiApManager.configApState(this, false);
+            }
         }
         sLastBatteryLevel = newLevel;
         if (fireEvents) {
-            mAirplaneModeOn = false;
             destroyStoreThread(); // Start with a new created thread
             acquireWakeLock();
             startLocationListener();
@@ -832,13 +838,6 @@ public class CoreService extends Service
     }
 
     void startLocationListener() {
-        /*if(mAirplaneModeOn) {
-            Utils.setAirplaneMode(this, false);
-        }*/
-
-        mAirplaneModeOn = (Utils.getBatteryLevel() < CRITICAL_BATTERY_LEV ||
-                (mSetAirplaneMode && Utils.getBatteryLevel() <= 100));
-
         if (mLocationManager == null) {
 
             mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -969,9 +968,11 @@ public class CoreService extends Service
     }
 
     private void setSyncAlarm() {
-        long millis = Utils.getMillisOfTomorrowTime(mSyncHour, mSyncMinute);
-        mAlarm.set(AlarmManager.RTC_WAKEUP, millis, mAlarmSyncCallback);
-        if(Logger.DEBUG) Logger.debug(TAG, "Next sync execution: %s", new Date(millis));
+        if (!mNoSynAlarm) {
+            long millis = Utils.getMillisOfTomorrowTime(mSyncHour, mSyncMinute);
+            mAlarm.set(AlarmManager.RTC_WAKEUP, millis, mAlarmSyncCallback);
+            if (Logger.DEBUG) Logger.debug(TAG, "Next sync execution: %s", new Date(millis));
+        }
     }
 
     void setLocationAlarm(int interval) {
@@ -1064,7 +1065,7 @@ public class CoreService extends Service
         }
 
         if(intent.hasExtra(Constants.EXTRA_SYNC)) {
-            if(Utils.getBatteryLevel() > 10) {
+            if(!mUnlimitedData && Utils.getBatteryLevel() > 10) {
                 sendAvailBalanceSms();
             }
             
@@ -1100,14 +1101,12 @@ public class CoreService extends Service
         mNotifyEvents =  mPreferences.getBoolean(R.string.profile_notify_events_key, false);
         mRestrictedSettings =  mPreferences.getBoolean(R.string.profile_settings_restricted_key, false);
         mUnlimitedData = mPreferences.getBoolean(R.string.pref_unlimited_data_key, false);
+        mNoSynAlarm = mUnlimitedData;
 
         mRequestPassiveLocationUpdates = mPreferences.getPreferences().getBoolean(Constants.PREF_KEY_CALCULATE_MOVEMENT, true);
         if(!mRequestPassiveLocationUpdates) {
             stopPassiveLocationListener();
         }
-
-        mAirplaneModeOn = Settings.System.getInt(context.getContentResolver(),
-                Settings.System.AIRPLANE_MODE_ON, 0) == 1;
 
         if (setup) {
             if(oldSyncHour != mSyncHour || oldSynMinute != mSyncMinute) {
