@@ -11,5 +11,5 @@ Features
 
 Disclaimer
 ----------
-I wrote this application as a solution to my specific problem (track location of certain items using an old Android phone), if it is useful to you great! you can
+I wrote this application as a fast prototype solution to my specific problem (track location of certain items using an old Android phone), if it is useful to you great! you can
 use it and reuse the code if you need it. I do not provide any sort of support.
