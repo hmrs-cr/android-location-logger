@@ -4,7 +4,9 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
+import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
+import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.data.sqlite.Helper;
 
 class GetDBCommand extends Command {
@@ -22,14 +24,21 @@ class GetDBCommand extends Command {
 
     @Override
     public void execute(String[] params) {
-        ConnectivityManager connectivityManager = (ConnectivityManager)context.androidContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connectivityManager;
+        NetworkInfo networkInfo;
 
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-        if(networkInfo != null && networkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
-            TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId,
-                    Helper.getInstance().getPathFile());
-        } else {
+        boolean unlimitedData = PreferenceProfile.get(context.androidContext).getBoolean(R.string.pref_unlimited_data_key, false);
+
+        if(!unlimitedData &&
+                ((connectivityManager = (ConnectivityManager)context.androidContext.getSystemService(Context.CONNECTIVITY_SERVICE)) == null ||
+                (networkInfo = connectivityManager.getActiveNetworkInfo()) == null ||
+                networkInfo.getType() != ConnectivityManager.TYPE_WIFI)) {
+
             sendTelegramReply("WiFi connection required.");
+            return;
         }
+
+        TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId,
+                Helper.getInstance().getPathFile());
     }
 }

@@ -184,6 +184,12 @@ public class CoreService extends Service
         }, 1);
     }
 
+    private void sendTelegramMessage(String msg) {
+        final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
+        final String channelId = mPreferences.getString(R.string.pref_telegram_chatid_key, getString(R.string.pref_telegram_chatid_default));
+        TelegramHelper.sendTelegramMessageAsync(botKey, channelId, msg);
+    }
+
     private void processSmsMessage(final String fromSmsNumber, final String text) {
         TaskExecutor.executeOnNewThread(new Runnable() {
             @Override
@@ -1041,7 +1047,11 @@ public class CoreService extends Service
             }
 
             if(intent.hasExtra(Constants.EXTRA_BALANCE_SMS)) {
-                sendAvailBalanceSms();
+                if(mUnlimitedData) {
+                    sendTelegramMessage("Unlimited data. No balance SMS needed.");
+                } else {
+                    sendAvailBalanceSms();
+                }
             }
 
             Utils.resetBatteryLevel();
