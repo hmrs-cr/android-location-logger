@@ -24,6 +24,18 @@ public class WifiApManager {
         return false;
     }
 
+    public static WifiConfiguration getWifiApConfiguration(Context context) {
+        WifiManager wifimanager = (WifiManager) context.getSystemService(context.WIFI_SERVICE);
+        try {
+            Method method = wifimanager.getClass().getDeclaredMethod("getWifiApConfiguration");
+            method.setAccessible(true);
+            return (WifiConfiguration) method.invoke(wifimanager);
+        } catch (Throwable e) {
+            Logger.error(TAG, "Error:getWifiApConfiguration", e);
+        }
+        return null;
+    }
+
     // toggle wifi hotspot on or off
     public static boolean configApState(Context context, boolean enable) {
         WifiManager wifimanager = (WifiManager) context.getSystemService(context.WIFI_SERVICE);
@@ -37,8 +49,8 @@ public class WifiApManager {
             Method method = wifimanager.getClass().getMethod("setWifiApEnabled", WifiConfiguration.class, boolean.class);
             method.invoke(wifimanager, wificonfiguration, enable);
 
-            if(!enable && wasWifiEnabled != null){
-                wifimanager.setWifiEnabled(wasWifiEnabled);
+            if(!enable){
+                wifimanager.setWifiEnabled(true);
             }
 
             return true;

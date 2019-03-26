@@ -182,6 +182,7 @@ public abstract class Command {
     public abstract void execute(String[] params);
 
     public static void registerCommands(Context context) {
+        registerCommandClass(HelpCommand.COMMAND_NAME, HelpCommand.class);
         registerCommandClass(ClearLogsCommand.COMMAND_NAME, ClearLogsCommand.class);
         registerCommandClass(LogsCommand.COMMAND_NAME, LogsCommand.class);
         registerCommandClass(SmsCommand.COMMAND_NAME, SmsCommand.class);
@@ -193,12 +194,12 @@ public abstract class Command {
         registerCommandClass(InfoCommand.COMMAND_NAME, InfoCommand.class);
         registerCommandClass(BalanceCommand.COMMAND_NAME, BalanceCommand.class);
         registerCommandClass(GetDBCommand.COMMAND_NAME, GetDBCommand.class);
-        registerCommandClass(HelpCommand.COMMAND_NAME, HelpCommand.class);
         registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
         registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
         registerCommandClass(WifiCommand.COMMAND_NAME, WifiCommand.class);
         registerCommandClass(ConfigCommand.COMMAND_NAME, ConfigCommand.class);
         registerCommandClass(GetTripCommand.COMMAND_NAME, GetTripCommand.class);
         registerCommandClass(PrefCommand.COMMAND_NAME, PrefCommand.class);
+        registerCommandClass(WifiApCommand.COMMAND_NAME, WifiApCommand.class);
     }
 }

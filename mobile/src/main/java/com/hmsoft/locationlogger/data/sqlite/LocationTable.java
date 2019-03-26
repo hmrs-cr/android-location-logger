@@ -171,7 +171,7 @@ public class LocationTable {
             }
 
             if(Logger.DEBUG) {
-                c = statement.executeInsert();
+                statement.executeInsert();
             } else {
                 statement.execute();
             }

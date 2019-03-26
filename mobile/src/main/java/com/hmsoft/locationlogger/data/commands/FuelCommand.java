@@ -11,7 +11,7 @@ class FuelCommand extends Command {
 
     @Override
     public String getSummary() {
-        return "Log fuel consuptions: _fuel ODO PRICEPERLITRE AMOUNT.";
+        return "Log fuel consuptions: _fuel ODO PRICEPERLITRE AMOUNT._";
     }
 
     @Override
