@@ -3,6 +3,7 @@ package com.hmsoft.locationlogger.data.sqlite;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.common.Gpx;
 import com.hmsoft.locationlogger.common.Utils;
@@ -89,6 +90,22 @@ public class TripTable {
             return locationSet;
         }
 
+        public LocationSet getLocations(long startTimestamp, long endTimestamp) {
+            Helper helper = Helper.getInstance();
+            SQLiteDatabase database = helper.getReadableDatabase();
+
+            locationSelection[0] = String.valueOf(startTimestamp);
+            locationSelection[1] = String.valueOf(endTimestamp);
+
+            Cursor cursor = database.query(DETAIL_VIEW_NAME, null,
+                    "timestamp BETWEEN ? AND ?", locationSelection, null, null, null, null);
+
+            DatabaseLocationSet locationSet = new DatabaseLocationSet(cursor);
+            locationSet.setAutoClose(false);
+
+            return locationSet;
+        }
+
         @Override
         public String toString() {
             String endAddress = this.endAddress.replace(", Costa Rica", "")
@@ -116,7 +133,7 @@ public class TripTable {
 
         private String objectString = null;
 
-        static TripDetail createTrip(long startTimeStamp, long endTimeStamp, float distance) {
+        public static TripDetail createTrip(long startTimeStamp, long endTimeStamp, float distance) {
             TripDetail trip = new TripDetail(startTimeStamp, endTimeStamp, distance);
             return trip;
         }
@@ -187,7 +204,14 @@ public class TripTable {
         public String toGpxString() {
             String gpxName = "Trip " + Gpx.df.format(new Date(this.endTimeStamp));
             String gpxDesc = this.toString();
-            LocationSet points = this.getLocations();
+            LocationSet points;
+
+            if(TextUtils.isEmpty(this.id)) {
+                points = this.getLocations(this.startTimeStamp, this.endTimeStamp);
+            } else {
+                points = this.getLocations();
+            }
+
             return Gpx.createGpx(points, gpxName, gpxDesc);
         }
     }

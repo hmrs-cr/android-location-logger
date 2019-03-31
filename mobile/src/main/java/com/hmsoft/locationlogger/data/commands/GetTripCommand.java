@@ -8,14 +8,21 @@ import com.hmsoft.locationlogger.data.sqlite.TripTable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 public class GetTripCommand extends Command {
     static final String COMMAND_NAME = "GetTrip";
+    private String[] supParams;
+    private static final SimpleDateFormat TripDateFormat = new SimpleDateFormat("yyyyMMdd", Locale.US);
+    private static final SimpleDateFormat TripDateTimeFormat = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
 
     @Override
     public String getSummary() {
-        return "Get a list of the latest trips. _getTrip [tripid]_";
+        return "Get a list of the latest trips. _getTrip [tripid]_ or _getTrip gpx startDate endDate_";
     }
 
     @Override
@@ -26,22 +33,52 @@ public class GetTripCommand extends Command {
     @Override
     public void execute(String[] params) {
         if (params.length == 2) {
-            String[] supParams = params[1].split(" ", 2);
+            String[] supParams = params[1].split(" ", 3);
 
             String id = supParams[0];
             if(id.endsWith("all")) {
                 handleTripList(true);
             } else if(supParams.length == 1) {
-                HandleSingle(id);
+                handleSingle(id);
             } else if(supParams.length == 2 && supParams[1].equals("gpx")) {
                 handleGpx(id);
+            } else if(supParams.length == 3 && supParams[0].equals("gpx")) {
+                 handleGpx(supParams[1], supParams[2]);
             }
         } else {
             handleTripList(false);
         }
     }
 
-    private void HandleSingle(String id) {
+    private static Date parseDateString(String dateStr, int offSet) throws ParseException {
+        try {
+            return TripDateTimeFormat.parse(dateStr);
+        } catch (ParseException e) {
+            Date date  = TripDateFormat.parse(dateStr);
+            if(offSet > 0) {
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(date);
+                cal.add(Calendar.HOUR_OF_DAY, offSet);
+                date = cal.getTime();
+            }
+            return date;
+        }
+    }
+
+    private void handleGpx(String startDateStr, String endDateStr) {
+        try {
+            Date startDate = parseDateString(startDateStr, 0);
+            Date endDate = parseDateString(endDateStr, 24);
+
+            TripTable.TripDetail trip = TripTable.TripDetail.createTrip(startDate.getTime(), endDate.getTime(), 0f);
+            handleGpx(trip, startDateStr + "-" + endDateStr);
+        } catch (ParseException e) {
+            sendReply(context, "Wrong date format.");
+            e.printStackTrace();
+        }
+    }
+
+    private void handleSingle(String id) {
 
         TripTable.TripDetail trip = TripTable.getTripbyId(id);
         if (trip != null) {
@@ -74,6 +111,12 @@ public class GetTripCommand extends Command {
                 id = trip.id;
             }
         }
+
+        handleGpx(trip, id);
+    }
+
+    private void handleGpx(TripTable.TripDetail trip, String id) {
+
 
         final File gpxFile = new File(context.androidContext.getCacheDir(), "Trip-" + id + ".gpx");
         if (!gpxFile.exists()) {
