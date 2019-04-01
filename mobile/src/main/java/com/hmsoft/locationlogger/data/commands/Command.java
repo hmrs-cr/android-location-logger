@@ -192,7 +192,6 @@ public abstract class Command {
         registerCommandClass(DocumentCommand.COMMAND_NAME, DocumentCommand.class);
         registerCommandClass(LocationCommand.COMMAND_NAME, LocationCommand.class);
         registerCommandClass(InfoCommand.COMMAND_NAME, InfoCommand.class);
-        registerCommandClass(BalanceCommand.COMMAND_NAME, BalanceCommand.class);
         registerCommandClass(GetDBCommand.COMMAND_NAME, GetDBCommand.class);
         registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
         registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
