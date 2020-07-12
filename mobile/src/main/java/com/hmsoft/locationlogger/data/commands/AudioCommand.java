@@ -29,12 +29,15 @@ class AudioCommand extends Command {
 
         try {
             File cacheDir = context.androidContext.getCacheDir();
-            File audioFile = File.createTempFile("audio-", ".3gp", cacheDir);
+            File audioFile = File.createTempFile("audio-", ".MP4A", cacheDir);
             mRecorder = new MediaRecorder();
             mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
             mRecorder.setOutputFile(audioFile.getPath());
-            mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+
+            mRecorder.setAudioSamplingRate(44100);
+            mRecorder.setAudioEncodingBitRate(96000);
+            mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
 
             mRecorder.prepare();

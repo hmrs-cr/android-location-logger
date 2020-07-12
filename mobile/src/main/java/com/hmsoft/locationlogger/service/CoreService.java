@@ -28,9 +28,6 @@ import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationCompat.Builder;
 import android.text.TextUtils;
 import android.widget.Toast;
 
@@ -62,6 +59,8 @@ public class CoreService extends Service
     implements TelegramHelper.UpdateCallback, LocatrackTripStorer.MovementChangeCallback {
 
     //region Static fields
+    public static final String CHANNEL_ID = "DefNotifCh";
+
     private static final String TAG = "CoreService";
     private static final boolean DEBUG = BuildConfig.DEBUG;
     private static final boolean DIAGNOSTICS = DEBUG;
@@ -787,15 +786,14 @@ public class CoreService extends Service
                         getString(R.string.app_name));
             }
 
-            Builder notificationBuilder = (new NotificationCompat.Builder(this)).
+            Notification.Builder notificationBuilder = (new Notification.Builder(this, CHANNEL_ID)).
                     setSmallIcon(R.drawable.ic_stat_service).
                     setContentIntent(mLocationActivityIntent).
                     setWhen(when).
                     setAutoCancel(false).
                     setContentTitle(contentTitle).
-                    setVisibility(NotificationCompat.VISIBILITY_PRIVATE).
-                    setSubText(mPreferences.activeProfileName).
-                    setPriority(NotificationCompat.PRIORITY_MIN);
+                    setVisibility(Notification.VISIBILITY_PRIVATE).
+                    setSubText(mPreferences.activeProfileName);
 
             if (mapPendingIntent != null) {
                 notificationBuilder.setContentIntent(mapPendingIntent);
@@ -1243,11 +1241,7 @@ public class CoreService extends Service
         }
 
         intent.setClass(context, CoreService.class);
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent);
-        } else {
-            context.startService(intent);
-        }
+        context.startForegroundService(intent);
     }
 
     public static void start(Context context, String option) {

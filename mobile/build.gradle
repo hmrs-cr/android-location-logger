@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 def versionMajor = 1
 def versionMinor = 1
-def verCode = 66
+def verCode = 68
 def APP_NAME = "LocationLogger"
 
 def buildTime() {
@@ -14,12 +14,12 @@ def buildTime() {
 def versionStringBase = "${versionMajor}.${versionMinor}.${verCode}-${buildTime()}"
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 30
 
     defaultConfig {
         applicationId "com.hmsoft." + APP_NAME.toLowerCase()
-        minSdkVersion 19
-        targetSdkVersion 23
+        minSdkVersion 27
+        targetSdkVersion 29
         versionName versionStringBase
         versionCode verCode
     }
