@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/mobile/mobile.iml" filepath="$PROJECT_DIR$/mobile/mobile.iml" />
-      <module fileurl="file://$PROJECT_DIR$/nmea-logger-src.iml" filepath="$PROJECT_DIR$/nmea-logger-src.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/android-location-logger.iml" filepath="$PROJECT_DIR$/.idea/modules/android-location-logger.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/mobile/android-location-logger.mobile.iml" filepath="$PROJECT_DIR$/.idea/modules/mobile/android-location-logger.mobile.iml" />
     </modules>
   </component>
 </project>
