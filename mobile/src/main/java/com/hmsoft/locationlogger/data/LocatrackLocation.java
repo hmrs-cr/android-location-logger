@@ -6,6 +6,7 @@ import android.os.Bundle;
 
 public class LocatrackLocation extends Location {
 
+    public static final String EVENT_INFO = "info";
     public static final String EVENT_START = "start";
     public static final String EVENT_MOVEMENT_START = "movement/" + EVENT_START;
     public static final String EVENT_RESTART = "re" + EVENT_START;

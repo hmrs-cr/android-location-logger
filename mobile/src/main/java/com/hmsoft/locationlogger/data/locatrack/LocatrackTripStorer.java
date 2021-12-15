@@ -70,7 +70,6 @@ public class LocatrackTripStorer extends LocationStorer {
                 }
                 if (trip != null) {
                     String extraInfo = location.extraInfo;
-                    location.extraInfo = trip.toString();
                     if (!TextUtils.isEmpty(extraInfo)) {
                         location.extraInfo += "\n\n" + extraInfo;
                     }

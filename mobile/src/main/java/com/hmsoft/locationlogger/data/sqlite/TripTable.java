@@ -1,10 +1,13 @@
 package com.hmsoft.locationlogger.data.sqlite;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
 
+import com.hmsoft.locationlogger.LocationLoggerApp;
+import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Gpx;
 import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.LocationSet;
@@ -189,14 +192,16 @@ public class TripTable {
         @Override
         public String toString() {
             if (objectString == null) {
+                Context context = LocationLoggerApp.getContext();
+                
                 double constSpeed = (this.distance / ((endTimeStamp - startTimeStamp) / 1000)) * 3.6;
-                objectString = "Duration: " + this.duration + "\n" +
-                        "Distance: " + (Math.round((this.distance / 1000.0) * 100.0) / 100.0) + "\n" +
-                        "Max Speed: " + (Math.round(this.maxSpeed * 100.0) / 100.0) + "\n" +
-                        "Avg Speed: " + (Math.round(this.avgSpeed * 100.0) / 100.0) + " (" + (Math.round(constSpeed * 100.0) / 100.0) + ")\n" +
-                        "Max Altitude: " + (Math.round(this.maxAltitude * 100.0) / 100.0) + "\n" +
-                        "Min Altitude: " + (Math.round(this.minAltitude * 100.0) / 100.0) + "\n" +
-                        "Points: " + this.pointNumber;
+                objectString = context.getString(R.string.str_duration) + this.duration + "\n" +
+                        context.getString(R.string.str_distance) + (Math.round((this.distance / 1000.0) * 100.0) / 100.0) + "\n" +
+                        context.getString(R.string.str_max_speed) + (Math.round(this.maxSpeed * 100.0) / 100.0) + "\n" +
+                        context.getString(R.string.str_avg_speed) + (Math.round(this.avgSpeed * 100.0) / 100.0) + " (" + (Math.round(constSpeed * 100.0) / 100.0) + ")\n" +
+                        context.getString(R.string.str_max_altitude) + (Math.round(this.maxAltitude * 100.0) / 100.0) + "\n" +
+                        context.getString(R.string.str_min_altitude) + (Math.round(this.minAltitude * 100.0) / 100.0) + "\n" +
+                        context.getString(R.string.str_points) + this.pointNumber;
             }
             return objectString;
         }

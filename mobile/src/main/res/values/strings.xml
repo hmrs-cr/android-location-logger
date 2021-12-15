@@ -2,4 +2,20 @@
 <resources>
     <string name="download_notification_channel_name">Default Notification Channel</string>
     <string name="download_notification_channel_desc">DefaultNotifications</string>
+    <string name="str_location">Location:</string>
+    <string name="str_accuracy">Accuracy:</string>
+    <string name="str_time">Time:</string>
+    <string name="str_battery">Battery:</string>
+    <string name="str_start">START</string>
+    <string name="str_stop">STOP</string>
+    <string name="str_low_battery">LOW BATTERY</string>
+    <string name="str_restart">RESTART</string>
+    <string name="str_restop">RESTOP</string>
+    <string name="str_duration">Duration: </string>
+    <string name="str_distance">Distance: </string>
+    <string name="str_max_speed">Max Speed: </string>
+    <string name="str_avg_speed">Avg Speed: </string>
+    <string name="str_max_altitude">Max Altitude: </string>
+    <string name="str_min_altitude">Min Altitude: </string>
+    <string name="str_points">Points: </string>
 </resources>

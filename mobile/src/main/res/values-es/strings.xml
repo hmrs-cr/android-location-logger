@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="str_accuracy">Precisión:</string>
+    <string name="str_location">Ubicación:</string>
+    <string name="str_time">Hora:</string>
+    <string name="str_battery">Batería:</string>
+    <string name="str_start">INICIADO</string>
+    <string name="str_stop">DETENIDO</string>
+    <string name="str_low_battery">BATERIA BAJA</string>
+    <string name="str_restart">INICIADO</string>
+    <string name="str_restop">DETENIDO</string>
+    <string name="str_duration">Duración: </string>
+    <string name="str_distance">Distancia: </string>
+    <string name="str_max_speed">Vel. Max: </string>
+    <string name="str_avg_speed">Vel. Prom: </string>
+    <string name="str_max_altitude">Altitud Max: </string>
+    <string name="str_min_altitude">Altitud Min: </string>
+    <string name="str_points">Puntos: </string>
+</resources>

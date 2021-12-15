@@ -129,12 +129,32 @@ public class LocatrackTelegramStorer extends LocationStorer {
     private String getEventMessage(LocatrackLocation location, String netWorkType) {
         StringBuilder message = new StringBuilder(128);
 
-        String event = TextUtils.isEmpty(location.event) ? "INFO" : location.event.toUpperCase();
         int batteryLevel = location.batteryLevel;
         if(batteryLevel > 100) {
             batteryLevel -= 100;
         }
 
+        String event = TextUtils.isEmpty(location.event) ? LocatrackLocation.EVENT_INFO : location.event;
+        switch (event) {
+            case LocatrackLocation.EVENT_INFO:
+                event = "INFO";
+                break;
+            case LocatrackLocation.EVENT_START:
+                event = mContext.getString(R.string.str_start);
+                break;
+            case LocatrackLocation.EVENT_STOP:
+                event = mContext.getString(R.string.str_stop);
+                break;
+            case LocatrackLocation.EVENT_LOW_BATTERY:
+                event = mContext.getString(R.string.str_low_battery);
+                break;
+            case LocatrackLocation.EVENT_RESTART:
+                event = mContext.getString(R.string.str_restart);
+                break;
+            case LocatrackLocation.EVENT_RESTOP:
+                event = mContext.getString(R.string.str_restop);
+                break;
+        }
 
         message.append("*").append(event).append("!").append("*\n\n");
 
@@ -143,10 +163,10 @@ public class LocatrackTelegramStorer extends LocationStorer {
         }
 
         message
-            .append("*Location:*\t[").append(getAddressLabel(location)).append("](https://www.google.com/maps/search/?api=1&query=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
-            .append("*Accuracy:*\t").append(Math.round(location.getAccuracy() * 100.0) / 100.0).append("m ").append(location.getProvider().charAt(0)).append(netWorkType.charAt(0)).append("\n")
-            .append("*Time:*\t").append(mDateFormat.format(new Date(location.getTime()))).append("\n")
-            .append("*Battery:*\t").append(batteryLevel).append("%");
+            .append("*").append(mContext.getString(R.string.str_location)).append("*\\t[").append(getAddressLabel(location)).append("](https://www.google.com/maps/search/?api=1&query=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
+            .append("*").append(mContext.getString(R.string.str_accuracy)).append("*\\t[").append(Math.round(location.getAccuracy() * 100.0) / 100.0).append("m ").append(location.getProvider().charAt(0)).append(netWorkType.charAt(0)).append("\n")
+            .append("*").append(mContext.getString(R.string.str_time)).append("*\\t[").append(mDateFormat.format(new Date(location.getTime()))).append("\n")
+            .append("*").append(mContext.getString(R.string.str_battery)).append("*\\t[").append(batteryLevel).append("%");
 
         return message.toString();
     }
