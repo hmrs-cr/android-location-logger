@@ -11,11 +11,13 @@
     <string name="str_low_battery">LOW BATTERY</string>
     <string name="str_restart">RESTART</string>
     <string name="str_restop">RESTOP</string>
-    <string name="str_duration">Duration: </string>
-    <string name="str_distance">Distance: </string>
-    <string name="str_max_speed">Max Speed: </string>
-    <string name="str_avg_speed">Avg Speed: </string>
-    <string name="str_max_altitude">Max Altitude: </string>
-    <string name="str_min_altitude">Min Altitude: </string>
-    <string name="str_points">Points: </string>
+    <string name="str_duration">"Duration: "</string>
+    <string name="str_distance">"Distance: "</string>
+    <string name="str_max_speed">"Max Speed: "</string>
+    <string name="str_avg_speed">"Avg Speed: "</string>
+    <string name="str_max_altitude">"Max Altitude: "</string>
+    <string name="str_min_altitude">"Min Altitude: "</string>
+    <string name="str_points">"Points: "</string>
+    <string name="service_started">Service started.\n</string>
+    <string name="app_updated">App Updated: </string>
 </resources>

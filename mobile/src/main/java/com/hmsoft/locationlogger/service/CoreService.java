@@ -48,6 +48,7 @@ import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTripStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
+import com.hmsoft.locationlogger.receivers.PowerConnectionReceiver;
 import com.hmsoft.locationlogger.receivers.StartServiceReceiver;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
@@ -1111,7 +1112,7 @@ public class CoreService extends Service
         mUnlimitedData = mPreferences.getBoolean(R.string.pref_unlimited_data_key, false);
         mNoSynAlarm = mUnlimitedData;
 
-        mRequestPassiveLocationUpdates = mPreferences.getPreferences().getBoolean(Constants.PREF_KEY_CALCULATE_MOVEMENT, true);
+        mRequestPassiveLocationUpdates = mPreferences.getPreferences().getBoolean(Constants.PREF_KEY_CALCULATE_MOVEMENT, false);
         if(!mRequestPassiveLocationUpdates) {
             stopPassiveLocationListener();
         }
@@ -1174,9 +1175,10 @@ public class CoreService extends Service
         mAlarmSyncCallback = PendingIntent.getService(context, 0, i, 0);
 
         ActionReceiver.register(this);
+        PowerConnectionReceiver.register(this);
 
         checkVersion();
-        insertNotifyInfo("Service started.\n");
+        insertNotifyInfo(getString(R.string.service_started));
         updateNotification();
     }
 
@@ -1188,7 +1190,7 @@ public class CoreService extends Service
             Logger.debug(TAG, "Current version: " + BuildConfig.BUILD_TIME  + ", Prev Version: " + lastVersionCode);
         }
         if(BuildConfig.BUILD_TIME > lastVersionCode) {
-            String message = "App Updated: " + Constants.VERSION_STRING + "\n";
+            String message = getString(R.string.app_updated) + Constants.VERSION_STRING + "\n";
             insertNotifyInfo(message);
             prefs.edit().putLong(VERSION_KEY, BuildConfig.BUILD_TIME).apply();
         }

@@ -37,7 +37,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
 
     public LocatrackTelegramStorer(Context context) {
         mContext = context;
-        mDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss a", Locale.US);
+        mDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss a", Locale.US);
         mConnectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
     }
 
@@ -163,10 +163,10 @@ public class LocatrackTelegramStorer extends LocationStorer {
         }
 
         message
-            .append("*").append(mContext.getString(R.string.str_location)).append("*\\t[").append(getAddressLabel(location)).append("](https://www.google.com/maps/search/?api=1&query=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
-            .append("*").append(mContext.getString(R.string.str_accuracy)).append("*\\t[").append(Math.round(location.getAccuracy() * 100.0) / 100.0).append("m ").append(location.getProvider().charAt(0)).append(netWorkType.charAt(0)).append("\n")
-            .append("*").append(mContext.getString(R.string.str_time)).append("*\\t[").append(mDateFormat.format(new Date(location.getTime()))).append("\n")
-            .append("*").append(mContext.getString(R.string.str_battery)).append("*\\t[").append(batteryLevel).append("%");
+            .append("*").append(mContext.getString(R.string.str_location)).append("*\t[").append(getAddressLabel(location)).append("](https://www.google.com/maps/search/?api=1&query=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
+            .append("*").append(mContext.getString(R.string.str_time)).append("*\t").append(mDateFormat.format(new Date(location.getTime()))).append("\n")
+            .append("*").append(mContext.getString(R.string.str_accuracy)).append("*\t").append(Math.round(location.getAccuracy() * 100.0) / 100.0).append("m ").append(location.getProvider().charAt(0)).append(netWorkType.charAt(0)).append("\n")
+            .append("*").append(mContext.getString(R.string.str_battery)).append("*\t").append(batteryLevel).append("%");
 
         return message.toString();
     }

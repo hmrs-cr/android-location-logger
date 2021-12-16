@@ -168,10 +168,7 @@ public class LocatrackTripStorer extends LocationStorer {
     @Override
     public LocationStorer configure() {
         SharedPreferences prefs = PreferenceProfile.get(LocationLoggerApp.getContext()).getPreferences();
-        if(!prefs.contains(MOVEMENT_PREF_KEY)) {
-            prefs.edit().putBoolean(MOVEMENT_PREF_KEY, true).apply();
-        }
-        mCalculateMovement = prefs.getBoolean(MOVEMENT_PREF_KEY, true);
+        mCalculateMovement = prefs.getBoolean(MOVEMENT_PREF_KEY, false);
 
         return this;
     }
