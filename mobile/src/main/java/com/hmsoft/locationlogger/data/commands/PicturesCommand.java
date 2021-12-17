@@ -61,7 +61,11 @@ class PicturesCommand extends Command {
                                 SOURCE_TELEGRAM,
                                 PreferenceProfile.get(context).getString(R.string.pref_telegram_botkey_key, context.getString(R.string.pref_telegram_botkey_default)),
                                 PreferenceProfile.get(context).getString(R.string.pref_telegram_chatid_key, mContext.getString(R.string.pref_telegram_chatid_default)),
-                                null
+                                null,
+                                null,
+                                null,
+                                PreferenceProfile.get(context).getString(R.string.pref_telegram_chatid_key, mContext.getString(R.string.pref_telegram_chatid_default)),
+                                true
                         );
                         sendPictures(cmdContext, mUri);
                     }

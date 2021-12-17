@@ -6,3 +6,5 @@
 /build
 mobile/src/debug/res/values/sensitive.xml
 *.xml~
+*.apk
+/mobile/*/release/*

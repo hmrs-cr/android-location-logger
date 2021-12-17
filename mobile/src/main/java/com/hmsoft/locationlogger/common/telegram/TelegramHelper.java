@@ -41,7 +41,7 @@ public class TelegramHelper {
     private static long updatesOffset = 0;
 
     public interface UpdateCallback {
-        void onTelegramUpdateReceived(String chatId, String messageId, String text);
+        void onTelegramUpdateReceived(String chatId, String messageId, String text, final String userName, final String fillName);
     }
 
     public static long sendTelegramMessage(String botKey, String chatId, String message) {
@@ -278,9 +278,12 @@ public class TelegramHelper {
                                             }
                                         }
                                         if (!TextUtils.isEmpty(text)) {
-                                            String chatId = message.getJSONObject("chat").getString("id");
+                                            JSONObject chat = message.getJSONObject("chat");
+                                            String chatId = chat.getString("id");
+                                            String userName = chat.getString("username");
+                                            String fullName = chat.getString("first_name") + " " + chat.getString("last_name");
                                             String messageId = message.optString("message_id");
-                                            mUpdateCallback.onTelegramUpdateReceived(chatId, messageId, text);
+                                            mUpdateCallback.onTelegramUpdateReceived(chatId, messageId, text, userName, fullName);
                                         }
                                     }
                                 }

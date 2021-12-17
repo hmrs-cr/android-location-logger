@@ -38,4 +38,6 @@
     <string name="profile_settings_restricted_key" translatable="false">profile_settings_restricted</string>
     <string name="profile_notify_events_key" translatable="false">profile_notify_events</string>
 
+    <string name="pref_telegram_masterid_key"  translatable="false">pref_telegram_masterid</string>
+
 </resources>

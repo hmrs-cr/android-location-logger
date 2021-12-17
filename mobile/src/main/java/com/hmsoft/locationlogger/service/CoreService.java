@@ -148,7 +148,7 @@ public class CoreService extends Service
 
     //region Telegram Methods
     @Override
-    public void onTelegramUpdateReceived(String chatId, final String messageId, final String text) {
+    public void onTelegramUpdateReceived(String chatId, final String messageId, final String text, final String userName, final String fullName) {
         if (DEBUG)
             Logger.debug(TAG, "Telegram:onTelegramUpdateReceived: ChatId: %s, TelegramMessage: %s", chatId, text);
 
@@ -156,7 +156,7 @@ public class CoreService extends Service
         boolean allowed;
         if (!(allowed = channelId.equals(chatId))) {
             if (mTelegramAllowedFrom == null) {
-                mTelegramAllowedFrom = getString(R.string.pref_telegram_masterid).split("\\|");
+                mTelegramAllowedFrom =  mPreferences.getString(R.string.pref_telegram_masterid_key, getString(R.string.pref_telegram_masterid_default)).split("\\|");
             }
             for (int i = 0; i < mTelegramAllowedFrom.length; i++) {
                 if (mTelegramAllowedFrom[i].equals(chatId)) {
@@ -166,15 +166,7 @@ public class CoreService extends Service
             }
         }
 
-        if (!allowed) {
-            String msg = String.format("You are not my master!\n\nmsg:\"%s\"\nid:%s", text, chatId);
-            Logger.warning(TAG, msg);
-            final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
-            TelegramHelper.sendTelegramMessage(botKey, channelId, null, msg);
-            return;
-        }
-
-        processTextMessage(null, messageId, text);
+        processTextMessage(null, messageId, text, chatId, userName, fullName, allowed);
 
         TaskExecutor.executeOnUIThread(new Runnable() {
             @Override
@@ -194,12 +186,19 @@ public class CoreService extends Service
         TaskExecutor.executeOnNewThread(new Runnable() {
             @Override
             public void run() {
-                processTextMessage(fromSmsNumber, null, text);
+                processTextMessage(fromSmsNumber, null, text, null, null, null, true);
             }
         });
     }
 
-    private synchronized void processTextMessage(final String fromSmsNumber, final String messageId, String text) {
+    private synchronized void processTextMessage(
+            final String fromSmsNumber,
+            final String messageId,
+            String text,
+            String chatId,
+            String userName,
+            String fullName,
+            boolean isAllowed) {
 
         final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
         final String channelId = mPreferences.getString(R.string.pref_telegram_chatid_key, getString(R.string.pref_telegram_chatid_default));
@@ -208,17 +207,24 @@ public class CoreService extends Service
         String fromId;
         if (TextUtils.isEmpty(fromSmsNumber)) {
             source = Command.SOURCE_TELEGRAM;
-            fromId = channelId;
+            fromId = chatId;
         } else {
             source = Command.SOURCE_SMS;
             fromId = fromSmsNumber;
         }
 
-        Command.CommandContext context = new Command.CommandContext(this, source, botKey, fromId, messageId);
+        Command.CommandContext context = new Command.CommandContext(this, source, botKey, fromId, messageId, userName, fullName, channelId, isAllowed);
 
         String[] commnadParams = text.split(" ", 2);
         Command command = Command.getCommand(commnadParams[0]);
         if (command != null) {
+            if (!command.isAnyoneAllowed() && !isAllowed) {
+                String msg = String.format("You are not my master!\n\nmsg:\"%s\"\nid:%s", text, chatId);
+                Logger.warning(TAG, msg);
+                TelegramHelper.sendTelegramMessage(botKey, chatId, null, msg);
+                return;
+            }
+
             command.setContext(context);
             command.execute(commnadParams);
         } else {
@@ -496,7 +502,7 @@ public class CoreService extends Service
                     message = "*** Location saved";
                     stopLocationListener();
                 } else {
-                    message = "No good GPS location.";
+                    message = "No good GPS location. " + location.getAccuracy() + "<=" + mBestAccuracy;
                 }
             }
 
@@ -852,7 +858,7 @@ public class CoreService extends Service
 
             long time = mGpsTimeout / 4;
             if(DEBUG) {
-                mGpsTimeout = 10;
+                //mGpsTimeout = 10;
             }
 
             float minDistance = mMinimumDistance / 2;
@@ -1175,7 +1181,7 @@ public class CoreService extends Service
         mAlarmSyncCallback = PendingIntent.getService(context, 0, i, 0);
 
         ActionReceiver.register(this);
-        PowerConnectionReceiver.register(this);
+        // PowerConnectionReceiver.register(this);
 
         checkVersion();
         insertNotifyInfo(getString(R.string.service_started));

@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Gpx;
+import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.LocationSet;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
@@ -18,6 +19,8 @@ import java.util.Date;
 import java.util.TimeZone;
 
 public class TripTable {
+    private static final String TAG = "TripTable";
+
     public static final String TABLE_NAME = "trip";
     public static final String VIEW_NAME = TABLE_NAME + "View";
     public static final String DETAIL_VIEW_NAME = TABLE_NAME + "DetailView";
@@ -280,6 +283,9 @@ public class TripTable {
         if (trip != null) {
 
             if (trip.pointNumber < 5) {
+                if (Logger.DEBUG) {
+                    Logger.debug(TAG, "Not enough points in trip:" + trip.pointNumber);
+                }
                 return null;
             }
 

@@ -2,6 +2,7 @@ package com.hmsoft.locationlogger.data.commands;
 
 import android.content.Context;
 
+import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
@@ -86,27 +87,44 @@ public abstract class Command {
     public static class CommandContext {
         public final int source;
         public final String botKey;
+        public final String channelId;
         public final String fromId;
+        public final String fromUserName;
+        public final String fromFullName;
         public final String messageId;
         public final Context androidContext;
+        public final boolean isAllowed;
 
-        public CommandContext(Context context, int source, String botKey, String fromId, String messageId) {
+        public CommandContext(
+                Context context,
+                int source,
+                String botKey,
+                String fromId,
+                String messageId,
+                String fromUserName,
+                String fromFullName,
+                String channelId,
+                boolean isAllowed) {
             this.source = source;
             this.botKey = botKey;
             this.fromId = fromId;
+            this.channelId = channelId;
+            this.fromUserName = fromUserName;
+            this.fromFullName = fromFullName;
             this.messageId = messageId;
             this.androidContext = context;
+            this.isAllowed = isAllowed;
         }
     }
 
     protected CommandContext context;
 
-    public void setContext(CommandContext context) {
-        this.context = context;
+    public boolean isAnyoneAllowed() {
+        return false;
     }
 
-    public void setContext(Context context, int source, String botKey, String fromId, String messageId) {
-        setContext(new CommandContext(context, source, botKey, fromId, messageId));
+    public void setContext(CommandContext context) {
+        this.context = context;
     }
 
     public static void sendReplyAsync(final CommandContext context, final String message) {
@@ -124,6 +142,10 @@ public abstract class Command {
         } else {
             TelegramHelper.sendTelegramMessage(context.botKey, context.fromId, context.messageId, message);
         }
+    }
+
+    protected long sendTelegramMessageToChannel(String message) {
+        return TelegramHelper.sendTelegramMessage(context.botKey, context.channelId, null, message);
     }
 
     protected long sendTelegramReply(String message) {
@@ -200,5 +222,6 @@ public abstract class Command {
         registerCommandClass(GetTripCommand.COMMAND_NAME, GetTripCommand.class);
         registerCommandClass(PrefCommand.COMMAND_NAME, PrefCommand.class);
         registerCommandClass(WifiApCommand.COMMAND_NAME, WifiApCommand.class);
+        registerCommandClass(JoinCommand.COMMAND_NAME, JoinCommand.class);
     }
 }
