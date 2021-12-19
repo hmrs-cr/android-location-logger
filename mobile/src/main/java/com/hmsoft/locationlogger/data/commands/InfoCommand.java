@@ -20,11 +20,6 @@ class InfoCommand extends Command {
     @Override
     public void execute(String[] params, CommandContext context) {
         String info = Utils.getGeneralInfo(context.androidContext);
-
-        if(context.source == Command.SOURCE_SMS) {
-            Utils.sendSms(context.fromId, info, null);
-        } else {
-            CoreService.updateLocation(context.androidContext, info);
-        }
+        sendReply(context, info);
     }
 }
