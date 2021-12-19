@@ -177,8 +177,13 @@ class DocumentCommand extends InternalCommand {
                 if (status == -1) {
                     message = "Download done, unknown status.";
                 } else if (DownloadManager.STATUS_SUCCESSFUL == status) {
-                    message = "Download done!";
-                    processDownload(Uri.parse(fileUri));
+                    boolean processed = false;
+                    try {
+                        processed = processDownload(Uri.parse(fileUri));
+                    } catch (Exception e) {
+                        Logger.error(TAG, "Error processing download", e);
+                    }
+                    message = processed ? "Download and processed successfully!" : "Download done, failed to process.";
                 } else {
                     message = "Download failed. " + reason;
                 }
@@ -190,22 +195,30 @@ class DocumentCommand extends InternalCommand {
             }
         }
 
-        private void processDownload(final Uri fileUri) {
+        private boolean processDownload(final Uri fileUri) {
             String fileName = fileUri.getPath();
             if (fileName.contains("database.backup") && fileName.endsWith(".db")) {
-                Helper.getInstance().importDB(fileName);
-            } else if (fileName.contains("/LocationLogger-") && fileName.endsWith(".apk")) {
+                return Helper.getInstance().importDB(fileName);
+            }
+
+            if (fileName.contains("/LocationLogger-") && fileName.endsWith(".apk")) {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setDataAndType(fileUri,"application/vnd.android.package-archive");
                  LocationLoggerApp.getContext().startActivity(intent);
-            } else if(fileName.contains("/" + TelegramHelper.VOICE_PREFIX) && fileName.endsWith(".tmp")) {
+                 return true;
+            }
+
+            if(fileName.contains("/" + TelegramHelper.VOICE_PREFIX) && fileName.endsWith(".tmp")) {
                 TaskExecutor.executeOnNewThread(new Runnable() {
                     @Override
                     public void run() {
                         Utils.playAudio(fileUri, true);
                     }
                 });
+                return true;
             }
+
+            return false;
         }
     }
 }

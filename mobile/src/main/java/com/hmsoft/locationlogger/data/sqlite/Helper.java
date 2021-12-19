@@ -64,7 +64,7 @@ public class Helper extends SQLiteOpenHelper {
         return  new File(this.getReadableDatabase().getPath());
     }
 
-    public void importDB(String inFileName) {
+    public boolean importDB(String inFileName) {
 
         final File outFile = getPathFile();
         try {
@@ -87,8 +87,11 @@ public class Helper extends SQLiteOpenHelper {
             output.close();
             fis.close();
 
+            return true;
+
         } catch (Exception e) {
             Logger.warning(TAG, "importDB", e);
+            return false;
         }
     }
 
