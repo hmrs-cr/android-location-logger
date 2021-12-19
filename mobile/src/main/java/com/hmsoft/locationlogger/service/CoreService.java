@@ -857,7 +857,7 @@ public class CoreService extends Service
 
             long time = mGpsTimeout / 4;
             if(DEBUG) {
-                //mGpsTimeout = 10;
+                mGpsTimeout = 10;
             }
 
             float minDistance = mMinimumDistance / 2;
