@@ -289,8 +289,8 @@ public class TelegramHelper {
                                         if (!TextUtils.isEmpty(text)) {
                                             JSONObject chat = message.getJSONObject("chat");
                                             String chatId = chat.getString("id");
-                                            String userName = chat.getString("username");
-                                            String fullName = chat.getString("first_name") + " " + chat.getString("last_name");
+                                            String userName = chat.optString("username");
+                                            String fullName = chat.optString("first_name") + " " + chat.optString("last_name");
                                             String messageId = message.optString("message_id");
                                             mUpdateCallback.onTelegramUpdateReceived(chatId, messageId, text, userName, fullName);
                                         }

@@ -227,7 +227,9 @@ public class CoreService extends Service
 
             command.execute(commnadParams, context);
         } else {
-            Command.sendReply(context, "Command not found.");
+            if (isAllowed) {
+                Command.sendReply(context, "Command not found.");
+            }
         }
     }
 
@@ -1099,6 +1101,7 @@ public class CoreService extends Service
         int oldSyncHour = mSyncHour;
         int oldSynMinute = mSyncMinute;
         //boolean oldUseGmsIgAvailable = mUseGmsIgAvailable;
+        mTelegramAllowedFrom = null;
         mMinimumDistance = mPreferences.getInt(R.string.pref_minimun_distance_key, String.valueOf(mMinimumDistance)); //meters
         mGpsTimeout = mPreferences.getInt(R.string.pref_gps_timeout_key, String.valueOf(mGpsTimeout)); //seconds
         mMaxReasonableSpeed = mPreferences.getFloat(R.string.pref_max_speed_key, String.valueOf(mMaxReasonableSpeed)); // meters/seconds
