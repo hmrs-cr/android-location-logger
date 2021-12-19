@@ -19,6 +19,6 @@ class LocationCommand extends Command {
     @Override
     public void execute(String[] params, CommandContext context) {
         String info = params.length > 1 ? params[1] : "Location";
-        CoreService.updateLocation(context.androidContext, info);
+        CoreService.updateLocation(context.androidContext, info, context.messageId, context.fromId);
     }
 }

@@ -28,10 +28,12 @@ public final class Constants {
     public static final String EXTRA_BATTERY_LEVEL = EXTRA_NAMESPACE + ".EXTRA_BATTERY_LEVEL";
     public static final String EXTRA_SMS_FROM_ADDR =  EXTRA_NAMESPACE + ".EXTRA_SMS_FROM_ADDR";
     public static final String EXTRA_SMS_BODY =  EXTRA_NAMESPACE + ".EXTRA_SMS_BODY";
+    public static final String EXTRA_FROM_ID = EXTRA_NAMESPACE + ".EXTRA_FROM_ID";
+    public static final String EXTRA_MESSAGE_ID = EXTRA_NAMESPACE + ".EXTRA_MESSAGE_ID";
+
 
 
     public static final String PREF_KEY_CALCULATE_MOVEMENT = "calculate_movement";
-
 
     private Constants() {
     }

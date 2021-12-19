@@ -48,7 +48,6 @@ import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTripStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
-import com.hmsoft.locationlogger.receivers.PowerConnectionReceiver;
 import com.hmsoft.locationlogger.receivers.StartServiceReceiver;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
@@ -143,6 +142,8 @@ public class CoreService extends Service
     private String[] mTelegramAllowedFrom = null;
     private long mLastTelegamUpdate;
     private String[] mPhoneNumbers;
+    private String mReplyToId;
+    private String mReplyToMessageId;
 
     //endregion Core fields
 
@@ -621,6 +622,10 @@ public class CoreService extends Service
 
         if(mPendingNotifyInfo != null) {
             location.extraInfo = mPendingNotifyInfo.toString();
+            location.replyToMessageId = mReplyToMessageId;
+            location.replyToId = mReplyToId;
+            mReplyToMessageId = null;
+            mReplyToId = null;
         }
     }
 
@@ -672,9 +677,7 @@ public class CoreService extends Service
                         @Override
                         public void run() {
                             cleanup();
-                            if (uploaded) {
-                                mPendingNotifyInfo = null;
-                            }
+                            mPendingNotifyInfo = null;
                         }
                     });
                 }
@@ -1050,6 +1053,9 @@ public class CoreService extends Service
             String notifyInfo = intent.getStringExtra(Constants.EXTRA_NOTIFY_INFO);
             if(!TextUtils.isEmpty(notifyInfo)) {
                 insertNotifyInfo(notifyInfo + "\n");
+
+                this.mReplyToId = intent.getStringExtra(Constants.EXTRA_FROM_ID);
+                this.mReplyToMessageId = intent.getStringExtra(Constants.EXTRA_MESSAGE_ID);
             }
 
             if(intent.hasExtra(Constants.EXTRA_BALANCE_SMS)) {
@@ -1275,6 +1281,15 @@ public class CoreService extends Service
     public static void updateLocation(Context context, String info) {
         Intent i = new Intent();
         i.putExtra(Constants.EXTRA_UPDATE_LOCATION, 1);
+        i.putExtra(Constants.EXTRA_NOTIFY_INFO, info);
+        start(context, i);
+    }
+
+    public static void updateLocation(Context context, String info, String messageId, String fromId) {
+        Intent i = new Intent();
+        i.putExtra(Constants.EXTRA_UPDATE_LOCATION, 1);
+        i.putExtra(Constants.EXTRA_MESSAGE_ID, messageId);
+        i.putExtra(Constants.EXTRA_FROM_ID, fromId);
         i.putExtra(Constants.EXTRA_NOTIFY_INFO, info);
         start(context, i);
     }

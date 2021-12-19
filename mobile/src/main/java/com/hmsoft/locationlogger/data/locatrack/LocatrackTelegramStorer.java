@@ -76,7 +76,13 @@ public class LocatrackTelegramStorer extends LocationStorer {
         }
 
         String message = getEventMessage(location, netTypeName);
-        long messageId = TelegramHelper.sendTelegramMessage(mBotKey, mChatId, message);
+
+        String chatId = LocatrackLocation.EVENT_INFO.equals(location.event) && location.replyToId != null ? location.replyToId : mChatId;
+        String replyMessageId = LocatrackLocation.EVENT_INFO.equals(location.event) ? location.replyToMessageId : null;
+        long messageId = TelegramHelper.sendTelegramMessage(mBotKey, chatId, replyMessageId, message);
+
+        location.replyToId = null;
+        location.replyToMessageId = null;
 
         boolean success = messageId > 0;
         if(!success) {
@@ -134,7 +140,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
             batteryLevel -= 100;
         }
 
-        String event = TextUtils.isEmpty(location.event) ? LocatrackLocation.EVENT_INFO : location.event;
+        String event = location.event = TextUtils.isEmpty(location.event) ? LocatrackLocation.EVENT_INFO : location.event;
         switch (event) {
             case LocatrackLocation.EVENT_INFO:
                 event = "INFO";
@@ -159,7 +165,7 @@ public class LocatrackTelegramStorer extends LocationStorer {
         message.append("*").append(event).append("!").append("*\n\n");
 
         if(!TextUtils.isEmpty(location.extraInfo)) {
-            message.append("_").append(location.extraInfo.trim()).append("_").append("\n\n");
+            message.append("_").append(TelegramHelper.escapeMarkdown(location.extraInfo.trim())).append("_").append("\n\n");
         }
 
         message
