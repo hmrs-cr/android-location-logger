@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
@@ -274,10 +275,10 @@ public class Utils {
         return generalInfo.toString();
     }
 
-    public static void playAudio(String fileName, boolean loudestPossible) {
+    public static void playAudio(Uri fileUri, boolean loudestPossible) {
 
         if(DEBUG) {
-            Logger.debug(TAG, "Playing audio: " + fileName);
+            Logger.debug(TAG, "Playing audio: " + fileUri);
         }
 
         AudioManager _audioManager = null;
@@ -297,9 +298,14 @@ public class Utils {
         final int originalVolume = _originalVolume;
 
         MediaPlayer mp = new MediaPlayer();
-        mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build();
+
+        mp.setAudioAttributes(audioAttributes);
         try {
-            mp.setDataSource(/*"content:/" +*/ fileName);
+            mp.setDataSource(LocationLoggerApp.getContext(), fileUri);
             mp.prepare();
             mp.start();
             mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener()

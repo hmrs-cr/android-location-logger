@@ -155,7 +155,7 @@ class DocumentCommand extends InternalCommand {
 
                 int status = -1;
                 int reason = -1;
-                String fileName = "";
+                String fileUri = "";
 
                 if (c.moveToNext()) {
                     int i = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
@@ -167,9 +167,9 @@ class DocumentCommand extends InternalCommand {
                     if (i > -1) {
                         reason = c.getInt(i);
                     }
-                    i = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_FILENAME);
+                    i = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
                     if (i > -1) {
-                        fileName = c.getString(i);
+                        fileUri = c.getString(i);
                     }
                 }
 
@@ -178,7 +178,7 @@ class DocumentCommand extends InternalCommand {
                     message = "Download done, unknown status.";
                 } else if (DownloadManager.STATUS_SUCCESSFUL == status) {
                     message = "Download done!";
-                    processDownload(fileName);
+                    processDownload(Uri.parse(fileUri));
                 } else {
                     message = "Download failed. " + reason;
                 }
@@ -190,18 +190,19 @@ class DocumentCommand extends InternalCommand {
             }
         }
 
-        private void processDownload(final String fileName) {
-            if (fileName.endsWith("database.backup.db")) {
+        private void processDownload(final Uri fileUri) {
+            String fileName = fileUri.getPath();
+            if (fileName.contains("database.backup") && fileName.endsWith(".db")) {
                 Helper.getInstance().importDB(fileName);
             } else if (fileName.contains("/LocationLogger-") && fileName.endsWith(".apk")) {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setDataAndType(Uri.fromFile(new File(fileName)),"application/vnd.android.package-archive");
+                intent.setDataAndType(fileUri,"application/vnd.android.package-archive");
                  LocationLoggerApp.getContext().startActivity(intent);
             } else if(fileName.contains("/" + TelegramHelper.VOICE_PREFIX) && fileName.endsWith(".tmp")) {
                 TaskExecutor.executeOnNewThread(new Runnable() {
                     @Override
                     public void run() {
-                        Utils.playAudio(fileName, true);
+                        Utils.playAudio(fileUri, true);
                     }
                 });
             }
