@@ -49,7 +49,7 @@ class DocumentCommand extends InternalCommand {
 
             if (!TextUtils.isEmpty(downloadUrl) && !TextUtils.isEmpty(context.messageId)) {
                 long id = downloadFile(fileName, downloadUrl);
-                DownloadFinishedReceiver.addDownload(id, context.messageId);
+                DownloadFinishedReceiver.addDownload(id, context);
             }
         }
     }
@@ -110,7 +110,7 @@ class DocumentCommand extends InternalCommand {
 
         private static DownloadFinishedReceiver sInstance;
         private Context mContext;
-        private Map<Long, String> mDownloads;
+        private Map<Long, CommandContext> mDownloads;
 
         @SuppressLint("UseSparseArrays")
         private DownloadFinishedReceiver(Context context) {
@@ -130,14 +130,15 @@ class DocumentCommand extends InternalCommand {
             if (sInstance != null) {
                 sInstance.mContext.unregisterReceiver(sInstance);
                 sInstance.mContext = null;
+                sInstance.mDownloads.clear();
                 sInstance.mDownloads = null;
                 sInstance = null;
             }
         }
 
-        public static void addDownload(long id, String messageId) {
+        public static void addDownload(long id, CommandContext commandContext) {
             if (sInstance != null) {
-                sInstance.mDownloads.put(id, messageId);
+                sInstance.mDownloads.put(id, commandContext);
             }
         }
 
@@ -146,10 +147,7 @@ class DocumentCommand extends InternalCommand {
             long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0);
             if (mDownloads.containsKey(id)) {
 
-                String messageId = mDownloads.get(id);
-                String botKey =  PreferenceProfile.get(mContext).getString(R.string.pref_telegram_botkey_key, mContext.getString(R.string.pref_telegram_botkey_default));
-                String channelId = PreferenceProfile.get(mContext).getString(R.string.pref_telegram_chatid_key, mContext.getString(R.string.pref_telegram_chatid_default));
-
+                CommandContext commandContext = mDownloads.get(id);
                 DownloadManager downloadManager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
                 Cursor c = downloadManager.query(new DownloadManager.Query().setFilterById(id));
 
@@ -189,7 +187,7 @@ class DocumentCommand extends InternalCommand {
                 }
                 c.close();
 
-                TelegramHelper.sendTelegramMessageAsync(botKey, channelId, messageId, message);
+                commandContext.sendTelegramReplyAsync(message);
 
                 mDownloads.remove(id);
             }

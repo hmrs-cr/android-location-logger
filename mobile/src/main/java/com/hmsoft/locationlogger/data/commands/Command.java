@@ -120,6 +120,15 @@ public abstract class Command {
         public long sendTelegramReply(String message) {
             return TelegramHelper.sendTelegramMessage(this.botKey, this.fromId, this.messageId, message);
         }
+
+        public void sendTelegramReplyAsync(final String message) {
+            TaskExecutor.executeOnNewThread(new Runnable() {
+                @Override
+                public void run() {
+                    sendTelegramReply(message);
+                }
+            });
+        }
     }
 
     public boolean isAnyoneAllowed() {
