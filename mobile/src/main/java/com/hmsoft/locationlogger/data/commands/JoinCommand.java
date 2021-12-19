@@ -1,7 +1,5 @@
 package com.hmsoft.locationlogger.data.commands;
 
-import com.hmsoft.locationlogger.service.CoreService;
-
 public class JoinCommand extends  Command {
 
     static final String COMMAND_NAME = "Join";
@@ -22,12 +20,12 @@ public class JoinCommand extends  Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         if (context.isAllowed) {
             // TODO: Localize strings
-            sendTelegramReply("Usted ya puede hablar conmigo en privado, no hace falta que lo pida de nuevo. Sopenco!");
+            context.sendTelegramReply("Usted ya puede hablar conmigo en privado, no hace falta que lo pida de nuevo. Sopenco!");
         } else {
-            sendTelegramMessageToChannel("Dice " + context.fromFullName + " que quiere hablar en privado conmigo. " + context.fromUserName + " (" + context.fromId + ")");
+            context.sendTelegramMessageToChannel("Dice " + context.fromFullName + " que quiere hablar en privado conmigo. " + context.fromUserName + " (" + context.fromId + ")");
         }
     }
 }

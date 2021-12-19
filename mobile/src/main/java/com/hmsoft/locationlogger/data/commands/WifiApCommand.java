@@ -19,7 +19,7 @@ class WifiApCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
 
         if(params.length == 2) {
            String[] newStatus = params[1].split(" ", 1);

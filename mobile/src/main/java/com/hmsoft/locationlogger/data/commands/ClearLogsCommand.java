@@ -17,8 +17,8 @@ class ClearLogsCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         int count = Logger.clearLogs();
-        sendTelegramReply(count + " logs removed.");
+        context.sendTelegramReply(count + " logs removed.");
     }
 }

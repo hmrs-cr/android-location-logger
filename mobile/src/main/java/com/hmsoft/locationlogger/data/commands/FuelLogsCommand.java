@@ -1,7 +1,6 @@
 package com.hmsoft.locationlogger.data.commands;
 
 import com.hmsoft.locationlogger.data.sqlite.FuelLogTable;
-import com.hmsoft.locationlogger.data.sqlite.Helper;
 
 class FuelLogsCommand extends Command {
 
@@ -18,7 +17,7 @@ class FuelLogsCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
 
         String[] subParams = getSubParams(params);
 
@@ -46,7 +45,7 @@ class FuelLogsCommand extends Command {
             String id = printIds ?  log.date.getTime() + " " : "";
             message = message + id + log + "\n";
         }
-        sendTelegramReply(message);
+        context.sendTelegramReply(message);
     }
 }
 

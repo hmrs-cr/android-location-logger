@@ -31,22 +31,22 @@ public class GetTripCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         if (params.length == 2) {
             String[] supParams = params[1].split(" ", 3);
 
             String id = supParams[0];
             if(id.endsWith("all")) {
-                handleTripList(true);
+                handleTripList(true, context);
             } else if(supParams.length == 1) {
-                handleSingle(id);
+                handleSingle(id, context);
             } else if(supParams.length == 2 && supParams[1].equals("gpx")) {
-                handleGpx(id);
+                handleGpx(id, context);
             } else if(supParams.length == 3 && supParams[0].equals("gpx")) {
-                 handleGpx(supParams[1], supParams[2]);
+                 handleGpx(supParams[1], supParams[2], context);
             }
         } else {
-            handleTripList(false);
+            handleTripList(false, context);
         }
     }
 
@@ -65,20 +65,20 @@ public class GetTripCommand extends Command {
         }
     }
 
-    private void handleGpx(String startDateStr, String endDateStr) {
+    private void handleGpx(String startDateStr, String endDateStr, CommandContext context) {
         try {
             Date startDate = parseDateString(startDateStr, 0);
             Date endDate = parseDateString(endDateStr, 24);
 
             TripTable.TripDetail trip = TripTable.TripDetail.createTrip(startDate.getTime(), endDate.getTime(), 0f);
-            handleGpx(trip, startDateStr + "-" + endDateStr);
+            handleGpx(trip, startDateStr + "-" + endDateStr, context);
         } catch (ParseException e) {
             sendReply(context, "Wrong date format.");
             e.printStackTrace();
         }
     }
 
-    private void handleSingle(String id) {
+    private void handleSingle(String id, CommandContext context) {
 
         TripTable.TripDetail trip = TripTable.getTripbyId(id);
         if (trip != null) {
@@ -90,7 +90,7 @@ public class GetTripCommand extends Command {
         }
     }
 
-    private void handleTripList(boolean all) {
+    private void handleTripList(boolean all, CommandContext context) {
         TripTable.Trip[] trips = TripTable.getTrips(all ? -1 : 0);
         String reply = "";
         for (TripTable.Trip trip : trips) {
@@ -102,7 +102,7 @@ public class GetTripCommand extends Command {
         sendReply(context, reply);
     }
 
-    private void handleGpx(String id) {
+    private void handleGpx(String id, CommandContext context) {
 
         TripTable.TripDetail trip = null;
         if("last".equals(id)) {
@@ -112,10 +112,10 @@ public class GetTripCommand extends Command {
             }
         }
 
-        handleGpx(trip, id);
+        handleGpx(trip, id, context);
     }
 
-    private void handleGpx(TripTable.TripDetail trip, String id) {
+    private void handleGpx(TripTable.TripDetail trip, String id, CommandContext context) {
 
 
         final File gpxFile = new File(context.androidContext.getCacheDir(), "Trip-" + id + ".gpx");

@@ -24,7 +24,7 @@ class AudioCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
 
 
         try {
@@ -55,7 +55,7 @@ class AudioCommand extends Command {
             TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, audioFile);
 
         } catch (Exception e) {
-            sendTelegramReply(e.getMessage());
+            context.sendTelegramReply(e.getMessage());
         }
     }
 }

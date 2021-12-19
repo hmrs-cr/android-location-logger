@@ -11,9 +11,12 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.text.TextUtils;
 
+import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
+import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class WifiCommand extends Command {
@@ -21,15 +24,23 @@ public class WifiCommand extends Command {
     static final String COMMAND_NAME = "Wifi";
     private static final String TAG = "WifiCommand";
 
-    private BroadcastReceiver wifiScanReceiver = new BroadcastReceiver() {
+    private WifiScanReceiver wifiScanReceiver = new WifiScanReceiver();
+
+    private class WifiScanReceiver extends  BroadcastReceiver {
+
+        private final List<CommandContext> contexts = new ArrayList<CommandContext>();
+
+        public synchronized void addContext(CommandContext context) { contexts.add(context); }
+        public synchronized void clearContextList() { contexts.clear(); }
+
         @Override
         public void onReceive(Context c, Intent intent) {
             boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
             if (success) {
-                scanSuccess();
+                scanSuccess(contexts);
             } else {
                 // scan failure handling
-                scanFailure();
+                scanFailure(contexts);
             }
         }
     };
@@ -128,8 +139,9 @@ public class WifiCommand extends Command {
     }
 
 
-    private void scanSuccess() {
-        context.androidContext.unregisterReceiver(wifiScanReceiver);
+    private void scanSuccess(List<CommandContext> contexts) {
+
+        LocationLoggerApp.getContext().unregisterReceiver(wifiScanReceiver);
 
         List<ScanResult> results = mWifiManager.getScanResults();
 
@@ -139,25 +151,29 @@ public class WifiCommand extends Command {
             currentWifi = wifiInfo.getSSID().replace("\"", "");
         }
 
-        String result = "Networks:\n";
+        String result = "";
         for(ScanResult scanResult : results) {
             int level = WifiManager.calculateSignalLevel(scanResult.level, 10);
 
 
             if(scanResult.SSID.equals(currentWifi)) {
-                result += "*" + scanResult.SSID + "* - " + level + "\n";
+                result += "*" + TelegramHelper.escapeMarkdown(scanResult.SSID) + "* - " + level + "\n";
             } else {
-                result += scanResult.SSID +  " - " +scanResult.capabilities + " - " + level +  "\n";
+                result += TelegramHelper.escapeMarkdown(scanResult.SSID) +  " - " + level +  "\n";
             }
         }
 
-        sendReplyAsync(context, result);
+        for (CommandContext context : contexts) {
+            sendReplyAsync(context, result);
+        }
+
+        wifiScanReceiver.clearContextList();
     }
 
 
-    private void scanFailure() {
+    private void scanFailure(List<CommandContext> contexts) {
         Logger.warning(TAG, "Wifi scan failed.");
-        scanSuccess();
+        scanSuccess(contexts);
     }
 
     private WifiManager mWifiManager;
@@ -175,8 +191,8 @@ public class WifiCommand extends Command {
 
     @Override
     public void cleanup() {
-        if(context != null) {
-            context.androidContext.unregisterReceiver(wifiScanReceiver);
+        if(wifiScanReceiver != null) {
+            LocationLoggerApp.getContext().unregisterReceiver(wifiScanReceiver);
         }
         wifiScanReceiver = null;
         mWifiManager = null;
@@ -184,7 +200,7 @@ public class WifiCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
 
 
         String[] subParams = getSubParams(params);
@@ -202,11 +218,13 @@ public class WifiCommand extends Command {
         mWifiManager.setWifiEnabled(true);
 
         if(TextUtils.isEmpty(ssid)) {
-            context.androidContext.registerReceiver(wifiScanReceiver, mIntentFilter);
-
+            LocationLoggerApp.getContext().registerReceiver(wifiScanReceiver, mIntentFilter);
+            wifiScanReceiver.addContext(context);
             boolean success = mWifiManager.startScan();
             if (!success) {
-                scanFailure();
+                List<CommandContext> contexts = new ArrayList<>();
+                contexts.add(context);
+                scanFailure(contexts);
             }
         } else {
             boolean connected = connectToWifi(ssid, password);

@@ -1,7 +1,6 @@
 package com.hmsoft.locationlogger.data.commands;
 
 import com.hmsoft.locationlogger.data.sqlite.FuelLogTable;
-import com.hmsoft.locationlogger.data.sqlite.Helper;
 
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -21,12 +20,12 @@ class AvgFuelCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
 
         FuelLogTable.Statics statics = FuelLogTable.getMostRecentStatics();
         double consuption = FuelLogTable.getAvgConsuption();
-        sendTelegramReply("*Last: *" + statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L (" + dateFormat.format(statics.startDate) + " - " + dateFormat.format(statics.endDate) + ")" +
+        context.sendTelegramReply("*Last: *" + statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L (" + dateFormat.format(statics.startDate) + " - " + dateFormat.format(statics.endDate) + ")" +
                 "\n*Overall:* " + consuption + " km/L");
     }
 }

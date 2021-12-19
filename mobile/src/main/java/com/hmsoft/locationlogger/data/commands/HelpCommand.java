@@ -14,7 +14,7 @@ class HelpCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         String helpText = "";
         if(params.length == 2) {
             Command command = getCommand(params[1]);
@@ -31,6 +31,6 @@ class HelpCommand extends Command {
                 }
             }
         }
-        sendTelegramReply(helpText);
+        context.sendTelegramReply(helpText);
     }
 }

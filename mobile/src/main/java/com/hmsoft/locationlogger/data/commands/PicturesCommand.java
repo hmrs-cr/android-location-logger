@@ -175,7 +175,7 @@ class PicturesCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
 
         Uri contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
 

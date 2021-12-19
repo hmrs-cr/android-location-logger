@@ -2,7 +2,6 @@ package com.hmsoft.locationlogger.data.commands;
 
 import android.content.Context;
 
-import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
@@ -80,9 +79,7 @@ public abstract class Command {
         return Collections.emptySet();
     }
 
-    public void cleanup() {
-        context = null;
-    }
+    public void cleanup() { }
 
     public static class CommandContext {
         public final int source;
@@ -115,16 +112,18 @@ public abstract class Command {
             this.androidContext = context;
             this.isAllowed = isAllowed;
         }
-    }
 
-    protected CommandContext context;
+        public long sendTelegramMessageToChannel(String message) {
+            return TelegramHelper.sendTelegramMessage(this.botKey, this.channelId, null, message);
+        }
+
+        public long sendTelegramReply(String message) {
+            return TelegramHelper.sendTelegramMessage(this.botKey, this.fromId, this.messageId, message);
+        }
+    }
 
     public boolean isAnyoneAllowed() {
         return false;
-    }
-
-    public void setContext(CommandContext context) {
-        this.context = context;
     }
 
     public static void sendReplyAsync(final CommandContext context, final String message) {
@@ -142,14 +141,6 @@ public abstract class Command {
         } else {
             TelegramHelper.sendTelegramMessage(context.botKey, context.fromId, context.messageId, message);
         }
-    }
-
-    protected long sendTelegramMessageToChannel(String message) {
-        return TelegramHelper.sendTelegramMessage(context.botKey, context.channelId, null, message);
-    }
-
-    protected long sendTelegramReply(String message) {
-        return TelegramHelper.sendTelegramMessage(context.botKey, context.fromId, context.messageId, message);
     }
 
     public static Command getCommand(String command) {
@@ -189,19 +180,12 @@ public abstract class Command {
         commandClasses.put(commandName.toLowerCase(), commandClass);
     }
 
-    public static void registerCommand(Command command) {
-        if (commandInstances == null) {
-            commandInstances = new HashMap<>();
-        }
-        commandInstances.put(command.getName().toLowerCase(), command);
-    }
-
     public String getSummary() {
         return "";
     }
 
     public abstract String getName();
-    public abstract void execute(String[] params);
+    public abstract void execute(String[] params, CommandContext context);
 
     public static void registerCommands(Context context) {
         registerCommandClass(HelpCommand.COMMAND_NAME, HelpCommand.class);

@@ -20,12 +20,12 @@ class LogsCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         File[] logs = Logger.getLogFiles();
         if (logs != null && logs.length > 0) {
             TelegramHelper.sendTelegramDocuments(context.botKey, context.fromId, context.messageId, logs);
         } else {
-            sendTelegramReply("No logs.");
+            context.sendTelegramReply("No logs.");
         }
     }
 }

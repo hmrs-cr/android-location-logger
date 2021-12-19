@@ -3,7 +3,6 @@ package com.hmsoft.locationlogger.data.commands;
 import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.data.sqlite.FuelLogTable;
-import com.hmsoft.locationlogger.data.sqlite.Helper;
 
 class FuelCommand extends Command {
 
@@ -19,12 +18,12 @@ class FuelCommand extends Command {
         return COMMAND_NAME;
     }
 
-    private void notEnoughParams() {
+    private void notEnoughParams(CommandContext context) {
         sendReply(context, "Not enough params.");
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         if (params.length == 2) {
             try {
                 String[] fuelData = params[1].split(" ");
@@ -38,15 +37,15 @@ class FuelCommand extends Command {
                     double consuption = FuelLogTable.getAvgConsuption();
 
 
-                    sendTelegramReply(statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L\nOverall avg: " + consuption + " km/L");
+                    context.sendTelegramReply(statics.km + " km, " + statics.litres + "L, " + statics.avg + " km/L\nOverall avg: " + consuption + " km/L");
                 } else {
-                    notEnoughParams();
+                    notEnoughParams(context);
                 }
             } catch (Exception e) {
-                sendTelegramReply("Error: " + e.getMessage());
+                context.sendTelegramReply("Error: " + e.getMessage());
             }
         } else {
-            notEnoughParams();
+            notEnoughParams(context);
         }
     }
 }

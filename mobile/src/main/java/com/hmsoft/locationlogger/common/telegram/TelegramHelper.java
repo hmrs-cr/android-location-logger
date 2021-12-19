@@ -40,6 +40,15 @@ public class TelegramHelper {
 
     private static long updatesOffset = 0;
 
+    public static String escapeMarkdown(String plainText) {
+        if (plainText != null) {
+            plainText = plainText
+                    .replace("_", "\\_");
+        }
+
+        return plainText;
+    }
+
     public interface UpdateCallback {
         void onTelegramUpdateReceived(String chatId, String messageId, String text, final String userName, final String fillName);
     }

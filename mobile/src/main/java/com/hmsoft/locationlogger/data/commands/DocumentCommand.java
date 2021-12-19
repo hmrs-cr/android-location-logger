@@ -37,7 +37,7 @@ class DocumentCommand extends InternalCommand {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         if(params.length == 2) {
             String[] values = params[1].split("\\|");
 
@@ -62,7 +62,7 @@ class DocumentCommand extends InternalCommand {
 
     private long downloadFile(String fileName, String downloadUrl) {
 
-        Context context = this.context.androidContext;
+        Context context = LocationLoggerApp.getContext();
 
         boolean isSilentDownload = false;
         File downloadDestination = null;

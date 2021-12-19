@@ -225,8 +225,7 @@ public class CoreService extends Service
                 return;
             }
 
-            command.setContext(context);
-            command.execute(commnadParams);
+            command.execute(commnadParams, context);
         } else {
             Command.sendReply(context, "Command not found.");
         }

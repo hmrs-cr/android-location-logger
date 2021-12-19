@@ -16,7 +16,7 @@ class ConfigCommand extends Command {
         return COMMAND_NAME;
     }
 
-    private void telegram(String botKey, String chatId) {
+    private void telegram(String botKey, String chatId, CommandContext context) {
 
         String botName = TelegramHelper.getBotName(botKey);
         if(TextUtils.isEmpty(botName)) {
@@ -40,8 +40,8 @@ class ConfigCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         String[] subParams =  getSubParams(params);
-        telegram(getString(subParams, 0), getString(subParams,1));
+        telegram(getString(subParams, 0), getString(subParams,1), context);
     }
 }

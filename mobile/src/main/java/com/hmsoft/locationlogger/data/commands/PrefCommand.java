@@ -17,15 +17,15 @@ public class PrefCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         if(params.length == 2) {
             String[] subParams = params[1].split(" ", 3);
             if(subParams[0].equals("get")) {
-                getPreference(subParams);
+                getPreference(subParams, context);
 
             } else if(subParams[0].equals("set")) {
                 if(subParams.length > 2) {
-                    setPreference(subParams);
+                    setPreference(subParams, context);
                 } else {
                     sendReply(context, "Missing parameters");
                 }
@@ -33,7 +33,7 @@ public class PrefCommand extends Command {
         }
     }
 
-    private void setPreference(String[] subParams) {
+    private void setPreference(String[] subParams, CommandContext context) {
         try {
             PreferenceProfile prefs = PreferenceProfile.get(context.androidContext);
             Map<String, ?> allPrefs = prefs.getPreferences().getAll();
@@ -69,7 +69,7 @@ public class PrefCommand extends Command {
         }
     }
 
-    private void getPreference(String[] subParams) {
+    private void getPreference(String[] subParams, CommandContext context) {
         String prefKey = null;
         if(subParams.length == 2) {
             prefKey = subParams[1];

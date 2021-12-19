@@ -23,18 +23,18 @@ class GetDBCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params) {
+    public void execute(String[] params, CommandContext context) {
         ConnectivityManager connectivityManager;
         NetworkInfo networkInfo;
 
         boolean unlimitedData = PreferenceProfile.get(context.androidContext).getBoolean(R.string.pref_unlimited_data_key, false);
 
         if(!unlimitedData &&
-                ((connectivityManager = (ConnectivityManager)context.androidContext.getSystemService(Context.CONNECTIVITY_SERVICE)) == null ||
+                ((connectivityManager = (ConnectivityManager) context.androidContext.getSystemService(Context.CONNECTIVITY_SERVICE)) == null ||
                 (networkInfo = connectivityManager.getActiveNetworkInfo()) == null ||
                 networkInfo.getType() != ConnectivityManager.TYPE_WIFI)) {
 
-            sendTelegramReply("WiFi connection required.");
+            context.sendTelegramReply("WiFi connection required.");
             return;
         }
 
