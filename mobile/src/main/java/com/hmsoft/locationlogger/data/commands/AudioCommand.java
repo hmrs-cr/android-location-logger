@@ -3,9 +3,11 @@ package com.hmsoft.locationlogger.data.commands;
 import android.media.MediaRecorder;
 
 import com.hmsoft.locationlogger.common.TaskExecutor;
+import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 
 import java.io.File;
+import java.util.Date;
 
 class AudioCommand extends Command {
 
@@ -39,20 +41,24 @@ class AudioCommand extends Command {
             mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
             mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
-
             mRecorder.prepare();
-
-
             mRecorder.start();
 
-            long len = getLong(getSubParams(params), 0, 15);
+            String caption = Utils.dateFormat.format(new Date());
+            long len = getLong(getSubParams(params), 0, 20);
             TaskExecutor.sleep((int)len);
 
             mRecorder.stop();
             mRecorder.release();
             mRecorder = null;
 
-            TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, audioFile);
+            TelegramHelper.sendTelegramAudio(
+                    context.botKey,
+                    context.fromId,
+                    context.messageId,
+                    audioFile,
+                    caption,
+                    len);
 
         } catch (Exception e) {
             context.sendTelegramReply(e.getMessage());

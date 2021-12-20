@@ -67,7 +67,7 @@ public class TelegramHelper {
                                              final File[] documentFiles) {
 
         for (File doc : documentFiles) {
-            sendTelegramDocument(botKey, chatId, replyId, doc);
+            sendTelegramDocument(botKey, chatId, replyId, doc, null);
         }
     }
 
@@ -81,7 +81,7 @@ public class TelegramHelper {
             @Override
             public void run() {
                 for(File doc  :documentFiles) {
-                    sendTelegramDocument(botKey, chatId, replyId, doc);
+                    sendTelegramDocument(botKey, chatId, replyId, doc, null);
                 }
             }
         });
@@ -103,12 +103,50 @@ public class TelegramHelper {
     }
 
     public static void sendTelegramDocument(final String botKey,
-                                                 final String chatId,
-                                                 final String replyId,
-                                                 final File documentFile) {
+                                            final String chatId,
+                                            final String replyId,
+                                            final File documentFile,
+                                            final String caption) {
 
+        sendTelegramDocument(
+                botKey,
+                "sendDocument",
+                "document",
+                chatId,
+                replyId,
+                documentFile,
+                caption,
+                -1);
+    }
 
-        StringBuilder messageUrl = getTelegramApiUrl(botKey, "sendDocument");
+    public static void sendTelegramAudio(final String botKey,
+                                         final String chatId,
+                                         final String replyId,
+                                         final File documentFile,
+                                         final String caption,
+                                         long len) {
+        sendTelegramDocument(
+                botKey,
+                "sendAudio",
+                "audio",
+                chatId,
+                replyId,
+                documentFile,
+                caption,
+                len);
+    }
+
+    private  static void sendTelegramDocument(
+         final String botKey,
+         final String method,
+         final String documentType,
+         final String chatId,
+         final String replyId,
+         final File documentFile,
+         final String caption,
+         final long len) {
+
+        StringBuilder messageUrl = getTelegramApiUrl(botKey, method);
 
         if (Logger.DEBUG) {
             Logger.debug(TAG, "Sending Telegram document: %s", documentFile.getAbsolutePath());
@@ -117,12 +155,22 @@ public class TelegramHelper {
         int retryCount = 3;
         while (retryCount-- > 0) {
             try {
-                HttpUtils.MultipartUtility multipartUtility = new HttpUtils.MultipartUtility(messageUrl.toString());
+                HttpUtils.MultipartUtility multipartUtility = new HttpUtils.MultipartUtility(messageUrl.toString()).addFormField("chat_id", chatId)
+                        .addFilePart(documentType, documentFile);
 
-                String response =  multipartUtility.addFormField("chat_id", chatId)
-                        .addFilePart("document", documentFile)
-                        .finish();
+                if (!TextUtils.isEmpty(replyId)) {
+                    multipartUtility.addFormField("reply_to_message_id", replyId);
+                }
 
+                if (!TextUtils.isEmpty(caption)) {
+                    multipartUtility.addFormField("caption", caption);
+                }
+
+                if (len > 0) {
+                    multipartUtility.addFormField("duration", len + "");
+                }
+
+                String response =  multipartUtility.finish();
                 Logger.debug(TAG, response);
                 return;
             } catch (IOException e) {

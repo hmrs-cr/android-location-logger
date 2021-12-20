@@ -146,8 +146,8 @@ class PicturesCommand extends Command {
         lastGeotagedPictureDate = preferences.getLong(lastUploadedPictureDateKey, lastGeotagedPictureDate);
 
 
-        String selectionCondition = MediaStore.Images.ImageColumns.DATE_ADDED + " > ?";;
-        String[] selectionArgs = new String[1];;
+        String selectionCondition = MediaStore.Images.ImageColumns.DATE_ADDED + " > ?";
+        String[] selectionArgs = new String[1];
 
         selectionArgs[0] = String.valueOf(lastGeotagedPictureDate);
 
@@ -160,10 +160,12 @@ class PicturesCommand extends Command {
         int c = 0;
         while(result.moveToNext()) {
             String fileName = result.getString(0);
-            TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, new File(fileName));
+            TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, new File(fileName), null);
             lastPictureDate = result.getLong(1);
             c++;
         }
+
+        result.close();
 
         if(c == 0) {
             sendReply(context,"No pictures found.");

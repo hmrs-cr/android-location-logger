@@ -39,6 +39,6 @@ class GetDBCommand extends Command {
         }
 
         TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId,
-                Helper.getInstance().getPathFile());
+                Helper.getInstance().getPathFile(), null);
     }
 }

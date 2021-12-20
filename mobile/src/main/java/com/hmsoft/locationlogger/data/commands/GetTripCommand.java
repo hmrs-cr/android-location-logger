@@ -141,6 +141,6 @@ public class GetTripCommand extends Command {
             }
         }
 
-        TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, gpxFile);
+        TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, gpxFile, null);
     }
 }
