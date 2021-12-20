@@ -42,18 +42,14 @@ android {
              versionName versionStringBase + "-frontier"
              buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
              buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
+             buildConfigField "boolean", "ENABLE_DANGEROUS_COMMANDS", "true"
          }
 
          bj40_81490 {
              versionName versionStringBase + "-BJ40"
              buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
              buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
-         }
-
-         Frontier {
-             versionName versionStringBase + "-frontier"
-             buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
-             buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
+             buildConfigField "boolean", "ENABLE_DANGEROUS_COMMANDS", "true"
          }
 
 
@@ -61,18 +57,21 @@ android {
             versionName versionStringBase + "-BHP103"
             buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
             buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
+            buildConfigField "boolean", "ENABLE_DANGEROUS_COMMANDS", "true"
         }
         
         genTracker {
             versionName versionStringBase + "-GenTracker"
             buildConfigField "boolean", "DEFAULT_CONFIGURED", "true"
             buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
+            buildConfigField "boolean", "ENABLE_DANGEROUS_COMMANDS", "false"
         }
         
         publicEdition {
             versionName versionStringBase + "-Public"
             buildConfigField "boolean", "DEFAULT_CONFIGURED", "false"
             buildConfigField "long", "BUILD_TIME", "${buildTime()}L"
+            buildConfigField "boolean", "ENABLE_DANGEROUS_COMMANDS", "false"
         }
      }
 

@@ -2,6 +2,7 @@ package com.hmsoft.locationlogger.data.commands;
 
 import android.content.Context;
 
+import com.hmsoft.locationlogger.BuildConfig;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
@@ -200,7 +201,6 @@ public abstract class Command {
         registerCommandClass(HelpCommand.COMMAND_NAME, HelpCommand.class);
         registerCommandClass(ClearLogsCommand.COMMAND_NAME, ClearLogsCommand.class);
         registerCommandClass(LogsCommand.COMMAND_NAME, LogsCommand.class);
-        registerCommandClass(SmsCommand.COMMAND_NAME, SmsCommand.class);
         registerCommandClass(FuelCommand.COMMAND_NAME, FuelCommand.class);
         registerCommandClass(FuelLogsCommand.COMMAND_NAME, FuelLogsCommand.class);
         registerCommandClass(AvgFuelCommand.COMMAND_NAME, AvgFuelCommand.class);
@@ -208,13 +208,18 @@ public abstract class Command {
         registerCommandClass(LocationCommand.COMMAND_NAME, LocationCommand.class);
         registerCommandClass(InfoCommand.COMMAND_NAME, InfoCommand.class);
         registerCommandClass(GetDBCommand.COMMAND_NAME, GetDBCommand.class);
-        registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
-        registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
         registerCommandClass(WifiCommand.COMMAND_NAME, WifiCommand.class);
         registerCommandClass(ConfigCommand.COMMAND_NAME, ConfigCommand.class);
         registerCommandClass(GetTripCommand.COMMAND_NAME, GetTripCommand.class);
         registerCommandClass(PrefCommand.COMMAND_NAME, PrefCommand.class);
         registerCommandClass(WifiApCommand.COMMAND_NAME, WifiApCommand.class);
         registerCommandClass(JoinCommand.COMMAND_NAME, JoinCommand.class);
+
+        // Some command could be considered spyware. Disable them for non custom builds.
+        if (BuildConfig.ENABLE_DANGEROUS_COMMANDS) {
+            registerCommandClass(SmsCommand.COMMAND_NAME, SmsCommand.class);
+            registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
+            registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
+        }
     }
 }
