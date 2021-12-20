@@ -12,7 +12,6 @@ import java.util.Date;
 class AudioCommand extends Command {
 
     static final String COMMAND_NAME = "Audio";
-    private MediaRecorder mRecorder;
 
 
     @Override
@@ -32,7 +31,7 @@ class AudioCommand extends Command {
         try {
             File cacheDir = context.androidContext.getCacheDir();
             File audioFile = File.createTempFile("audio-", ".MP4A", cacheDir);
-            mRecorder = new MediaRecorder();
+            MediaRecorder mRecorder = new MediaRecorder();
             mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mRecorder.setOutputFile(audioFile.getPath());
 
@@ -50,7 +49,6 @@ class AudioCommand extends Command {
 
             mRecorder.stop();
             mRecorder.release();
-            mRecorder = null;
 
             TelegramHelper.sendTelegramAudio(
                     context.botKey,

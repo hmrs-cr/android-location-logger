@@ -1,7 +1,6 @@
 package com.hmsoft.locationlogger.data.commands;
 
 import com.hmsoft.locationlogger.common.Utils;
-import com.hmsoft.locationlogger.service.CoreService;
 
 class InfoCommand extends Command {
 
