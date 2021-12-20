@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.R;
@@ -33,6 +34,7 @@ class PicturesCommand extends Command {
 
         private final Uri mUri;
         private final Context mContext;
+        public String chatId;
 
         private PictureContentObserver(Context context, Uri uri) {
             super(null);
@@ -51,7 +53,7 @@ class PicturesCommand extends Command {
                 sent = true;
             }
 
-            if(sent) {
+            if(sent && !TextUtils.isEmpty(chatId)) {
                 TaskExecutor.executeOnNewThread(new Runnable() {
                     @Override
                     public void run() {
@@ -60,7 +62,7 @@ class PicturesCommand extends Command {
                                 context,
                                 SOURCE_TELEGRAM,
                                 PreferenceProfile.get(context).getString(R.string.pref_telegram_botkey_key, context.getString(R.string.pref_telegram_botkey_default)),
-                                PreferenceProfile.get(context).getString(R.string.pref_telegram_chatid_key, mContext.getString(R.string.pref_telegram_chatid_default)),
+                                chatId,
                                 null,
                                 null,
                                 null,
@@ -78,17 +80,20 @@ class PicturesCommand extends Command {
             onChange(selfChange, null);
         }
 
-        public static void register(Context context) {
+        public static void register(CommandContext context) {
             if(sExternalInstance == null) {
-                sExternalInstance = new PictureContentObserver(context,
+                sExternalInstance = new PictureContentObserver(context.androidContext,
                         MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             }
             if(sInternalInstance == null) {
-                sInternalInstance = new PictureContentObserver(context,
+                sInternalInstance = new PictureContentObserver(context.androidContext,
                         MediaStore.Images.Media.INTERNAL_CONTENT_URI);
             }
 
-            ContentResolver resolver = context.getContentResolver();
+            sExternalInstance.chatId = context.fromId;
+            sInternalInstance.chatId = context.fromId;
+
+            ContentResolver resolver = context.androidContext.getContentResolver();
             resolver.registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                     false, sExternalInstance);
             resolver.registerContentObserver(MediaStore.Images.Media.INTERNAL_CONTENT_URI,
@@ -188,6 +193,6 @@ class PicturesCommand extends Command {
 
         sendPictures(context, contentUri);
 
-        PictureContentObserver.register(context.androidContext);
+        PictureContentObserver.register(context);
     }
 }
