@@ -84,7 +84,6 @@ public class PreferenceProfile {
                 } else {
                     mDefaults.put(key, value);
                 }
-
             }
         } catch (IOException e) {
             mIntervalValues = new int[1];
