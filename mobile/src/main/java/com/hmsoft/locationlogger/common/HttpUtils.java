@@ -160,7 +160,8 @@ public class HttpUtils {
     public static int httpGet(String url, StringBuilder response) throws IOException {
 
         HttpURLConnection con = (HttpURLConnection) (new URL(url)).openConnection();
-
+        con.setConnectTimeout(10000);
+        con.setReadTimeout(180000);
         con.setRequestMethod("GET");
 
         if(Logger.DEBUG) {
