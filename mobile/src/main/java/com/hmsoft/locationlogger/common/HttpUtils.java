@@ -160,31 +160,36 @@ public class HttpUtils {
     public static int httpGet(String url, StringBuilder response) throws IOException {
 
         HttpURLConnection con = (HttpURLConnection) (new URL(url)).openConnection();
-        con.setConnectTimeout(10000);
-        con.setReadTimeout(180000);
-        con.setRequestMethod("GET");
+        try {
+            con.setConnectTimeout(10000);
+            con.setReadTimeout(180000);
+            con.setRequestMethod("GET");
 
-        if(Logger.DEBUG) {
-            if(response == null) {
-                response = new StringBuilder();
+            if (Logger.DEBUG) {
+                if (response == null) {
+                    response = new StringBuilder();
+                }
             }
-        }
 
-        int responseCode = con.getResponseCode();
-        if (response != null) {
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(con.getInputStream()));
-            String inputLine;
+            int responseCode = con.getResponseCode();
+            if (response != null) {
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(con.getInputStream()));
+                String inputLine;
 
 
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+                con.disconnect();
+
+                if (Logger.DEBUG) {
+                    Logger.debug(TAG, response.toString());
+                }
             }
-            in.close();
-
-            if(Logger.DEBUG) {
-                Logger.debug(TAG, response.toString());
-            }
+        } finally {
+            con.disconnect();
         }
 
         return responseCode;
