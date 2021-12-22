@@ -184,7 +184,6 @@ public class HttpUtils {
                     response.append(inputLine);
                 }
                 in.close();
-                con.disconnect();
 
                 if (Logger.DEBUG) {
                     Logger.debug(TAG, response.toString());
