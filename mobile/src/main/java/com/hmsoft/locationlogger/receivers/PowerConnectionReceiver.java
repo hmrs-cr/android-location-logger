@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.widget.Toast;
 
-import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.service.CoreService;
