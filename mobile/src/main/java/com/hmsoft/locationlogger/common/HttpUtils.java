@@ -188,10 +188,10 @@ public class HttpUtils {
                     Logger.debug(TAG, response.toString());
                 }
             }
+
+            return responseCode;
         } finally {
             con.disconnect();
         }
-
-        return responseCode;
     }
 }
