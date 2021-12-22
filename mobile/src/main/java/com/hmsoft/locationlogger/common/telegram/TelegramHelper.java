@@ -385,9 +385,7 @@ public class TelegramHelper {
 
     public static synchronized void getUpdates(String botKey, UpdateCallback updateCallback,
                                                int count) {
-
         if (updaterThread == null) {
-
             updaterThread = new Thread(new Updater(botKey, updateCallback, count));
 
             if (Logger.DEBUG)
