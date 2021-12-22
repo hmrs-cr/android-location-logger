@@ -7,7 +7,9 @@ import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 class AudioCommand extends Command {
 
@@ -27,39 +29,62 @@ class AudioCommand extends Command {
     @Override
     public void execute(String[] params, CommandContext context) {
 
+        long len = getLong(getSubParams(params), 0, 20);
+        long times = getLong(getSubParams(params), 1, 1);
 
+        if (len > 120) {
+            len = 120;
+        }
+
+        if (times > 10) {
+            times = 10;
+        }
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss", Locale.US);
+        MediaRecorder recorder = new MediaRecorder();
         try {
-            File cacheDir = context.androidContext.getCacheDir();
-            File audioFile = File.createTempFile("audio-", ".MP4A", cacheDir);
-            MediaRecorder mRecorder = new MediaRecorder();
-            mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            mRecorder.setOutputFile(audioFile.getPath());
+            int count = 0;
+            while (count++ < times) {
+                try {
+                    File cacheDir = context.androidContext.getCacheDir();
+                    File audioFile = File.createTempFile("audio-", ".MP4A", cacheDir);
+                    recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+                    recorder.setOutputFile(audioFile.getPath());
 
-            mRecorder.setAudioSamplingRate(44100);
-            mRecorder.setAudioEncodingBitRate(96000);
-            mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-            mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+                    recorder.setAudioSamplingRate(44100);
+                    recorder.setAudioEncodingBitRate(96000);
+                    recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+                    recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
-            mRecorder.prepare();
-            mRecorder.start();
+                    String caption = dateFormat.format(new Date());
+                    recorder.prepare();
+                    recorder.start();
 
-            String caption = Utils.dateFormat.format(new Date());
-            long len = getLong(getSubParams(params), 0, 20);
-            TaskExecutor.sleep((int)len);
+                    TaskExecutor.sleep((int) len);
 
-            mRecorder.stop();
-            mRecorder.release();
+                    recorder.stop();
+                    recorder.reset();
 
-            TelegramHelper.sendTelegramAudio(
-                    context.botKey,
-                    context.fromId,
-                    context.messageId,
-                    audioFile,
-                    caption,
-                    len);
+                    String performer = "Audio";
+                    if (times > 1) {
+                        performer = "Audio " + count + "/" + times;
+                    }
 
-        } catch (Exception e) {
-            context.sendTelegramReply(e.getMessage());
+                    TelegramHelper.sendTelegramAudio(
+                            context.botKey,
+                            context.fromId,
+                            context.messageId,
+                            audioFile,
+                            caption,
+                            performer,
+                            len);
+
+                } catch (Exception e) {
+                    context.sendTelegramReply(e.getMessage());
+                }
+            }
+        } finally {
+            recorder.release();
         }
     }
 }

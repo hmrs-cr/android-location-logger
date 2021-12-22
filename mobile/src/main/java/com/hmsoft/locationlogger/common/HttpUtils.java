@@ -1,5 +1,7 @@
 package com.hmsoft.locationlogger.common;
 
+import android.text.TextUtils;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -81,9 +83,9 @@ public class HttpUtils {
          * @param uploadFile a File to be uploaded
          * @throws IOException
          */
-        public MultipartUtility addFilePart(String fieldName, File uploadFile)
+        public MultipartUtility addFilePart(String fieldName, File uploadFile, String fileName)
                 throws IOException {
-            String fileName = uploadFile.getName();
+            fileName = TextUtils.isEmpty(fileName) ? uploadFile.getName() : fileName;
             writer.append("--" + boundary).append(LINE_FEED);
             writer.append(
                     "Content-Disposition: form-data; name=\"" + fieldName

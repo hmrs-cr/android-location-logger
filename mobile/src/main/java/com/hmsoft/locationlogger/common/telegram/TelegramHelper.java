@@ -94,9 +94,7 @@ public class TelegramHelper {
                 response = response.getJSONObject("result");
                 return response.optString("first_name");
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
         return null;
@@ -116,6 +114,8 @@ public class TelegramHelper {
                 replyId,
                 documentFile,
                 caption,
+                null,
+                null,
                 -1);
     }
 
@@ -124,6 +124,7 @@ public class TelegramHelper {
                                          final String replyId,
                                          final File documentFile,
                                          final String caption,
+                                         final String performer,
                                          long len) {
         sendTelegramDocument(
                 botKey,
@@ -132,7 +133,9 @@ public class TelegramHelper {
                 chatId,
                 replyId,
                 documentFile,
+                null,
                 caption,
+                performer,
                 len);
     }
 
@@ -144,6 +147,8 @@ public class TelegramHelper {
          final String replyId,
          final File documentFile,
          final String caption,
+         final String fileName,
+         final String performer,
          final long len) {
 
         StringBuilder messageUrl = getTelegramApiUrl(botKey, method);
@@ -156,7 +161,7 @@ public class TelegramHelper {
         while (retryCount-- > 0) {
             try {
                 HttpUtils.MultipartUtility multipartUtility = new HttpUtils.MultipartUtility(messageUrl.toString()).addFormField("chat_id", chatId)
-                        .addFilePart(documentType, documentFile);
+                        .addFilePart(documentType, documentFile, fileName);
 
                 if (!TextUtils.isEmpty(replyId)) {
                     multipartUtility.addFormField("reply_to_message_id", replyId);
@@ -164,6 +169,10 @@ public class TelegramHelper {
 
                 if (!TextUtils.isEmpty(caption)) {
                     multipartUtility.addFormField("caption", caption);
+                }
+
+                if (!TextUtils.isEmpty(performer)) {
+                    multipartUtility.addFormField("performer", performer);
                 }
 
                 if (len > 0) {
