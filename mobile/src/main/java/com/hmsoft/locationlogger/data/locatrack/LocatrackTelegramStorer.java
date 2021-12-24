@@ -30,14 +30,12 @@ public class LocatrackTelegramStorer extends LocationStorer {
 
     private String mBotKey;
     private String mChatId;
-    private DateFormat mDateFormat;
     private long mLastStartTime = 0;
     private long mLastStopTime = 0;
     private ConnectivityManager mConnectivityManager;
 
     public LocatrackTelegramStorer(Context context) {
         mContext = context;
-        mDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss a", Locale.US);
         mConnectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
     }
 
@@ -169,27 +167,12 @@ public class LocatrackTelegramStorer extends LocationStorer {
         }
 
         message
-            .append("*").append(mContext.getString(R.string.str_location)).append("*\t[").append(getAddressLabel(location)).append("](https://www.google.com/maps/search/?api=1&query=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
-            .append("*").append(mContext.getString(R.string.str_time)).append("*\t").append(mDateFormat.format(new Date(location.getTime()))).append("\n")
-            .append("*").append(mContext.getString(R.string.str_accuracy)).append("*\t").append(Math.round(location.getAccuracy() * 100.0) / 100.0).append("m ").append(location.getProvider().charAt(0)).append(netWorkType.charAt(0)).append("\n")
+            .append("*").append(mContext.getString(R.string.str_location)).append("*\t[").append(location.getAddressLabel()).append("](https://www.google.com/maps/search/?api=1&query=").append(location.getLatitude()).append(",").append(location.getLongitude()).append(")\n")
+            .append("*").append(mContext.getString(R.string.str_time)).append("*\t").append(location.getTimeString()).append("\n")
+            .append("*").append(mContext.getString(R.string.str_accuracy)).append("*\t").append(location.getAccuracyString()).append(netWorkType.charAt(0)).append("\n")
             .append("*").append(mContext.getString(R.string.str_battery)).append("*\t").append(batteryLevel).append("%");
 
         return message.toString();
-    }
-
-    private String getAddressLabel(LocatrackLocation location) {
-        String address = Geocoder.getFromCache(location);
-        if(TextUtils.isEmpty(address)) {
-            address = Geocoder.getFromRemote(mContext, location);
-            if (!TextUtils.isEmpty(address)) {
-                Geocoder.addToCache(location, address);
-            }
-        }
-        if(TextUtils.isEmpty(address)) {
-            address = location.getLatitude() + "," + location.getLongitude();
-        }
-
-        return address;
     }
 
     public boolean isConfigured() {

@@ -21,6 +21,7 @@ import android.provider.Settings;
 import android.telephony.SmsManager;
 
 import com.hmsoft.locationlogger.LocationLoggerApp;
+import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 
 import java.io.IOException;
@@ -267,8 +268,36 @@ public class Utils {
         String netName = networkInfo != null ? networkInfo.getTypeName() : "None";
         boolean connected = networkInfo != null && networkInfo.isConnected();
 
+        int level = getBatteryLevel(true);
+        boolean charging = false;
+        if (level > 100) {
+            charging = true;
+            level -= 100;
+        }
+
+        LocatrackLocation lastLocation = LocatrackLocation.getLastLocation();
+        StringBuilder locationInfo = new StringBuilder();
+        if (lastLocation != null) {
+            locationInfo
+                    .append("[")
+                    .append(lastLocation.getAddressLabel())
+                    .append("](https://www.google.com/maps/search/?api=1&query=")
+                    .append(lastLocation.getLatitude())
+                    .append(",")
+                    .append(lastLocation.getLongitude())
+                    .append(") ")
+                    .append(lastLocation.getTimeString())
+                    .append(" (")
+                    .append(lastLocation.getAccuracyString())
+                    .append(")");
+        } else {
+            locationInfo.append("Unknown");
+        }
+
         generalInfo.append("\nNetwork: ").append(netName).append(" - Connected:").append(connected).append("\n")
                 .append("Internet: ").append(connected && Utils.isInternetAvailable()).append("\n")
+                .append("Battery: ").append(level).append("%").append(charging ? " (charging)" : "").append("\n")
+                .append("Loc: ").append(locationInfo).append("\n")
                 .append("App Version: ").append(Constants.VERSION_STRING).append("\n")
                 .append("Android Version: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");
 
