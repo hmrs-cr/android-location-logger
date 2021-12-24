@@ -710,8 +710,8 @@ public class CoreService extends Service
                 mWakeLock.setReferenceCounted(false);
             }
             if(!mWakeLock.isHeld()) {
-                if (DIAGNOSTICS && mLocationLogEnabled) Logger.info(TAG, "acquireLocationLock");
-                mWakeLock.acquire();
+                mWakeLock.acquire(5*60*1000L);
+                if (DEBUG) Logger.debug(TAG, "Wakelock acquired");
             }
         }
     }
@@ -725,9 +725,10 @@ public class CoreService extends Service
         /*if (mAirplaneModeOn) {
             Utils.setAirplaneMode(getApplicationContext(), true);
         }*/
-        if (mWakeLock != null) {
-            if(DIAGNOSTICS && mLocationLogEnabled) Logger.info(TAG, "releaseLocationLock");
+        if (mWakeLock != null && mWakeLock.isHeld()) {
             mWakeLock.release();
+            mWakeLock = null;
+            if (DEBUG) Logger.debug(TAG, "WakeLock released");
         }
     }
 
@@ -927,7 +928,7 @@ public class CoreService extends Service
             if (!TextUtils.isEmpty(botKey)) {
                 TelegramHelper.getUpdates(botKey, this, count);
             }
-            mLastTelegamUpdate = SystemClock.uptimeMillis();
+            mLastTelegamUpdate = SystemClock.elapsedRealtime();
         } else {
             if (DEBUG)
                 Logger.debug(TAG, "Requesting telegram updates too fast:" + (SystemClock.elapsedRealtime() - mLastTelegamUpdate / 1000));
@@ -1006,13 +1007,8 @@ public class CoreService extends Service
             Toast.makeText(this, "Location alarm set to " + interval + "s", Toast.LENGTH_LONG).show();
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            mAlarm.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() +
-                    interval * 1000, mAlarmLocationCallback);
-        } else {
-            mAlarm.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() +
-                    interval * 1000, mAlarmLocationCallback);
-        }
+        mAlarm.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() +
+                interval * 1000L, mAlarmLocationCallback);
         if(Logger.DEBUG) Logger.debug(TAG, "Set alarm to %d seconds", interval);
     }
 

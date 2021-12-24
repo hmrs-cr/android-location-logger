@@ -163,8 +163,8 @@ public class HttpUtils {
 
         HttpURLConnection con = (HttpURLConnection) (new URL(url)).openConnection();
         try {
-            con.setConnectTimeout(10000);
-            con.setReadTimeout(180000);
+            con.setConnectTimeout(5000);
+            con.setReadTimeout(60000);
             con.setRequestMethod("GET");
 
             if (Logger.DEBUG) {
@@ -178,7 +178,6 @@ public class HttpUtils {
                 BufferedReader in = new BufferedReader(
                         new InputStreamReader(con.getInputStream()));
                 String inputLine;
-
 
                 while ((inputLine = in.readLine()) != null) {
                     response.append(inputLine);

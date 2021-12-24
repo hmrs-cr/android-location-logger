@@ -1,6 +1,8 @@
 package com.hmsoft.locationlogger.common.telegram;
 
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
@@ -13,18 +15,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 
 public class TelegramHelper {
@@ -265,16 +258,22 @@ public class TelegramHelper {
 
     private static Thread updaterThread = null;
 
-    private static class Updater implements Runnable {
+    private static class UpdaterThread extends Thread {
+
+        private static final int RETRIES = 3;
 
         private int mCount;
-        private String mBotKey;
-        private UpdateCallback mUpdateCallback;
+        private final String mBotKey;
+        private final UpdateCallback mUpdateCallback;
+        private final PowerManager.WakeLock mWakeLock;
 
-        public Updater(String botKey, UpdateCallback updateCallback, int count) {
+        public UpdaterThread(String botKey, UpdateCallback updateCallback, int count) {
             mBotKey = botKey;
             mUpdateCallback = updateCallback;
             mCount = count < 0 ? count * -1 : count;
+            PowerManager powerManager = (PowerManager)LocationLoggerApp.getContext().getSystemService(Context.POWER_SERVICE);
+            mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "locatrack:wakelock:telegramupdater");
+            mWakeLock.acquire(60 * 1000 * 2);
         }
 
         @Override
@@ -286,13 +285,14 @@ public class TelegramHelper {
             }
 
             try {
+                int retries = RETRIES;
                 while (mCount-- > 0) {
                     try {
 
                         StringBuilder updatesUrl = getTelegramApiUrl(mBotKey, "getUpdates");
 
                         updatesUrl
-                                .append("?timeout=60")
+                                .append("?timeout=10")
                                 .append("&limit=10");
 
                         if (updatesOffset > 0) {
@@ -358,11 +358,16 @@ public class TelegramHelper {
 
                     } catch (Exception e) {
                         Logger.error(TAG, e.getMessage());
+                        if (retries-- > 0) {
+                            mCount++;
+                            if (Logger.DEBUG) Logger.debug(TAG, "Retry " + (RETRIES - retries) + "/" + RETRIES);
+                        }
                     }
                 }
             } finally {
                 updaterThread = null;
                 preferences.edit().putLong(OFFSET_PREF_KEY, updatesOffset).commit();
+                mWakeLock.release();
                 if (Logger.DEBUG)
                     Logger.debug(TAG, "Ending telegram update thread. Offset: %d - ThreadId:%d", updatesOffset, Thread.currentThread().getId());
             }
@@ -395,7 +400,7 @@ public class TelegramHelper {
     public static synchronized void getUpdates(String botKey, UpdateCallback updateCallback,
                                                int count) {
         if (updaterThread == null) {
-            updaterThread = new Thread(new Updater(botKey, updateCallback, count));
+            updaterThread = new UpdaterThread(botKey, updateCallback, count);
 
             if (Logger.DEBUG)
                 Logger.debug(TAG, "Starting telegram update thread. - ThreadId:%d", updaterThread.getId());

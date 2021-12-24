@@ -10,3 +10,4 @@ pref_advanced_best_accuracy=21
 pref_advanced_minimun_distance=50
 profile_settings_restricted=true
 profile_notify_events=true
+pref_advanced_wackelock_enabled=true
