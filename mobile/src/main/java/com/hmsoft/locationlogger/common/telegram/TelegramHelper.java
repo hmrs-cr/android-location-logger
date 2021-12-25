@@ -360,6 +360,7 @@ public class TelegramHelper {
                         Logger.error(TAG, e.getMessage());
                         if (retries-- > 0) {
                             mCount++;
+                            TaskExecutor.sleep(2);
                             if (Logger.DEBUG) Logger.debug(TAG, "Retry " + (RETRIES - retries) + "/" + RETRIES);
                         }
                     }
