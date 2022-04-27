@@ -20,7 +20,7 @@ android {
         applicationId "com.hmsoft." + APP_NAME.toLowerCase()
         minSdkVersion 26
         //noinspection ExpiredTargetSdkVersion
-        targetSdkVersion 25
+        targetSdkVersion 26
         versionName versionStringBase
         versionCode verCode
     }
