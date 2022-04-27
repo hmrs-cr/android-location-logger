@@ -371,9 +371,10 @@ public class Utils {
     }
 
     public static int getBatteryLevel(Intent intent) {
-        boolean plugged = (intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
+        int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+        boolean isPlugged = (plugged != 0);
         sLastBatteryLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
-        if (plugged) sLastBatteryLevel += 100;
+        if (isPlugged) sLastBatteryLevel += 100;
 
         return sLastBatteryLevel;
     }

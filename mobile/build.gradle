@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 def versionMajor = 1
 def versionMinor = 1
-def verCode = 69
+def verCode = 70
 def APP_NAME = "LocationLogger"
 
 def buildTime() {
@@ -20,7 +20,7 @@ android {
         applicationId "com.hmsoft." + APP_NAME.toLowerCase()
         minSdkVersion 26
         //noinspection ExpiredTargetSdkVersion
-        targetSdkVersion 26
+        targetSdkVersion 30
         versionName versionStringBase
         versionCode verCode
     }

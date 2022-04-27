@@ -48,6 +48,7 @@ import com.hmsoft.locationlogger.data.locatrack.LocatrackDb;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTripStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
+import com.hmsoft.locationlogger.receivers.PowerConnectionReceiver;
 import com.hmsoft.locationlogger.receivers.StartServiceReceiver;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
@@ -1232,6 +1233,7 @@ public class CoreService extends Service
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if(Logger.DEBUG) Logger.debug(TAG, "onStartCommand");
+        PowerConnectionReceiver.register(getApplicationContext());
         processIntent(intent);
         return START_STICKY;
     }
