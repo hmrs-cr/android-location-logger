@@ -18,6 +18,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -38,7 +39,6 @@ import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.PerfWatch;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.common.Utils;
-import com.hmsoft.locationlogger.common.WifiApManager;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.data.Geocoder;
 import com.hmsoft.locationlogger.data.LocationStorer;
@@ -57,7 +57,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class CoreService extends Service
-    implements TelegramHelper.UpdateCallback, LocatrackTripStorer.MovementChangeCallback {
+        implements TelegramHelper.UpdateCallback, LocatrackTripStorer.MovementChangeCallback {
 
     //region Static fields
     public static final String CHANNEL_ID = "DefNotifCh";
@@ -158,7 +158,7 @@ public class CoreService extends Service
         boolean allowed;
         if (!(allowed = channelId.equals(chatId))) {
             if (mTelegramAllowedFrom == null) {
-                mTelegramAllowedFrom =  mPreferences.getString(R.string.pref_telegram_masterid_key, getString(R.string.pref_telegram_masterid_default)).split("\\|");
+                mTelegramAllowedFrom = mPreferences.getString(R.string.pref_telegram_masterid_key, getString(R.string.pref_telegram_masterid_default)).split("\\|");
             }
             for (int i = 0; i < mTelegramAllowedFrom.length; i++) {
                 if (mTelegramAllowedFrom[i].equals(chatId)) {
@@ -261,9 +261,9 @@ public class CoreService extends Service
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(Logger.DEBUG) Logger.debug(TAG, "onReceive:" + intent.getAction());
-            if(mService == null) {
-                if(Logger.DEBUG) Logger.debug(TAG, "mService is null");
+            if (Logger.DEBUG) Logger.debug(TAG, "onReceive:" + intent.getAction());
+            if (mService == null) {
+                if (Logger.DEBUG) Logger.debug(TAG, "mService is null");
                 return;
             }
             switch (intent.getAction()) {
@@ -276,8 +276,8 @@ public class CoreService extends Service
             }
         }
 
-        public static void register(CoreService service){
-            if(sInstance == null) {
+        public static void register(CoreService service) {
+            if (sInstance == null) {
                 sInstance = new ActionReceiver(service);
                 IntentFilter filter = new IntentFilter();
                 filter.addAction(Intent.ACTION_SCREEN_ON);
@@ -287,7 +287,7 @@ public class CoreService extends Service
         }
 
         public static void unregister(Context context) {
-            if(sInstance != null) {
+            if (sInstance != null) {
                 context.getApplicationContext().unregisterReceiver(sInstance);
                 sInstance.mService = null;
                 sInstance = null;
@@ -310,8 +310,8 @@ public class CoreService extends Service
 
         @Override
         public void onLocationChanged(Location location) {
-            if(Logger.DEBUG) Logger.debug(TAG, "onLocationChanged:%s", mProvider);
-            if(mService != null) mService.handleLocation(location, mProvider);
+            if (Logger.DEBUG) Logger.debug(TAG, "onLocationChanged:%s", mProvider);
+            if (mService != null) mService.handleLocation(location, mProvider);
         }
 
         @Override
@@ -346,12 +346,12 @@ public class CoreService extends Service
 
         @Override
         protected String doInBackground(Location... params) {
-            if(Logger.DEBUG) Logger.debug(TAG, "doInBackground");
-			Location location = params[0];
-			String address = Geocoder.getFromRemote(mService, location);
-			if (!TextUtils.isEmpty(address)) {
-				Geocoder.addToCache(location, address);
-			}
+            if (Logger.DEBUG) Logger.debug(TAG, "doInBackground");
+            Location location = params[0];
+            String address = Geocoder.getFromRemote(mService, location);
+            if (!TextUtils.isEmpty(address)) {
+                Geocoder.addToCache(location, address);
+            }
             return address;
         }
 
@@ -364,7 +364,7 @@ public class CoreService extends Service
         @Override
         protected void onPostExecute(String address) {
             if (!TextUtils.isEmpty(address)) {
-                if(Logger.DEBUG) Logger.debug(TAG, "onPostExecute");
+                if (Logger.DEBUG) Logger.debug(TAG, "onPostExecute");
                 mService.mLastSaveAddress = address;
                 mService.updateNotification();
             }
@@ -384,45 +384,45 @@ public class CoreService extends Service
     //region Core functions
 
     void handleSmsResult(int resultCode) {
-        if(resultCode != -1) {
-            if(DEBUG) Logger.debug(TAG, "SMS failed with status: " + resultCode);
+        if (resultCode != -1) {
+            if (DEBUG) Logger.debug(TAG, "SMS failed with status: " + resultCode);
             if (--mRetrySmsCount > 0) {
                 TaskExecutor.executeOnUIThread(new Runnable() {
-                   @Override
-                   public void run() {
-                       sendAvailBalanceSms();
-                   }
-               }, 1);
+                    @Override
+                    public void run() {
+                        sendAvailBalanceSms();
+                    }
+                }, 1);
             } else {
                 // not sending
                 Logger.warning(TAG, "Too many retries to send SMS");
             }
-        } else if(DEBUG) {
+        } else if (DEBUG) {
             Logger.debug(TAG, "SMS successfully sent");
         }
     }
 
     void handleSms(String address, String smsBody) {
-        if(DEBUG) {
+        if (DEBUG) {
             Logger.debug(TAG, "SMS From %s: %s", address, smsBody);
         }
 
         String balanceKeyWord = getString(R.string.pref_balance_sms_message).toLowerCase();
         String balanceSmsNumber = getString(R.string.pref_balance_sms_number);
-        if(!TextUtils.isEmpty(smsBody) && (balanceSmsNumber.equals(address) || smsBody.toLowerCase().contains(balanceKeyWord))) {
+        if (!TextUtils.isEmpty(smsBody) && (balanceSmsNumber.equals(address) || smsBody.toLowerCase().contains(balanceKeyWord))) {
             // not sending
-            if(mPendingNotifyInfo == null) {
+            if (mPendingNotifyInfo == null) {
                 mPendingNotifyInfo = new StringBuilder();
             }
-            if(mPendingNotifyInfo.indexOf(smsBody) < 0) {
+            if (mPendingNotifyInfo.indexOf(smsBody) < 0) {
                 mPendingNotifyInfo.append("\n***\t").append(smsBody).append("**");
             }
         } else {
-            if(mPhoneNumbers == null) {
+            if (mPhoneNumbers == null) {
                 mPhoneNumbers = getApplicationContext().getString(R.string.pref_sim_notify_numbers).split(",");
             }
-            for(String pn : mPhoneNumbers) {
-                if(pn.equals(address)) {
+            for (String pn : mPhoneNumbers) {
+                if (pn.equals(address)) {
                     processSmsMessage(address, smsBody);
                     break;
                 }
@@ -437,26 +437,41 @@ public class CoreService extends Service
         requestTelegramUpdates(2, true);
     }
 
-    void handleBatteryLevelChange(int newLevel) {
+    void handleBatteryLevelChange(int newLevel, int pluggedTo) {
         boolean fireEvents = false;
-        if ((sLastBatteryLevel <= 0 || sLastBatteryLevel <= 100) && newLevel > 100) {
-            if(DEBUG) Logger.debug(TAG, "Charging start");
+        if ((sLastBatteryLevel <= 100) && newLevel > 100) {
+            if (DEBUG) {
+                final String msg = "Charging start (Plugged to: " + (pluggedTo == BatteryManager.BATTERY_PLUGGED_USB ? "USB" : (pluggedTo == BatteryManager.BATTERY_PLUGGED_AC ? "AC" : "Unknown")) + ")";
+                TaskExecutor.executeOnUIThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+                    }
+                });
+                Logger.debug(TAG, msg);
+            }
             mChargingStart = true;
             mChargingStop = false;
             fireEvents = true;
             requestTelegramUpdates();
-            if(mUnlimitedData) {
+            /*if(mUnlimitedData) {
                 WifiApManager.configApState(this, true);
+            }*/
+
+            if (pluggedTo == BatteryManager.BATTERY_PLUGGED_AC) {
+                onPluggedToAC();
             }
         } else if ((sLastBatteryLevel < 0 || sLastBatteryLevel > 100) && newLevel <= 100) {
-            if(DEBUG) Logger.debug(TAG, "Charging stop " + mChargingStart);
+            if (DEBUG) Logger.debug(TAG, "Charging stop " + mChargingStart);
             mChargingStartStop = mChargingStart;
             mChargingStop = !mChargingStartStop;
             mChargingStart = false;
             fireEvents = true;
-            if(mUnlimitedData) {
+            /*if(mUnlimitedData) {
                 WifiApManager.configApState(this, false);
-            }
+            }*/
+
+            onUnplugged();
         }
         sLastBatteryLevel = newLevel;
         if (fireEvents) {
@@ -464,11 +479,19 @@ public class CoreService extends Service
             acquireWakeLock();
             startLocationListener();
             int intv = -1;
-            if(mChargingStop && mPreferences.getInterval(sLastBatteryLevel)  > 150) {
+            if (mChargingStop && mPreferences.getInterval(sLastBatteryLevel) > 150) {
                 intv = 150;
             }
             setLocationAlarm(intv);
         }
+    }
+
+    private void onPluggedToAC() {
+       Utils.turnBluetoothOn();
+    }
+
+    private void onUnplugged() {
+        Utils.turnBluetoothOff();
     }
 
     void handleLocation(Location location, String provider) {
@@ -1069,7 +1092,8 @@ public class CoreService extends Service
 
         if(intent.hasExtra(Constants.EXTRA_BATTERY_LEVEL)) {
             int level = intent.getIntExtra(Constants.EXTRA_BATTERY_LEVEL, -1);
-            this.handleBatteryLevelChange(level);
+            int pluggedTo = intent.getIntExtra(Constants.EXTRA_BATTERY_PLUGGED_TO, -1);
+            this.handleBatteryLevelChange(level, pluggedTo);
         }
 
         if(intent.hasExtra(Constants.EXTRA_SMS_BODY) && intent.hasExtra(Constants.EXTRA_SMS_FROM_ADDR)) {
@@ -1316,9 +1340,10 @@ public class CoreService extends Service
         return false;
     }
 
-    public static void powerConnectionChange(Context context, int batteryLevel) {
+    public static void powerConnectionChange(Context context, int batteryLevel, int pluggedTo) {
         Intent i = new Intent();
         i.putExtra(Constants.EXTRA_BATTERY_LEVEL, batteryLevel);
+        i.putExtra(Constants.EXTRA_BATTERY_PLUGGED_TO, pluggedTo);
         start(context, i);
     }
 

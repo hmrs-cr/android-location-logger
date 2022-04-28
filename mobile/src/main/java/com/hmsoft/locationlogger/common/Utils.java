@@ -3,6 +3,7 @@ package com.hmsoft.locationlogger.common;
 import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -383,12 +384,15 @@ public class Utils {
         return getBatteryLevel(false);
     }
 
+    public  static Intent getBatteryChangedIntent() {
+        Intent intent = LocationLoggerApp.getContext().registerReceiver(null,
+                batteryIntentFilter);
+        return  intent;
+    }
+
     public static int getBatteryLevel(boolean fresh) {
         if (fresh || sLastBatteryLevel < 0) {
-            Intent intent = LocationLoggerApp.getContext().registerReceiver(null,
-                    batteryIntentFilter);
-
-            sLastBatteryLevel = getBatteryLevel(intent);
+            sLastBatteryLevel = getBatteryLevel(getBatteryChangedIntent());
 
             if(DEBUG) {
                 Logger.debug(TAG, "Getting battery level: " + sLastBatteryLevel);
@@ -396,5 +400,31 @@ public class Utils {
         }
 
         return sLastBatteryLevel;
+    }
+
+    public static void turnBluetoothOn() {
+        if (LocationLoggerApp.getContext().checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+            BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            if (!bluetoothAdapter.isEnabled()) {
+                if (bluetoothAdapter.enable()) {
+                    if (DEBUG) Logger.debug(TAG, "Bluetooth enabled successfully.");
+                } else {
+                    Logger.warning(TAG, "Failed to enable bluetooth");
+                }
+            }
+        }
+    }
+
+    public static void turnBluetoothOff() {
+        if (LocationLoggerApp.getContext().checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+            BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            if (bluetoothAdapter.isEnabled()) {
+                if (bluetoothAdapter.disable()) {
+                    if (DEBUG) Logger.debug(TAG, "Bluetooth disabled successfully.");
+                } else {
+                    Logger.warning(TAG, "Failed to disable bluetooth");
+                }
+            }
+        }
     }
 }

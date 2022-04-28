@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.BatteryManager;
 import android.widget.Toast;
 
 import com.hmsoft.locationlogger.common.Logger;
@@ -40,7 +41,9 @@ public class PowerConnectionReceiver extends BroadcastReceiver {
             Toast.makeText(context, "" + intent, Toast.LENGTH_LONG).show();
         }
 
-        int batteryLevel = Utils.getBatteryLevel(true);
-        CoreService.powerConnectionChange(context, batteryLevel);
+        Intent batteryIntent = Utils.getBatteryChangedIntent();
+        int pluggedTo = batteryIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+        int batteryLevel = Utils.getBatteryLevel(batteryIntent);
+        CoreService.powerConnectionChange(context, batteryLevel, pluggedTo);
     }
 }
