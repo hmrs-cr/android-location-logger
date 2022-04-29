@@ -487,11 +487,11 @@ public class CoreService extends Service
     }
 
     private void onPluggedToAC() {
-       Utils.turnBluetoothOn();
+       //// Utils.turnBluetoothOn();
     }
 
     private void onUnplugged() {
-        Utils.turnBluetoothOff();
+        ///// Utils.turnBluetoothOff();
     }
 
     void handleLocation(Location location, String provider) {
@@ -887,7 +887,7 @@ public class CoreService extends Service
 
             long time = mGpsTimeout / 4;
             if(DEBUG) {
-                mGpsTimeout = 10;
+                ////mGpsTimeout = 10;
             }
 
             float minDistance = mMinimumDistance / 2;
