@@ -56,7 +56,9 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.CoreService" >
+        <service
+            android:name=".service.CoreService"
+            android:foregroundServiceType="location|camera|microphone" >
         </service>
 
         <receiver android:name=".receivers.StartServiceReceiver" >

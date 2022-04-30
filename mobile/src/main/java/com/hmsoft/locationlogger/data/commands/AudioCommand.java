@@ -1,9 +1,12 @@
 package com.hmsoft.locationlogger.data.commands;
 
+import android.content.Context;
 import android.media.MediaRecorder;
+import android.os.PowerManager;
 
+import com.hmsoft.locationlogger.LocationLoggerApp;
+import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
-import com.hmsoft.locationlogger.common.Utils;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 
 import java.io.File;
@@ -14,6 +17,7 @@ import java.util.Locale;
 class AudioCommand extends Command {
 
     static final String COMMAND_NAME = "Audio";
+    private static final String TAG = "AudioCommand";
 
 
     @Override
@@ -27,18 +31,21 @@ class AudioCommand extends Command {
     }
 
     @Override
-    public void execute(String[] params, CommandContext context) {
+    public void execute(String[] params, final CommandContext context) {
 
-        long len = getLong(getSubParams(params), 0, 20);
+        PowerManager powerManager = (PowerManager) context.androidContext.getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "locatrack:wakelock:audiorecord");
+        wakeLock.setReferenceCounted(false);
+
+        long lenp = getLong(getSubParams(params), 0, 30);
         long times = getLong(getSubParams(params), 1, 1);
+        final long len = lenp > 180 ? 180 : lenp;
 
-        if (len > 120) {
-            len = 120;
+        if (times > 20) {
+            times = 20;
         }
 
-        if (times > 10) {
-            times = 10;
-        }
+        wakeLock.acquire((times * len * 1000) + 10000);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss", Locale.US);
         MediaRecorder recorder = new MediaRecorder();
@@ -46,8 +53,10 @@ class AudioCommand extends Command {
             int count = 0;
             while (count++ < times) {
                 try {
-                    File cacheDir = context.androidContext.getCacheDir();
-                    File audioFile = File.createTempFile("audio-", ".MP4A", cacheDir);
+                    final String caption = dateFormat.format(new Date());
+                    File cacheDir = LocationLoggerApp.getContext().getExternalFilesDir("audio");
+                    final File audioFile = File.createTempFile(caption.replace(' ', 'T') + "-", ".MP4A", cacheDir);
+
                     recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
                     recorder.setOutputFile(audioFile.getPath());
 
@@ -56,7 +65,6 @@ class AudioCommand extends Command {
                     recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
                     recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
-                    String caption = dateFormat.format(new Date());
                     recorder.prepare();
                     recorder.start();
 
@@ -65,26 +73,29 @@ class AudioCommand extends Command {
                     recorder.stop();
                     recorder.reset();
 
-                    String performer = "Audio";
-                    if (times > 1) {
-                        performer = "Audio " + count + "/" + times;
-                    }
-
-                    TelegramHelper.sendTelegramAudio(
-                            context.botKey,
-                            context.fromId,
-                            context.messageId,
-                            audioFile,
-                            caption,
-                            performer,
-                            len);
+                    final String performer = times > 1 ? "Audio " + count + "/" + times: "Audio";
+                    TaskExecutor.executeOnNewThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TelegramHelper.sendTelegramAudio(
+                                    context.botKey,
+                                    context.fromId,
+                                    context.messageId,
+                                    audioFile,
+                                    caption,
+                                    performer,
+                                    len);
+                        }
+                    });
 
                 } catch (Exception e) {
                     context.sendTelegramReply(e.getMessage());
+                    Logger.warning(TAG, "Error recording audio", e);
                 }
             }
         } finally {
             recorder.release();
+            wakeLock.release();
         }
     }
 }

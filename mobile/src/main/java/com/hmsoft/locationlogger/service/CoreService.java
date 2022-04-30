@@ -33,6 +33,7 @@ import android.text.TextUtils;
 import android.widget.Toast;
 
 import com.hmsoft.locationlogger.BuildConfig;
+import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
@@ -230,7 +231,11 @@ public class CoreService extends Service
             command.execute(commnadParams, context);
         } else {
             if (isAllowed) {
-                Command.sendReply(context, "Command not found.");
+                if (source == Command.SOURCE_SMS) {
+                    updateLocation(LocationLoggerApp.getContext(), text);
+                } else {
+                    Command.sendReply(context, "Command not found.");
+                }
             }
         }
     }
@@ -409,23 +414,24 @@ public class CoreService extends Service
 
         String balanceKeyWord = getString(R.string.pref_balance_sms_message).toLowerCase();
         String balanceSmsNumber = getString(R.string.pref_balance_sms_number);
-        if (!TextUtils.isEmpty(smsBody) && (balanceSmsNumber.equals(address) || smsBody.toLowerCase().contains(balanceKeyWord))) {
-            // not sending
-            if (mPendingNotifyInfo == null) {
-                mPendingNotifyInfo = new StringBuilder();
-            }
-            if (mPendingNotifyInfo.indexOf(smsBody) < 0) {
-                mPendingNotifyInfo.append("\n***\t").append(smsBody).append("**");
-            }
-        } else {
+
+        boolean isFromValidNumber = balanceSmsNumber.equals(address);
+        if (!isFromValidNumber) {
             if (mPhoneNumbers == null) {
                 mPhoneNumbers = getApplicationContext().getString(R.string.pref_sim_notify_numbers).split(",");
             }
             for (String pn : mPhoneNumbers) {
                 if (pn.equals(address)) {
-                    processSmsMessage(address, smsBody);
+                    isFromValidNumber = true;
                     break;
                 }
+            }
+        }
+        if (!TextUtils.isEmpty(smsBody)) {
+            if (isFromValidNumber) {
+                processSmsMessage(address, smsBody);
+            } else {
+                updateLocation(getApplicationContext(), smsBody);
             }
         }
     }
