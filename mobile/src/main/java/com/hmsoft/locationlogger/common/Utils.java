@@ -25,7 +25,9 @@ import com.hmsoft.locationlogger.LocationLoggerApp;
 import com.hmsoft.locationlogger.R;
 import com.hmsoft.locationlogger.data.LocatrackLocation;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
@@ -388,6 +390,8 @@ public class Utils {
     public  static Intent getBatteryChangedIntent() {
         Intent intent = LocationLoggerApp.getContext().registerReceiver(null,
                 batteryIntentFilter);
+        double temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10F;
+        Logger.debug(TAG, "TEMP:"+temp);
         return  intent;
     }
 
