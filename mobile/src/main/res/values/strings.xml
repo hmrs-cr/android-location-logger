@@ -20,4 +20,5 @@
     <string name="str_points">"Points: "</string>
     <string name="service_started">Service started.\n</string>
     <string name="app_updated">App Updated: </string>
+    <string name="significant_motion_detected">Significant motion detected!</string>
 </resources>

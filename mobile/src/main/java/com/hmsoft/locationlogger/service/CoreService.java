@@ -12,6 +12,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
+import android.hardware.TriggerEvent;
+import android.hardware.TriggerEventListener;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
@@ -30,6 +34,7 @@ import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.hmsoft.locationlogger.BuildConfig;
@@ -89,6 +94,7 @@ public class CoreService extends Service
     private boolean mUnlimitedData;
     private boolean mNoSynAlarm;
     LocationManager mLocationManager;
+    SensorManager mSensorManager;
     private boolean mNetProviderEnabled;
     private boolean mGpsProviderEnabled;
     private boolean mTimeoutRoutinePending;
@@ -146,6 +152,7 @@ public class CoreService extends Service
     private String[] mPhoneNumbers;
     private String mReplyToId;
     private String mReplyToMessageId;
+    private TriggerEventListener mSignificantMotionTrigger;
 
     //endregion Core fields
 
@@ -1204,6 +1211,7 @@ public class CoreService extends Service
         configure(false);
 
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAlarm = (AlarmManager) getSystemService(ALARM_SERVICE);
         Intent i = new Intent(context, CoreService.class);
         i.setAction(Constants.ACTION_ALARM);
@@ -1221,6 +1229,25 @@ public class CoreService extends Service
         checkVersion();
         insertNotifyInfo(getString(R.string.service_started));
         updateNotification();
+
+        final Sensor sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_SIGNIFICANT_MOTION);
+        if (sensor != null) {
+            mSignificantMotionTrigger = new TriggerEventListener() {
+                @Override
+                public void onTrigger(TriggerEvent triggerEvent) {
+                    if (Logger.DEBUG) Logger.debug(TAG, "Significant motion detected.");
+                    if (!isCharging()) {
+                        updateLocation(getApplicationContext(), getString(R.string.significant_motion_detected));
+                    }
+
+                    mSensorManager.requestTriggerSensor(mSignificantMotionTrigger, sensor);
+                }
+            };
+
+            mSensorManager.requestTriggerSensor(mSignificantMotionTrigger, sensor);
+        } else {
+            Logger.warning(TAG, "No SIGNIFICANT_MOTION sensor found");
+        }
     }
 
     private void checkVersion() {
