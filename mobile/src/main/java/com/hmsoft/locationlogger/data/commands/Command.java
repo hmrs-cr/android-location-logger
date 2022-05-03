@@ -215,11 +215,12 @@ public abstract class Command {
         registerCommandClass(WifiApCommand.COMMAND_NAME, WifiApCommand.class);
         registerCommandClass(JoinCommand.COMMAND_NAME, JoinCommand.class);
 
-        // Some command could be considered spyware. Disable them for non custom builds.
+        // Some commands could be considered spyware. Disable them for non custom builds.
         if (BuildConfig.ENABLE_DANGEROUS_COMMANDS) {
             registerCommandClass(SmsCommand.COMMAND_NAME, SmsCommand.class);
             registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
             registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
+            registerCommandClass(CallCommand.COMMAND_NAME, CallCommand.class);
         }
     }
 }
