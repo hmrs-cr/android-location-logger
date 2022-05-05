@@ -163,7 +163,7 @@ public class HttpUtils {
 
         HttpURLConnection con = (HttpURLConnection) (new URL(url)).openConnection();
         try {
-            con.setConnectTimeout(5000);
+            con.setConnectTimeout(15000);
             con.setReadTimeout(60000);
             con.setRequestMethod("GET");
 

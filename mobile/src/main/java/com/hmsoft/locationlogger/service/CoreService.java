@@ -181,7 +181,7 @@ public class CoreService extends Service
         TaskExecutor.executeOnUIThread(new Runnable() {
             @Override
             public void run() {
-                requestTelegramUpdates(2);
+                requestTelegramUpdates(3, true);
             }
         }, 1);
     }
@@ -945,10 +945,6 @@ public class CoreService extends Service
 
     private void requestTelegramUpdates() {
       requestTelegramUpdates(1, false);
-    }
-
-    private void requestTelegramUpdates(int count) {
-        requestTelegramUpdates(count, false);
     }
 
     private void requestTelegramUpdates(int count, boolean now) {

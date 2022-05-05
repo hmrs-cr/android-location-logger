@@ -391,7 +391,7 @@ public class Utils {
         Intent intent = LocationLoggerApp.getContext().registerReceiver(null,
                 batteryIntentFilter);
         double temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10F;
-        Logger.debug(TAG, "TEMP:"+temp);
+        Logger.info(TAG, "TEMP:"+temp);
         return  intent;
     }
 

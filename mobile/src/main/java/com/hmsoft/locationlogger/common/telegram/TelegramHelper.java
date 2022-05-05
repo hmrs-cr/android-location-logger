@@ -273,7 +273,7 @@ public class TelegramHelper {
             mCount = count < 0 ? count * -1 : count;
             PowerManager powerManager = (PowerManager)LocationLoggerApp.getContext().getSystemService(Context.POWER_SERVICE);
             mWakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "locatrack:wakelock:telegramupdater");
-            mWakeLock.acquire(60 * 1000 * 2);
+            mWakeLock.acquire(60000);
         }
 
         @Override
@@ -292,8 +292,8 @@ public class TelegramHelper {
                         StringBuilder updatesUrl = getTelegramApiUrl(mBotKey, "getUpdates");
 
                         updatesUrl
-                                .append("?timeout=10")
-                                .append("&limit=10");
+                                .append("?timeout=12")
+                                .append("&limit=15");
 
                         if (updatesOffset > 0) {
                             updatesUrl.append("&offset=").append(updatesOffset);
