@@ -25,6 +25,9 @@ public class LocatrackLocation extends Location {
 
     public static final String EVENT_LOW_BATTERY = "low-battery";
 
+    public static final String INFO_SET_GEOFENCE_LABEL = "___SET_GEOFENCE_LABEL";
+    public static final String INFO_GET_GEOFENCE_LABEL = "___GET_GEOFENCE_LABEL";
+
     private final DateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss a",Locale.US);;
     private static LocatrackLocation sLastLocation;
 
@@ -34,6 +37,7 @@ public class LocatrackLocation extends Location {
     public long uploadTime;
     public String replyToMessageId;
     public String replyToId;
+    public String newGeoFenceLabel;
 
     public LocatrackLocation(String provider) {
         super(provider);

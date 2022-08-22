@@ -6,6 +6,7 @@ import android.location.Location;
 import android.text.TextUtils;
 
 import com.hmsoft.locationlogger.common.Logger;
+import com.hmsoft.locationlogger.data.sqlite.GeoFenceTable;
 import com.hmsoft.locationlogger.data.sqlite.GeocoderTable;
 import com.hmsoft.locationlogger.data.sqlite.Helper;
 
@@ -53,11 +54,16 @@ public class Geocoder {
     }
 
     public static String getFromCache(Location location) {
+
+        String address = GeoFenceTable.getLabel(location.getLatitude(), location.getLongitude());
+        if (!TextUtils.isEmpty(address)) {
+            return address;
+        }
+
         double lat = Math.round(location.getLatitude() * ROUND) / ROUND;
         double lon = Math.round(location.getLongitude() * ROUND) / ROUND;
 
-        String address = GeoCoderMemCache.getAddress(lat, lon);
-        
+        address = GeoCoderMemCache.getAddress(lat, lon);
         if(TextUtils.isEmpty(address)) {
            address = GeocoderTable.getAddress(lat, lon);
             if(!TextUtils.isEmpty(address)) {

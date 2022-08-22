@@ -32,8 +32,9 @@ public final class TaskExecutor
 		sExecuteOnUIHandler.post(runnable);
 	}
 	
-	public synchronized static void executeOnUIThread(Runnable runnable, int seconds) {
+	public synchronized static Runnable executeOnUIThread(Runnable runnable, int seconds) {
 		sExecuteOnUIHandler.postDelayed(runnable, seconds * 1000);
+		return  runnable;
 	}
 
 	public static void sleep(int seconds) {

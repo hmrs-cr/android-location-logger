@@ -106,12 +106,17 @@ public class Helper extends SQLiteOpenHelper {
         db.execSQL(TripTable.SQL_CREATE_TABLE);
         db.execSQL(TripTable.SQL_CREATE_VIEW);
         db.execSQL(TripTable.SQL_CREATE_DETAIL_VIEW);
+        db.execSQL(GeoFenceTable.SQL_CREATE_TABLE);
 
         for (String index : LocationTable.SQL_CREATE_INDICES) {
             db.execSQL(index);
         }
 
         for (String index : GeocoderTable.SQL_CREATE_INDICES) {
+            db.execSQL(index);
+        }
+
+        for (String index : GeoFenceTable.SQL_CREATE_INDICES) {
             db.execSQL(index);
         }
     }

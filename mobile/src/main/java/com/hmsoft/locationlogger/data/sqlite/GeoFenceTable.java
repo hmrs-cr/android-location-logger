@@ -4,16 +4,18 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
-public class GeocoderTable {
-    public static final String TABLE_NAME = "geocoder";
+public class GeoFenceTable {
+    public static final String TABLE_NAME = "geofence";
 
     public static final String SQL_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
-
 
     public static final String COLUMN_NAME_TIMESTAMP = "timestamp";
     public static final String COLUMN_NAME_LATITUDE = "latitude";
     public static final String COLUMN_NAME_LONGITUDE = "longitude";
-    public static final String COLUMN_NAME_ADDRESS = "address";
+    public static final String COLUMN_NAME_LABEL = "label";
+    public static final String COLUMN_NAME_RADIO = "radio";
+
+    private static final String RADIO_FACTOR = "0.00001";
 
     public static final String[] SQL_CREATE_INDICES = new String[]{
             "CREATE UNIQUE INDEX idx_" + TABLE_NAME + "_latlong ON " + TABLE_NAME + " (" + COLUMN_NAME_LATITUDE +
@@ -21,41 +23,44 @@ public class GeocoderTable {
     };
 
     private static final String[] QUERY_COLUMNS = new String[] {
-            COLUMN_NAME_ADDRESS
+            COLUMN_NAME_LABEL
     };
 
-    private static final String[] queryValues = new String[2];
-    private static final ContentValues insertValues = new ContentValues(4);
+    private static final String[] queryValues = new String[4];
+    private static final ContentValues insertValues = new ContentValues(5);
 
     public static final String SQL_CREATE_TABLE =
             "CREATE TABLE " + TABLE_NAME + " (" +
                     COLUMN_NAME_TIMESTAMP + Helper.TYPE_INTEGER + Helper.TYPE_PRIMARY_KEY + Helper.COMMA_SEP +
                     COLUMN_NAME_LATITUDE + Helper.TYPE_REAL + Helper.COMMA_SEP +
                     COLUMN_NAME_LONGITUDE + Helper.TYPE_REAL + Helper.COMMA_SEP +
-                    COLUMN_NAME_ADDRESS + Helper.TYPE_TEXT +
+                    COLUMN_NAME_RADIO + Helper.TYPE_INTEGER + Helper.COMMA_SEP +
+                    COLUMN_NAME_LABEL + Helper.TYPE_TEXT +
                     ")";
 
 
-    public static  void saveAddress(long ts, double latitude, double longitude,
-                                    String address) {
+    public static  long saveGeofence(double latitude, double longitude, int radio, String label) {
 
-        insertValues.put(COLUMN_NAME_TIMESTAMP, ts);
+        insertValues.put(COLUMN_NAME_TIMESTAMP, System.currentTimeMillis());
         insertValues.put(COLUMN_NAME_LATITUDE, latitude);
         insertValues.put(COLUMN_NAME_LONGITUDE, longitude);
-        insertValues.put(COLUMN_NAME_ADDRESS, address);
+        insertValues.put(COLUMN_NAME_RADIO, radio);
+        insertValues.put(COLUMN_NAME_LABEL, label);
 
         Helper helper = Helper.getInstance();
-        helper.getWritableDatabase().insertWithOnConflict(TABLE_NAME, null, insertValues,
+        return helper.getWritableDatabase().insertWithOnConflict(TABLE_NAME, null, insertValues,
                 SQLiteDatabase.CONFLICT_REPLACE);
     }
 
-    public static String getAddress(double latitude, double longitude) {
+    public static String getLabel(double latitude, double longitude) {
         queryValues[0] = String.valueOf(latitude);
-        queryValues[1] = String.valueOf(longitude);
+        queryValues[1] = queryValues[0];
+        queryValues[2] = String.valueOf(longitude);
+        queryValues[3] = queryValues[2];
 
         Helper helper = Helper.getInstance();
         Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, QUERY_COLUMNS,
-                COLUMN_NAME_LATITUDE + " = ? AND " + COLUMN_NAME_LONGITUDE + " = ?",
+                COLUMN_NAME_LATITUDE + " BETWEEN ? - (" + COLUMN_NAME_RADIO + " * " + RADIO_FACTOR + ") AND ? + (" + COLUMN_NAME_RADIO + " * "+ RADIO_FACTOR + ") AND " + COLUMN_NAME_LONGITUDE + " BETWEEN ? - (" + COLUMN_NAME_RADIO + " * " + RADIO_FACTOR + ") AND ? + (" + COLUMN_NAME_RADIO + " * " + RADIO_FACTOR + ")",
                 queryValues, null, null, COLUMN_NAME_TIMESTAMP + " DESC", "1");
 
         if(cursor != null) {

@@ -214,6 +214,7 @@ public abstract class Command {
         registerCommandClass(PrefCommand.COMMAND_NAME, PrefCommand.class);
         registerCommandClass(WifiApCommand.COMMAND_NAME, WifiApCommand.class);
         registerCommandClass(JoinCommand.COMMAND_NAME, JoinCommand.class);
+        registerCommandClass(GeofenceCommand.COMMAND_NAME, GeofenceCommand.class);
 
         // Some commands could be considered spyware. Disable them for non custom builds.
         if (BuildConfig.ENABLE_DANGEROUS_COMMANDS) {

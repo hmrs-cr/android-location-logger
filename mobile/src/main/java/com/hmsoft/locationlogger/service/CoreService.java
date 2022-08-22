@@ -153,6 +153,7 @@ public class CoreService extends Service
     private String mReplyToId;
     private String mReplyToMessageId;
     private TriggerEventListener mSignificantMotionTrigger;
+    private String mNewGeoFenceLabel;
 
     //endregion Core fields
 
@@ -553,6 +554,13 @@ public class CoreService extends Service
     }
 
     private void insertNotifyInfo(String notifyInfo) {
+        if (notifyInfo.startsWith(LocatrackLocation.INFO_SET_GEOFENCE_LABEL)) {
+            this.mNewGeoFenceLabel = notifyInfo.replace(LocatrackLocation.INFO_SET_GEOFENCE_LABEL, "").trim();
+            notifyInfo = "Geofence update";
+        } else if (notifyInfo.startsWith(LocatrackLocation.INFO_GET_GEOFENCE_LABEL)) {
+            notifyInfo = "Geofence";
+        }
+
         if (mPendingNotifyInfo == null) {
             mPendingNotifyInfo = new StringBuilder();
         }
@@ -661,8 +669,10 @@ public class CoreService extends Service
             location.extraInfo = mPendingNotifyInfo.toString();
             location.replyToMessageId = mReplyToMessageId;
             location.replyToId = mReplyToId;
+            location.newGeoFenceLabel = mNewGeoFenceLabel;
             mReplyToMessageId = null;
             mReplyToId = null;
+            mNewGeoFenceLabel = null;
         }
     }
 
