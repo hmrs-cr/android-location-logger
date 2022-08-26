@@ -29,11 +29,13 @@ public class TripTable {
             " (id INTEGER PRIMARY KEY, startLocation INTEGER, endLocation INTEGER, distance INTEGER)";
 
     public static final String SQL_CREATE_VIEW = "CREATE VIEW " + VIEW_NAME + " AS " +
-            "SELECT t.id,t.distance,t.startLocation AS startTimestamp, COALESCE(gs.address, 'Trip Start #' || t.id)  " +
+            "SELECT t.id,t.distance,t.startLocation AS startTimestamp, COALESCE(gfs.label, gs.address, 'Trip Start #' || t.id)  " +
             "AS startAddress, ls.latitude AS startLat,ls.longitude AS startLong,t.endLocation AS endTimestamp," +
-            "COALESCE(ge.address, 'Trip End #' || t.id)  AS endAddress,le.latitude AS endLat,le.longitude AS endLong " +
-            "FROM trip AS t JOIN location AS ls ON ls.timestamp=t.startLocation LEFT JOIN geocoder AS gs ON gs.latitude = ROUND(ls.latitude, 3) " +
+            "COALESCE(gfe.label, ge.address, 'Trip End #' || t.id)  AS endAddress,le.latitude AS endLat,le.longitude AS endLong " +
+            "FROM trip AS t JOIN location AS ls ON ls.timestamp=t.startLocation LEFT JOIN geofence AS gfs ON gfs.latitude BETWEEN  ls.latitude - (gfs.radio * 0.00001) AND  ls.latitude + (gfs.radio * 0.00001)  AND gfs.longitude BETWEEN  ls.longitude - (gfs.radio * 0.00001) AND  ls.longitude + (gfs.radio * 0.00001) " +
+            "LEFT JOIN geocoder AS gs ON gs.latitude = ROUND(ls.latitude, 3) " +
             "AND gs.longitude = ROUND(ls.longitude, 3) JOIN location AS le ON le.timestamp=t.endLocation " +
+            "LEFT JOIN geofence AS gfe ON gfe.latitude BETWEEN  le.latitude - (gfe.radio * 0.00001) AND  le.latitude + (gfe.radio * 0.00001)  AND gfe.longitude BETWEEN  le.longitude - (gfe.radio * 0.00001) AND  le.longitude + (gfe.radio * 0.00001)  " +
             "LEFT JOIN geocoder AS ge ON ge.latitude = ROUND(le.latitude, 3) AND ge.longitude = ROUND(le.longitude, 3) " +
             "ORDER BY t.endLocation DESC";
 

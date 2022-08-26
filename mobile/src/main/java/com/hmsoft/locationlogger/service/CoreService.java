@@ -55,6 +55,7 @@ import com.hmsoft.locationlogger.data.locatrack.LocatrackTelegramStorer;
 import com.hmsoft.locationlogger.data.locatrack.LocatrackTripStorer;
 import com.hmsoft.locationlogger.data.preferences.PreferenceProfile;
 import com.hmsoft.locationlogger.receivers.PowerConnectionReceiver;
+import com.hmsoft.locationlogger.receivers.SmsReceiver;
 import com.hmsoft.locationlogger.receivers.StartServiceReceiver;
 import com.hmsoft.locationlogger.ui.MainActivity;
 
@@ -213,6 +214,8 @@ public class CoreService extends Service
 
         final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
         final String channelId = mPreferences.getString(R.string.pref_telegram_chatid_key, getString(R.string.pref_telegram_chatid_default));
+
+        Logger.debug(TAG, "SMSNum:" + fromSmsNumber, ",ChatId:" + chatId);
 
         int source;
         String fromId;
@@ -440,6 +443,7 @@ public class CoreService extends Service
                 processSmsMessage(address, smsBody);
             } else {
                 updateLocation(getApplicationContext(), smsBody);
+                Logger.warning(TAG, "Invalid number: " + address);
             }
         }
     }
@@ -1297,6 +1301,7 @@ public class CoreService extends Service
     public int onStartCommand(Intent intent, int flags, int startId) {
         if(Logger.DEBUG) Logger.debug(TAG, "onStartCommand");
         PowerConnectionReceiver.register(getApplicationContext());
+        SmsReceiver.register(getApplicationContext());
         processIntent(intent);
         return START_STICKY;
     }

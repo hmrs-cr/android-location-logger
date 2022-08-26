@@ -272,7 +272,9 @@ public class Utils {
         String netName = networkInfo != null ? networkInfo.getTypeName() : "None";
         boolean connected = networkInfo != null && networkInfo.isConnected();
 
-        int level = getBatteryLevel(true);
+        Intent batteryIntent = getBatteryChangedIntent();
+        double temp = getBatteryTemp(batteryIntent);
+        int level = getBatteryLevel(batteryIntent);
         boolean charging = false;
         if (level > 100) {
             charging = true;
@@ -301,6 +303,7 @@ public class Utils {
         generalInfo.append("\nNetwork: ").append(netName).append(" - Connected:").append(connected).append("\n")
                 .append("Internet: ").append(connected && Utils.isInternetAvailable()).append("\n")
                 .append("Battery: ").append(level).append("%").append(charging ? " (charging)" : "").append("\n")
+                .append("Temp: ").append(temp).append("\n")
                 .append("Loc: ").append(locationInfo).append("\n")
                 .append("App Version: ").append(Constants.VERSION_STRING).append("\n")
                 .append("Android Version: ").append(android.os.Build.MODEL).append(" ").append(android.os.Build.VERSION.RELEASE).append("\n");
@@ -383,6 +386,11 @@ public class Utils {
         return sLastBatteryLevel;
     }
 
+    public static double getBatteryTemp(Intent intent) {
+        double temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10F;
+        return  temp;
+    }
+
     public static int getBatteryLevel() {
         return getBatteryLevel(false);
     }
@@ -390,8 +398,6 @@ public class Utils {
     public  static Intent getBatteryChangedIntent() {
         Intent intent = LocationLoggerApp.getContext().registerReceiver(null,
                 batteryIntentFilter);
-        double temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10F;
-        Logger.info(TAG, "TEMP:"+temp);
         return  intent;
     }
 

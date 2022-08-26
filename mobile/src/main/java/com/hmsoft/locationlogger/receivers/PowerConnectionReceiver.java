@@ -47,28 +47,23 @@ public class PowerConnectionReceiver extends BroadcastReceiver {
             Toast.makeText(context, "" + intent, Toast.LENGTH_LONG).show();
         }
 
-        if (currentPowerEvent == null) {
-            PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "locatrack:wakelock:powerconnection.event");
-            wakeLock.acquire(Math.round(DelayInSeconds * 2.5) * 1000);
-            currentPowerEvent = TaskExecutor.executeOnUIThread(new Runnable() {
-                @Override
-                public void run() {
-                    Intent batteryIntent = Utils.getBatteryChangedIntent();
-                    int pluggedTo = batteryIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
-                    int batteryLevel = Utils.getBatteryLevel(batteryIntent);
-                    CoreService.powerConnectionChange(context, batteryLevel, pluggedTo);
-                    TaskExecutor.executeOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            currentPowerEvent = null;
-                        }
-                    }, DelayInSeconds);
-
-                }
-            }, DelayInSeconds);
-        } else {
-            if (Logger.DEBUG) Logger.debug(TAG, "There's still a pending power connection change event. " + TaskExecutor.isMainUIThread());
+        if (currentPowerEvent != null) {
+            TaskExecutor.removeFromUIThread(currentPowerEvent);
+            currentPowerEvent = null;
         }
+
+        PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "locatrack:wakelock:powerconnection.event");
+        wakeLock.acquire(Math.round(DelayInSeconds * 2.5) * 1000);
+        currentPowerEvent = TaskExecutor.executeOnUIThread(new Runnable() {
+            @Override
+            public void run() {
+                Intent batteryIntent = Utils.getBatteryChangedIntent();
+                int pluggedTo = batteryIntent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+                int batteryLevel = Utils.getBatteryLevel(batteryIntent);
+                CoreService.powerConnectionChange(context, batteryLevel, pluggedTo);
+                currentPowerEvent = null;
+            }
+        }, DelayInSeconds);
     }
 }

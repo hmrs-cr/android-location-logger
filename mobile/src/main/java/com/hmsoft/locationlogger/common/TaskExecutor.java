@@ -37,6 +37,10 @@ public final class TaskExecutor
 		return  runnable;
 	}
 
+	public synchronized static void removeFromUIThread(Runnable runnable) {
+		sExecuteOnUIHandler.removeCallbacks(runnable);
+	}
+
 	public static void sleep(int seconds) {
 		if(seconds < 1) return;
 		try {

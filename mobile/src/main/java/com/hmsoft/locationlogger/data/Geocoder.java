@@ -4,6 +4,7 @@ import android.content.Context;
 import android.location.Address;
 import android.location.Location;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.data.sqlite.GeoFenceTable;
@@ -108,7 +109,7 @@ public class Geocoder {
         if (addresses != null && addresses.size() > 0) {
             // Get the first address
             Address address = addresses.get(0);
-            Logger.info(TAG, "Got address from geocoder: %s", address);
+            if (Logger.DEBUG) Logger.debug(TAG, "Got address from geocoder: %s", address);
 
                 /*
                  * Format the first line of address (if available),
