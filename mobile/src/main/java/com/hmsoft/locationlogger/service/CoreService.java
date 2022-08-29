@@ -198,6 +198,7 @@ public class CoreService extends Service
         TaskExecutor.executeOnNewThread(new Runnable() {
             @Override
             public void run() {
+                requestTelegramUpdates(3, true);
                 processTextMessage(fromSmsNumber, null, text, null, null, null, true);
             }
         });
@@ -215,8 +216,6 @@ public class CoreService extends Service
         final String botKey = mPreferences.getString(R.string.pref_telegram_botkey_key, getString(R.string.pref_telegram_botkey_default));
         final String channelId = mPreferences.getString(R.string.pref_telegram_chatid_key, getString(R.string.pref_telegram_chatid_default));
 
-        Logger.debug(TAG, "SMSNum:" + fromSmsNumber, ",ChatId:" + chatId);
-
         int source;
         String fromId;
         if (TextUtils.isEmpty(fromSmsNumber)) {
@@ -230,11 +229,10 @@ public class CoreService extends Service
         Command.CommandContext context = new Command.CommandContext(this, source, botKey, fromId, messageId, userName, fullName, channelId, isAllowed);
 
         String[] commnadParams = text.split(" ", 2);
-        Command command = Command.getCommand(commnadParams[0]);
+        Command command = Command.getCommand(commnadParams[0].trim());
         if (command != null) {
             if (!command.isAnyoneAllowed() && !isAllowed) {
                 String msg = String.format("You are not my master!\n\nmsg:\"%s\"\nid:%s", text, chatId);
-                Logger.warning(TAG, msg);
                 TelegramHelper.sendTelegramMessage(botKey, chatId, null, msg);
                 return;
             }
@@ -451,8 +449,8 @@ public class CoreService extends Service
     void handleUserPresent() {
         mNeedsToUpdateUI = true;
         updateNotification();
-
-        requestTelegramUpdates(2, true);
+        requestTelegramUpdates(3, true);
+        CoreService.updateLocation(getApplicationContext());
     }
 
     void handleBatteryLevelChange(int newLevel, int pluggedTo) {
@@ -505,11 +503,11 @@ public class CoreService extends Service
     }
 
     private void onPluggedToAC() {
-       //// Utils.turnBluetoothOn();
+       Utils.turnBluetoothOn();
     }
 
     private void onUnplugged() {
-        ///// Utils.turnBluetoothOff();
+        Utils.turnBluetoothOff();
     }
 
     void handleLocation(Location location, String provider) {
@@ -963,7 +961,7 @@ public class CoreService extends Service
 
     private void requestTelegramUpdates(int count, boolean now) {
 
-        final long UPDATES_WINDOW = 1000 * 60 * 10;
+        final long UPDATES_WINDOW = 1000 * 60 * 2;
 
         boolean fastestUpdates = DEBUG || now || ((mUnlimitedData || isWifiConnected()) && isCharging());
         boolean mustRequestUpdates = fastestUpdates ||

@@ -47,7 +47,7 @@ public class SmsReceiver extends BroadcastReceiver {
             String smsBody = smsMessage.getMessageBody();
             String address = smsMessage.getOriginatingAddress();
 
-            Logger.debug(TAG, "SMS received:" + address);
+            if (Logger.DEBUG) Logger.debug(TAG, "SMS received:" + address + ", Body: " + smsBody);
 
             CoreService.handleSms(context, address, smsBody);
         }

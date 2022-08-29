@@ -163,9 +163,10 @@ class PicturesCommand extends Command {
 
         long lastPictureDate = 0;
         int c = 0;
+        String chatId = context.source == SOURCE_SMS ? context.channelId : context.fromId;
         while(result.moveToNext()) {
             String fileName = result.getString(0);
-            TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, new File(fileName), null);
+            TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, chatId, new File(fileName), null);
             lastPictureDate = result.getLong(1);
             c++;
         }

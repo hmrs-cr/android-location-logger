@@ -23,7 +23,8 @@ class LogsCommand extends Command {
     public void execute(String[] params, CommandContext context) {
         File[] logs = Logger.getLogFiles();
         if (logs != null && logs.length > 0) {
-            TelegramHelper.sendTelegramDocuments(context.botKey, context.fromId, context.messageId, logs);
+            String chatId = context.source == SOURCE_SMS ? context.channelId : context.fromId;
+            TelegramHelper.sendTelegramDocuments(context.botKey, chatId, context.messageId, logs);
         } else {
             context.sendTelegramReply("No logs.");
         }

@@ -1,12 +1,22 @@
 package com.hmsoft.locationlogger.data.commands;
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.provider.Telephony;
+import android.telephony.SmsMessage;
+import android.widget.Toast;
 
 import com.hmsoft.locationlogger.BuildConfig;
+import com.hmsoft.locationlogger.common.Constants;
 import com.hmsoft.locationlogger.common.Logger;
 import com.hmsoft.locationlogger.common.TaskExecutor;
 import com.hmsoft.locationlogger.common.telegram.TelegramHelper;
 import com.hmsoft.locationlogger.common.Utils;
+import com.hmsoft.locationlogger.receivers.SmsReceiver;
+import com.hmsoft.locationlogger.service.CoreService;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -119,7 +129,8 @@ public abstract class Command {
         }
 
         public long sendTelegramReply(String message) {
-            return TelegramHelper.sendTelegramMessage(this.botKey, this.fromId, this.messageId, message);
+            String chatId = this.source == SOURCE_SMS ? this.channelId : this.fromId;
+            return TelegramHelper.sendTelegramMessage(this.botKey, chatId, this.messageId, message);
         }
 
         public void sendTelegramReplyAsync(final String message) {
@@ -147,7 +158,13 @@ public abstract class Command {
 
     public static void sendReply(CommandContext context, String message) {
         if(context.source == SOURCE_SMS) {
-            Utils.sendSms(context.fromId, message, null);
+            Intent i = new Intent(context.androidContext.getApplicationContext(), SmsResultReceiver.class);
+            i.setAction(SmsResultReceiver.ACTION);
+            i.putExtra(SmsResultReceiver.EXTRA_TEXT, message);
+            PendingIntent pe = PendingIntent.getBroadcast(context.androidContext.getApplicationContext(), 11, i, 0);
+            if (!Utils.sendSms(context.fromId, message, pe)) {
+                TelegramHelper.sendTelegramMessage(context.botKey, context.channelId, context.messageId, message);
+            }
         } else {
             TelegramHelper.sendTelegramMessage(context.botKey, context.fromId, context.messageId, message);
         }
@@ -222,6 +239,19 @@ public abstract class Command {
             registerCommandClass(AudioCommand.COMMAND_NAME, AudioCommand.class);
             registerCommandClass(PicturesCommand.COMMAND_NAME, PicturesCommand.class);
             registerCommandClass(CallCommand.COMMAND_NAME, CallCommand.class);
+        }
+
+        ////context.registerReceiver(new SmsResultReceiver(), new IntentFilter(SmsResultReceiver.ACTION));
+    }
+
+    private static class SmsResultReceiver extends BroadcastReceiver {
+
+        public static final String ACTION = "SENT_SMS_RESULT";
+        public static final String EXTRA_TEXT = "SMS_TEXT";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int resultCode = getResultCode();
         }
     }
 }

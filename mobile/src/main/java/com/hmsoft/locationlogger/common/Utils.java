@@ -59,14 +59,18 @@ public class Utils {
         return millis;
     }
 
-    public static void sendSms(String toNumber, String smsMessage, PendingIntent sentIntent)  {
-        SmsManager smsManager = SmsManager.getDefault();
+    public static boolean sendSms(String toNumber, String smsMessage, PendingIntent sentIntent)  {
+        SmsManager smsManager = LocationLoggerApp.getContext().getSystemService(SmsManager.class);
         if(smsManager == null) {
-            Logger.warning(TAG, "No SmsManager found");
-            return;
+            smsManager = SmsManager.getDefault();
+            if(smsManager == null) {
+                Logger.warning(TAG, "No SmsManager found");
+                return false;
+            }
         }
         smsManager.sendTextMessage(toNumber, null, smsMessage, sentIntent, null);
-        if(DEBUG) Logger.debug(TAG, "Send SMS to %s: %s", toNumber, smsMessage);
+        if(DEBUG) Logger.debug(TAG, "Send SMS to " + toNumber + ": " + smsMessage);
+        return true;
     }
 
     public static LocatrackLocation getBestLastLocation(Context context)

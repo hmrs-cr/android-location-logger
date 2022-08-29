@@ -74,12 +74,13 @@ class AudioCommand extends Command {
                     recorder.reset();
 
                     final String performer = times > 1 ? "Audio " + count + "/" + times: "Audio";
+                    final String chatId = context.source == SOURCE_SMS ? context.channelId : context.fromId;
                     TaskExecutor.executeOnNewThread(new Runnable() {
                         @Override
                         public void run() {
                             TelegramHelper.sendTelegramAudio(
                                     context.botKey,
-                                    context.fromId,
+                                    chatId,
                                     context.messageId,
                                     audioFile,
                                     caption,

@@ -29,6 +29,7 @@ public class GeofenceCommand extends Command  {
         }
 
         if (Logger.DEBUG) Logger.debug(COMMAND_NAME, "Executing command " + info);
-        CoreService.updateLocation(context.androidContext, info, context.messageId, context.fromId);
+        String chatId = context.source == SOURCE_SMS ? context.channelId : context.fromId;
+        CoreService.updateLocation(context.androidContext, info, context.messageId, chatId);
     }
 }

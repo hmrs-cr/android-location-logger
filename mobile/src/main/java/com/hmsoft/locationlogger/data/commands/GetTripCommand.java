@@ -141,6 +141,7 @@ public class GetTripCommand extends Command {
             }
         }
 
-        TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId, gpxFile, null);
+        String chatId = context.source == SOURCE_SMS ? context.channelId : context.fromId;
+        TelegramHelper.sendTelegramDocument(context.botKey, chatId, context.messageId, gpxFile, null);
     }
 }

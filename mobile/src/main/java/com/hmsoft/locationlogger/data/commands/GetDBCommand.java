@@ -38,7 +38,8 @@ class GetDBCommand extends Command {
             return;
         }
 
-        TelegramHelper.sendTelegramDocument(context.botKey, context.fromId, context.messageId,
+        String chatId = context.source == SOURCE_SMS ? context.channelId : context.fromId;
+        TelegramHelper.sendTelegramDocument(context.botKey, chatId, context.messageId,
                 Helper.getInstance().getPathFile(), null);
     }
 }
