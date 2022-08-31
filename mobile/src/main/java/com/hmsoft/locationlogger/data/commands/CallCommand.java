@@ -23,7 +23,11 @@ public class CallCommand extends Command  {
     public void execute(String[] params, CommandContext context) {
         if (params.length == 2) {
             Intent callIntent = new Intent(Intent.ACTION_CALL);
-            callIntent.setData(Uri.parse("tel:" + params[1]));
+            String number = params[1];
+            if ("me".equals(number) && context.source == SOURCE_SMS) {
+                number = context.fromId;
+            }
+            callIntent.setData(Uri.parse("tel:" + number));
             callIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.androidContext.getApplicationContext().startActivity(callIntent);
         }
