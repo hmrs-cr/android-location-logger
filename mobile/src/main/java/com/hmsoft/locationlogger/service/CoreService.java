@@ -558,9 +558,9 @@ public class CoreService extends Service
     private void insertNotifyInfo(String notifyInfo) {
         if (notifyInfo.startsWith(LocatrackLocation.INFO_SET_GEOFENCE_LABEL)) {
             this.mNewGeoFenceLabel = notifyInfo.replace(LocatrackLocation.INFO_SET_GEOFENCE_LABEL, "").trim();
-            notifyInfo = "Geofence update";
+            notifyInfo = "Geofence update\n";
         } else if (notifyInfo.startsWith(LocatrackLocation.INFO_GET_GEOFENCE_LABEL)) {
-            notifyInfo = "Geofence";
+            notifyInfo = "Geofence\n";
         }
 
         if (mPendingNotifyInfo == null) {
@@ -856,6 +856,10 @@ public class CoreService extends Service
                     setVisibility(Notification.VISIBILITY_PRIVATE).
                     setSubText(mPreferences.activeProfileName);
 
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                notificationBuilder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
+            }
+
             if (mapPendingIntent != null) {
                 notificationBuilder.setContentIntent(mapPendingIntent);
             }
@@ -961,7 +965,7 @@ public class CoreService extends Service
 
     private void requestTelegramUpdates(int count, boolean now) {
 
-        final long UPDATES_WINDOW = 1000 * 60 * 2;
+        final long UPDATES_WINDOW = 1000 * 60;
 
         boolean fastestUpdates = DEBUG || now || ((mUnlimitedData || isWifiConnected()) && isCharging());
         boolean mustRequestUpdates = fastestUpdates ||
@@ -1299,7 +1303,7 @@ public class CoreService extends Service
     public int onStartCommand(Intent intent, int flags, int startId) {
         if(Logger.DEBUG) Logger.debug(TAG, "onStartCommand");
         PowerConnectionReceiver.register(getApplicationContext());
-        SmsReceiver.register(getApplicationContext());
+        //SmsReceiver.register(getApplicationContext());
         processIntent(intent);
         return START_STICKY;
     }

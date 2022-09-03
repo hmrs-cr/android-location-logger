@@ -18,7 +18,7 @@
       </configuration>
     </facet>
   </component>
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_7" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../../mobile/build/generated/aidl_source_output_dir/FrontierDebug/out" />
     <content url="file://$MODULE_DIR$/../../../mobile/build/generated/ap_generated_sources/FrontierDebug/out">

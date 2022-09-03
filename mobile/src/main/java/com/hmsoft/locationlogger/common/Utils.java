@@ -103,6 +103,9 @@ public class Utils {
     public static String[] getAllNeededPermissions() {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return new String[]{
+                    Manifest.permission.BLUETOOTH_ADMIN,
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? Manifest.permission.BLUETOOTH_CONNECT : null,
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? Manifest.permission.BLUETOOTH_SCAN : null,
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.READ_SMS,
@@ -126,7 +129,7 @@ public class Utils {
         String[] permissions = getAllNeededPermissions();
 
         for(String permission : permissions) {
-            if(!hasPermission(permission)) {
+            if(permission != null && !hasPermission(permission)) {
                 if(DEBUG) {
                     Logger.debug(TAG, "Missing permission: " + permission);
                 }
@@ -418,28 +421,36 @@ public class Utils {
     }
 
     public static void turnBluetoothOn() {
-        if (LocationLoggerApp.getContext().checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
-            BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (!bluetoothAdapter.isEnabled()) {
-                if (bluetoothAdapter.enable()) {
-                    if (DEBUG) Logger.debug(TAG, "Bluetooth enabled successfully.");
-                } else {
-                    Logger.warning(TAG, "Failed to enable bluetooth");
+        try {
+            if (LocationLoggerApp.getContext().checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+                BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                if (!bluetoothAdapter.isEnabled()) {
+                    if (bluetoothAdapter.enable()) {
+                        if (DEBUG) Logger.debug(TAG, "Bluetooth enabled successfully.");
+                    } else {
+                        Logger.warning(TAG, "Failed to enable bluetooth");
+                    }
                 }
             }
+        } catch (Exception e) {
+            // Ignore
         }
     }
 
     public static void turnBluetoothOff() {
-        if (LocationLoggerApp.getContext().checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
-            BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (bluetoothAdapter.isEnabled()) {
-                if (bluetoothAdapter.disable()) {
-                    if (DEBUG) Logger.debug(TAG, "Bluetooth disabled successfully.");
-                } else {
-                    Logger.warning(TAG, "Failed to disable bluetooth");
+        try {
+            if (LocationLoggerApp.getContext().checkSelfPermission(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+                BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                if (bluetoothAdapter.isEnabled()) {
+                    if (bluetoothAdapter.disable()) {
+                        if (DEBUG) Logger.debug(TAG, "Bluetooth disabled successfully.");
+                    } else {
+                        Logger.warning(TAG, "Failed to disable bluetooth");
+                    }
                 }
             }
+        } catch (Exception e) {
+            // Ignore
         }
     }
 }

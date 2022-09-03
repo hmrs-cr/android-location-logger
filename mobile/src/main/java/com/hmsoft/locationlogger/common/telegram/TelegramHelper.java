@@ -292,8 +292,8 @@ public class TelegramHelper {
                         StringBuilder updatesUrl = getTelegramApiUrl(mBotKey, "getUpdates");
 
                         updatesUrl
-                                .append("?timeout=12")
-                                .append("&limit=15");
+                                .append("?timeout=30")
+                                .append("&limit=25");
 
                         if (updatesOffset > 0) {
                             updatesUrl.append("&offset=").append(updatesOffset);

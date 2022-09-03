@@ -28,7 +28,6 @@ public class GeofenceCommand extends Command  {
             info = LocatrackLocation.INFO_SET_GEOFENCE_LABEL + params[1];
         }
 
-        if (Logger.DEBUG) Logger.debug(COMMAND_NAME, "Executing command " + info);
         String chatId = context.source == SOURCE_SMS ? context.channelId : context.fromId;
         CoreService.updateLocation(context.androidContext, info, context.messageId, chatId);
     }
