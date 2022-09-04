@@ -15,9 +15,24 @@ public final class Gpx {
 
     public static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
 
+    public static StringBuilder createGpxStringBuilder() {
+        return  new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n<gpx xmlns=\"http://www.topografix.com/GPX/1/1\" creator=\"HM Software\" version=\"1.1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"  xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">\n");
+    }
+
+    public static StringBuilder addWayPoint(StringBuilder sb, double lat, double lon, String name, String description) {
+        return sb.append("<wpt lat=\"").append(lat).append("\" lon=\"").append(lon).append("\">\n")
+                 .append("    <name>").append(name).append("</name>\n")
+                 .append("    <desc>").append(description).append("</desc>\n")
+                 .append("</wpt>\n");
+    }
+
+    public static StringBuilder closeGpx(StringBuilder gpxStringBuilder) {
+        return gpxStringBuilder.append("</gpx>");
+    }
+
     public static String createGpx(LocationSet points, String name, String description) {
 
-        StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?><gpx xmlns=\"http://www.topografix.com/GPX/1/1\" creator=\"HM Software\" version=\"1.1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"  xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">");
+        StringBuilder sb = createGpxStringBuilder();
 
         sb.append("<trk>");
         sb.append("<name>");sb.append(name);sb.append("</name>");
@@ -38,7 +53,8 @@ public final class Gpx {
             }
         }
 
-        sb.append("</trkseg></trk></gpx>");
+        sb.append("</trkseg></trk>");
+        closeGpx(sb);
 
         return sb.toString();
         /*try {

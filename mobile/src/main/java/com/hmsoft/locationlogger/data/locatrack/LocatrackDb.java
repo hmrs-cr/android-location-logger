@@ -67,26 +67,7 @@ public class LocatrackDb extends LocationStorer {
 
     private void saveGeoFence(LocatrackLocation location) {
         if (!TextUtils.isEmpty(location.newGeoFenceLabel)) {
-            int radio = 35;
-            String label = location.newGeoFenceLabel;
-
-            if (label.startsWith("radio:")) {
-                int i1 = label.indexOf(':') + 1;
-                int i2 = label.indexOf(',', i1);
-                if (i2 > 0) {
-                    try {
-                        String s = label.substring(i1, i2);
-                        radio = Integer.parseInt(s);
-                    } catch (Exception e) {
-                        // Ignore
-                    }
-
-                    label = label.substring(i2 + 1);
-                }
-            }
-
-            long c = GeoFenceTable.saveGeofence(location.getLatitude(), location.getLongitude(), radio, label);
-            if (c > 0 && Logger.DEBUG) Logger.debug(TAG, "Geofence saved: " + location.newGeoFenceLabel);
+            saveGeoFence(location.newGeoFenceLabel, location.getLatitude(), location.getLongitude());
             location.newGeoFenceLabel = null;
         }
     }
@@ -110,6 +91,27 @@ public class LocatrackDb extends LocationStorer {
     public void close() {
         LocationTable.stopBulkInsert();
         super.close();
+    }
+
+    public static void saveGeoFence(String label, double lat, double lon) {
+        int radio = 35;
+
+        if (label.startsWith("radio:")) {
+            int i1 = label.indexOf(':') + 1;
+            int i2 = label.indexOf(',', i1);
+            if (i2 > 0) {
+                try {
+                    String s = label.substring(i1, i2);
+                    radio = Integer.parseInt(s);
+                } catch (Exception e) {
+                    // Ignore
+                }
+
+                label = label.substring(i2 + 1);
+            }
+        }
+
+        long c = GeoFenceTable.saveGeofence(lat, lon, radio, label);
     }
 }
 

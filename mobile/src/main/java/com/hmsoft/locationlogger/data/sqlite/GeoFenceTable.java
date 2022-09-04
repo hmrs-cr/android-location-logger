@@ -4,6 +4,8 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import com.hmsoft.locationlogger.common.Gpx;
+
 public class GeoFenceTable {
     public static final String TABLE_NAME = "geofence";
 
@@ -76,4 +78,32 @@ public class GeoFenceTable {
         return null;
     }
 
+    public static String exportGpx() {
+        StringBuilder sb = Gpx.createGpxStringBuilder();
+
+        Helper helper = Helper.getInstance();
+        Cursor cursor = helper.getReadableDatabase().query(TABLE_NAME, null,
+                null,
+                null, null, null, COLUMN_NAME_TIMESTAMP + " DESC");
+
+        if(cursor != null) {
+            try {
+                if (cursor.moveToFirst()) {
+                    boolean hasNext = true;
+                    while (hasNext) {
+                        double lat = cursor.getDouble(cursor.getColumnIndex(COLUMN_NAME_LATITUDE));
+                        double lon = cursor.getDouble(cursor.getColumnIndex(COLUMN_NAME_LONGITUDE));
+                        String name = cursor.getString(cursor.getColumnIndex(COLUMN_NAME_LABEL));
+                        String description = "distance: " + cursor.getInt(cursor.getColumnIndex(COLUMN_NAME_RADIO));
+                        Gpx.addWayPoint(sb, lat, lon, name, description);
+                        hasNext = cursor.moveToNext();
+                    }
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+
+        return Gpx.closeGpx(sb).toString();
+    }
 }
